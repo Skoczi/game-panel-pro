@@ -100,8 +100,12 @@ def main():
             for target in dest.rglob('*'):
                 target.chmod(0o755 if target.is_dir() else 0o644)
         html = (dest / 'dist/index.html').read_bytes()
+        # BuildKit interprets a bare sha256 ID as a registry image name in FROM.
+        # Give the inspected local image a unique, retained rollback tag.
+        base_image = 'gamepanel-pro-frontend:base-' + args.patch
+        run('docker', 'tag', frontend['Image'], base_image)
         (dest / 'Dockerfile').write_text(
-            'FROM ' + frontend['Image'] + '\n'
+            'FROM ' + base_image + '\n'
             'COPY dist/ /usr/share/nginx/html/\n'
             'COPY nginx.conf /etc/nginx/conf.d/default.conf\n'
             'COPY security-headers.conf /etc/nginx/security-headers.conf\n')
