@@ -24,6 +24,7 @@ export function ApiTokensModal({ onClose }: { onClose: () => void }) {
   const [secret, setSecret] = useState(''), [revoke, setRevoke] = useState<Token | null>(null);
   const [copied, setCopied] = useState(false), [loaded, setLoaded] = useState(false);
   const [needsRefresh, setNeedsRefresh] = useState(false);
+  const [power, setPower] = useState(false);
   const [readResources, setReadResources] = useState(false);
   const [readBackups, setReadBackups] = useState(false), [createBackups, setCreateBackups] = useState(false);
   const refresh = async () => {
@@ -41,7 +42,7 @@ export function ApiTokensModal({ onClose }: { onClose: () => void }) {
     try {
       const result = await request<{ token: Token; secret: string }>('/api/api-tokens', 'POST', {
         name, serverIds: selected, scopes: ['servers.read', ...(readResources ? ['resources.read'] : []),
-          ...(readBackups ? ['backups.read'] : []), ...(createBackups ? ['backups.create', 'operations.read'] : [])], expiresAt: Date.now() + days * 86400000,
+          ...(readBackups ? ['backups.read'] : []), ...(createBackups ? ['backups.create'] : []), ...(power ? ['servers.power'] : []), ...(createBackups || power ? ['operations.read'] : [])], expiresAt: Date.now() + days * 86400000,
       });
       setSecret(result.secret); setTokens(previous => [result.token, ...previous]); setName(''); setSelected([]);
     } catch (cause) {
@@ -78,6 +79,7 @@ export function ApiTokensModal({ onClose }: { onClose: () => void }) {
           </section> : <form className="space-y-3" onSubmit={event => { event.preventDefault(); void create(); }}>
             <div><label htmlFor={`${id}-name`}>Token name</label><AppInput id={`${id}-name`} value={name} maxLength={80} disabled={busy} onChange={event => setName(event.target.value)} placeholder="Monitoring dashboard" /></div>
             <div><label htmlFor={`${id}-days`}>Expires in days</label><AppInput id={`${id}-days`} type="number" min={1} max={365} value={days} disabled={busy} onChange={event => setDays(Number(event.target.value))} /></div>
+            <AppToggle checked={power} disabled={busy} onChange={setPower} ariaLabel="Start, stop and restart servers" label="Start, stop and restart servers" />
             <AppToggle checked={readResources} disabled={busy} onChange={setReadResources} ariaLabel="Read resource measurements" label="Read resource measurements" />
             <AppToggle checked={readBackups} disabled={busy} onChange={setReadBackups} ariaLabel="Read backup lists" label="Read backup lists" />
             <AppToggle checked={createBackups} disabled={busy} onChange={setCreateBackups} ariaLabel="Create Native backups and read their status" label="Create Native backups and read their status" />

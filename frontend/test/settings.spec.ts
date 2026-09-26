@@ -12,6 +12,7 @@ test('display revisions remain separate from technical package versions', () => 
 });
 
 test.beforeEach(async ({ page }) => {
+  await page.route('**/api/signed-webhooks', route => route.fulfill({ json: { revision: 0, enabled: false, url: '', secretConfigured: false, recent: [] } }));
   await page.route('**/api/system/notifications', route => route.fulfill({ json: { revision: 0, enabled: false, webhookConfigured: false, categories: ['game','node','backup','schedule','recovery'], recent: [] } }));
 });
 

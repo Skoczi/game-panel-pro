@@ -1,3 +1,4 @@
+import { signedWebhooks } from './signedWebhooks.js';
 import { getDatabase } from '../database/init.js';
 import { isAgent } from '../agent/identity.js';
 import { serverRepository } from '../database/index.js';
@@ -6,7 +7,7 @@ import { AlertStore, type AlertCategory } from './alertStore.js';
 import { deliverDiscord } from './discordAlerts.js';
 import { isPanelMaintenance } from './panelMaintenance.js';
 import { logError } from '../utils/logger.js';
-export async function alertStore() { return new AlertStore(await getDatabase()); }
+export async function alertStore() { return new AlertStore(await getDatabase(), (event, source) => signedWebhooks().then(s => s.enqueue('alert.' + event.category, { title: event.title, source }, `${source}:${event.id}`))); }
 export function actionAlert(level: string, message: string, actor: string): { category: AlertCategory; title: string } | null {
     if (actor === 'monitor') {
         if (message.startsWith('Game is not responding')) return { category: 'game', title: 'Game is not responding' };

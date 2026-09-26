@@ -23,7 +23,7 @@ export function validateAlertBatch(value: unknown, now = Date.now()): AlertEvent
     });
 }
 export class AlertStore {
-    constructor(private db: Database) {}
+    constructor(private db: Database, private signedEvent?: (event: AlertEvent, source: string) => Promise<void>) {}
     async config(): Promise<AlertConfig & { revision: number }> {
         const row = await this.db.get('SELECT * FROM alert_settings WHERE id=1');
         return row ? { ...JSON.parse(row.config_json), revision: row.revision } : { ...defaults, revision: 0 };
@@ -53,6 +53,7 @@ export class AlertStore {
         const state = !config || (config.enabled && config.categories.includes(event.category)) ? 'pending' : 'skipped';
         await this.db.run('INSERT OR IGNORE INTO alert_events(id,source,category,payload_json,created_at,state) VALUES(?,?,?,?,?,?)',
             source === 'agent-outbox' ? event.id : `${source}:${event.id}`, source, event.category, JSON.stringify(event), event.createdAt, state);
+        if (source !== 'agent-outbox') await this.signedEvent?.(event, source).catch(() => console.error('Signed alert could not be queued'));
     }
     async create(category: AlertCategory, title: string, detail: string, source = 'local') {
         const event = { id: randomUUID(), category, title: title.slice(0, 200), detail: detail.slice(0, 1000), createdAt: Date.now() };

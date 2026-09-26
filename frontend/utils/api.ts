@@ -1229,6 +1229,9 @@ class ApiClient {
     return (await this.client.get('/api/system/appearance')).data;
   }
 
+  async getSignedWebhooks() { return (await this.client.get('/api/signed-webhooks')).data; }
+  async saveSignedWebhooks(settings: unknown) { return (await this.client.put('/api/signed-webhooks', settings)).data; }
+  async testSignedWebhooks() { return (await this.client.post('/api/signed-webhooks/test', {})).data; }
   async getNotifications() { return (await this.client.get('/api/system/notifications')).data; }
   async saveNotifications(settings: { revision: number; enabled: boolean; categories: string[]; webhook?: string }) { return (await this.client.put('/api/system/notifications', settings)).data; }
   async testNotifications() { return (await this.client.post('/api/system/notifications/test', {})).data; }

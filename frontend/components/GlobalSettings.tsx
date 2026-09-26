@@ -1,3 +1,4 @@
+import { SignedWebhookSettings } from './SignedWebhookSettings';
 import { NotificationSettings } from './NotificationSettings';
 import { confirmDialog } from '../utils/confirmDialog';
 import { useEffect, useState } from 'react';
@@ -262,7 +263,7 @@ export function GlobalSettings({
         </div>
       )}
       {!settings && !error && <p>Loading settings…</p>}
-      {!nodeId && settings && <NotificationSettings />}
+      {!nodeId && settings && <><NotificationSettings /><SignedWebhookSettings /></>}
       {settings && (
         <fieldset disabled={busy} className="min-w-0 space-y-6">
           {!nodeId && (

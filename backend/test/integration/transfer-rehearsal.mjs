@@ -2,9 +2,13 @@
 import { readFile, writeFile } from 'node:fs/promises';
 import { spawn } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
-import { initializeDatabase, closeDatabase } from '../../dist/database/init.js';
-import { serverRepository } from '../../dist/database/index.js';
-import { docker } from '../../dist/utils/docker/client.js';
+const { getConfig } = await import('../../dist/config.js');
+// The product database root is /data; give each fixture process its own database.
+getConfig().gamepanelDataDir = process.env.GAMEPANEL_APP_ROOT;
+const { initializeDatabase, closeDatabase } = await import('../../dist/database/init.js');
+const { apiPower } = await import('../../dist/services/publicApiPower.js');
+const { serverRepository } = await import('../../dist/database/index.js');
+const { docker } = await import('../../dist/utils/docker/client.js');
 const role = process.env.TRANSFER_ROLE;
 if (role) {
   const db = await initializeDatabase();
@@ -15,11 +19,12 @@ if (role) {
   const { default: express } = await import('express');
   const { RequestVerifier } = await import('../../dist/nodes/protocol.js');
   const { serverCloneRoutes, cloneImportRoutes } = await import('../../dist/routes/serverClone.js');
+  const { createServerPowerRoutes } = await import('../../dist/routes/servers/power.js');
   const { readBackupJob } = await import('../../dist/services/backupJobs.js');
   const { enterServerMutation } = await import('../../dist/services/nativeOperationLock.js');
   const app = express(), verifier = new RequestVerifier();
   app.use((req, res, next) => {
-    try { const claim = verifier.verify(req.headers['x-gamepanel-node-auth'], process.env.REHEARSAL_KEY, process.env.GAMEPANEL_NODE_ID, req.method, req.originalUrl); req.user = { userId: 1, username: claim.actor, isRoot: !claim.delegation }; next(); }
+    try { const claim = verifier.verify(req.headers['x-gamepanel-node-auth'], process.env.REHEARSAL_KEY, process.env.GAMEPANEL_NODE_ID, req.method, req.originalUrl); req.user = { userId: 1, username: claim.actor, isRoot: !claim.delegation, delegation: claim.delegation }; next(); }
     catch { res.status(401).json({ error: 'Signature required' }); }
   });
   app.use(express.json());
@@ -30,6 +35,7 @@ if (role) {
   });
   app.get('/api/servers/:id/backups/jobs/:job', async (req, res) => { res.json({ job: await readBackupJob(Number(req.params.id), req.params.job) }); });
   app.use('/api/servers/:id/clone', serverCloneRoutes);
+  app.use('/api/servers', createServerPowerRoutes());
   const server = app.listen(Number(process.env.PORT), '127.0.0.1');
   process.on('SIGTERM', () => { server.close(); void closeDatabase().then(() => process.exit(0)); });
 } else {
@@ -72,12 +78,23 @@ if (role) {
     const container = fixtureDocker.getContainer(target.Id);
     if ((await container.inspect()).State.Running) throw new Error('Destination auto-started');
     if ((await fixtureDocker.getContainer(process.env.RESTORE_CONTAINER).inspect()).State.Running) throw new Error('Source auto-started');
-    await container.start();
+    const powerRow = { node_id: targetId, runtime_id: result.targetId, runtime_key: result.targetRuntimeKey };
+    console.log('Scoped API start');
+    await apiPower(powerRow, 1, randomUUID(), 'start');
+    console.log('Scoped API start confirmed');
     const runtime = await container.inspect(), address = runtime.NetworkSettings.Networks[process.env.GAMEPANEL_GAMES_NETWORK].IPAddress;
     let info;
     for (let i = 0; i < 30; i++) { try { info = await queryGame(address, preview.ports.udp[0].container, 1000); break; } catch { await new Promise(r => setTimeout(r, 1000)); } }
     if (!info) throw new Error('Transferred game did not answer A2S');
-    console.log(JSON.stringify({ transfer: 'completed', signedHttp: true, checksumVerified: true, duplicateNotReplayed: true, receiptPersistent: true, newIdentity: true, bothInitiallyStopped: true, gameAnswered: true }));
+    console.log('Scoped API stop');
+    await apiPower(powerRow, 1, randomUUID(), 'stop');
+    console.log('Scoped API stop confirmed');
+    if ((await container.inspect()).State.Running) throw new Error('API stop failed');
+    console.log('Scoped API restart');
+    await apiPower(powerRow, 1, randomUUID(), 'restart');
+    console.log('Scoped API restart confirmed');
+    if (!(await container.inspect()).State.Running) throw new Error('API restart failed');
+    console.log(JSON.stringify({ scopedApiPowerVerified: true, transfer: 'completed', signedHttp: true, checksumVerified: true, duplicateNotReplayed: true, receiptPersistent: true, newIdentity: true, bothInitiallyStopped: true, gameAnswered: true }));
     await writeFile(process.env.REHEARSAL_ROOT + '/result.json', JSON.stringify({ completed: true, game: info }));
   } finally { for (const child of children) child.kill('SIGTERM'); await Promise.all(children.map(c => new Promise(r => c.once('exit', r)))); await closeDatabase(); }
 }

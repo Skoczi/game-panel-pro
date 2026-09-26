@@ -26,6 +26,7 @@ test('token management checks every selected server, never trusts supplied owner
         assert.equal((await post({ ...body, serverIds: [allowed, denied] })).status, 403);
         assert.equal((await post({ ...body, scopes: ['backups.create'] })).status, 403);
         assert.equal((await post({ ...body, scopes: ['*'] })).status, 400);
+        assert.equal((await post({ ...body, scopes: ['servers.power'] })).status, 403);
         assert.equal(created, 0);
         const createdResponse = await post(body);
         assert.equal(createdResponse.status, 201);

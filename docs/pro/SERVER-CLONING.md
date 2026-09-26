@@ -22,5 +22,4 @@ The latest transfer appears again after refreshing the page. A stable Idempotenc
 
 This prepares a migration copy; it does not automatically change DNS, public IP ownership, fleet grants, schedules or the existing fleet identity. Review the stopped target, start it, verify A2S/logs, then deliberately switch external integrations. Keep the old source stopped for rollback.
 
-2026-09-26 19:39:58 UTC rehearsal: two separate runtime processes/databases/node identities on one physical WAW2 host, signed HTTP transfer, checksum, duplicate admission, durable receipt, distinct target identity and A2S after target start passed. Real source unchanged. This tests the complete transfer path but is not a physical cross-host failover or HTTPS proxy load test.
-
+2026-09-26 20:03:23 UTC corrected rehearsal: two separate runtime processes/node identities and three separate databases (control/source/target) on one physical WAW2 host, signed HTTP transfer, checksum, duplicate admission, durable receipt, distinct target identity and A2S after target start passed. Real source unchanged. This tests the complete transfer path but is not a physical cross-host failover or HTTPS proxy load test.

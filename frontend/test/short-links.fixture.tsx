@@ -40,8 +40,8 @@ function Fixture() {
   if (!session.isAuthenticated)
     return (
       <button
-        onClick={() => {
-          localStorage.setItem('auth_token', 'test-token');
+        onClick={async () => {
+          await apiClient.login('fixture-user', 'fixture-password');
           location.reload();
         }}
       >

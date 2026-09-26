@@ -53,154 +53,52 @@ async function getServerForPowerAction(serverId: number): Promise<GameServerWith
     return server as GameServerWithContainer;
 }
 
+export type PowerAction = 'start' | 'stop' | 'restart';
+/** Shared by session routes and scoped API power; caller holds the server mutation lock. */
+export async function executeServerPower(serverId: number, action: PowerAction, actor: string) {
+    try {
+        let message: string;
+        if (action === 'start') {
+            let server = await getServerForPowerAction(serverId);
+            const currentStatus = await dockerUtils.checkContainerStatus(server.docker_container_id);
+            if (currentStatus !== 'running') {
+                await applyPendingServerConfiguration(serverId);
+                await refreshNativeStartupCompatibility(serverId);
+                server = await getServerForPowerAction(serverId);
+                await assertHostPortsAvailableForServer({ ports: parseStoredPorts(server), excludeServerId: serverId, excludeContainerIds: [server.docker_container_id] });
+            }
+            await serverRepository.updateDesiredState(serverId, 'running');
+            await beginServerTransition(serverId, 'starting', { timeoutMs: POWER_TRANSITION_TIMEOUT_MS, timeoutBehavior: 'reconcile', pollDockerHealth: true });
+            if (currentStatus !== 'running' && !await startOvhcloudServerIfHandled(serverId, server)) await dockerUtils.startContainer(server.docker_container_id);
+            await completeDockerPowerTransition(serverId);
+            message = 'Server start initiated';
+        } else if (action === 'stop') {
+            const server = await getServerForPowerAction(serverId);
+            await serverRepository.updateDesiredState(serverId, 'stopped');
+            await beginServerTransition(serverId, 'stopping', { timeoutMs: POWER_TRANSITION_TIMEOUT_MS, timeoutBehavior: 'reconcile', pollDockerHealth: false });
+            if (await dockerUtils.checkContainerStatus(server.docker_container_id) === 'running') await dockerUtils.stopContainer(server.docker_container_id, getServerStopTimeoutSeconds(server));
+            await afterOvhcloudServerStopped(serverId, server);
+            await reconcileServerStatus(serverId);
+            message = 'Server stopped';
+        } else if (action === 'restart') {
+            message = await restartServer(serverId) ? 'Saved settings applied; server restarted' : 'Server restart initiated';
+        } else throw new Error('Invalid power action');
+        await actionsRepository.create(serverId, 'info', message, actor);
+        return { success: true, message };
+    } catch (error) {
+        clearServerTransition(serverId);
+        await reconcileServerStatus(serverId).catch(e => logError('POWER:RECONCILE', e, { serverId }));
+        throw error;
+    }
+}
 export function createServerPowerRoutes(): Router {
     const router = Router();
-
-    // POST /api/servers/:id/start
-    router.post(
-        '/:id/start',
-        requireServerPermission(PERMISSIONS.server.power),
-        async (req: AuthenticatedRequest, res: Response) => {
-            let serverId: number | null = null;
-
-            try {
-                serverId = parseServerId(req.params.id);
-                if (!serverId) return res.status(400).json({ error: 'Invalid server id' });
-
-                let server = await getServerForPowerAction(serverId);
-                const currentStatus = await dockerUtils.checkContainerStatus(server.docker_container_id);
-                if (currentStatus !== 'running') {
-                    await applyPendingServerConfiguration(serverId);
-                    await refreshNativeStartupCompatibility(serverId);
-                    server = await getServerForPowerAction(serverId);
-                    await assertHostPortsAvailableForServer({
-                        ports: parseStoredPorts(server),
-                        excludeServerId: serverId,
-                        excludeContainerIds: [server.docker_container_id],
-                    });
-                }
-
-                await serverRepository.updateDesiredState(serverId, 'running');
-                await beginServerTransition(serverId, 'starting', {
-                    timeoutMs: POWER_TRANSITION_TIMEOUT_MS,
-                    timeoutBehavior: 'reconcile',
-                    pollDockerHealth: true,
-                });
-
-                if (currentStatus !== 'running') {
-                    const handled = await startOvhcloudServerIfHandled(serverId, server);
-                    if (!handled) {
-                        await dockerUtils.startContainer(server.docker_container_id);
-                    }
-                }
-
-                await completeDockerPowerTransition(serverId);
-
-                await actionsRepository.create(
-                    serverId,
-                    'info',
-                    'Server start initiated',
-                    req.user?.username || ''
-                );
-
-                return res.json({ success: true, message: 'Server start initiated' });
-            } catch (error) {
-                return sendRouteError(res, error, {
-                    route: 'ROUTE:SERVERS:START',
-                    fallbackMessage: 'Failed to start server',
-                    logContext: { serverId: req.params.id },
-                    onServerError: async () => {
-                        if (!serverId) return;
-                        clearServerTransition(serverId);
-                        await reconcileServerStatus(serverId).catch((reconcileError) => {
-                            logError('ROUTE:SERVERS:START:RECONCILE', reconcileError, { serverId });
-                        });
-                    },
-                });
-            }
-        }
-    );
-
-    // POST /api/servers/:id/stop
-    router.post(
-        '/:id/stop',
-        requireServerPermission(PERMISSIONS.server.power),
-        async (req: AuthenticatedRequest, res: Response) => {
-            let serverId: number | null = null;
-
-            try {
-                serverId = parseServerId(req.params.id);
-                if (!serverId) return res.status(400).json({ error: 'Invalid server id' });
-
-                const server = await getServerForPowerAction(serverId);
-                await serverRepository.updateDesiredState(serverId, 'stopped');
-                await beginServerTransition(serverId, 'stopping', {
-                    timeoutMs: POWER_TRANSITION_TIMEOUT_MS,
-                    timeoutBehavior: 'reconcile',
-                    pollDockerHealth: false,
-                });
-
-                const currentStatus = await dockerUtils.checkContainerStatus(server.docker_container_id);
-                if (currentStatus === 'running') {
-                    await dockerUtils.stopContainer(
-                        server.docker_container_id,
-                        getServerStopTimeoutSeconds(server)
-                    );
-                }
-                await afterOvhcloudServerStopped(serverId, server);
-
-                await reconcileServerStatus(serverId);
-                await actionsRepository.create(serverId, 'info', 'Server stopped', req.user?.username || '');
-
-                return res.json({ success: true, message: 'Server stopped' });
-            } catch (error) {
-                return sendRouteError(res, error, {
-                    route: 'ROUTE:SERVERS:STOP',
-                    fallbackMessage: 'Failed to stop server',
-                    logContext: { serverId: req.params.id },
-                    onServerError: async () => {
-                        if (!serverId) return;
-                        clearServerTransition(serverId);
-                        await reconcileServerStatus(serverId).catch((reconcileError) => {
-                            logError('ROUTE:SERVERS:STOP:RECONCILE', reconcileError, { serverId });
-                        });
-                    },
-                });
-            }
-        }
-    );
-
-    // POST /api/servers/:id/restart
-    router.post(
-        '/:id/restart',
-        requireServerPermission(PERMISSIONS.server.power),
-        async (req: AuthenticatedRequest, res: Response) => {
-            let serverId: number | null = null;
-
-            try {
-                serverId = parseServerId(req.params.id);
-                if (!serverId) return res.status(400).json({ error: 'Invalid server id' });
-
-                const applied = await restartServer(serverId);
-                const message = applied ? 'Saved settings applied; server restarted' : 'Server restart initiated';
-                await actionsRepository.create(serverId, 'info', message, req.user?.username || '');
-                return res.json({ success: true, message });
-            } catch (error) {
-                return sendRouteError(res, error, {
-                    route: 'ROUTE:SERVERS:RESTART',
-                    fallbackMessage: 'Failed to restart server',
-                    logContext: { serverId: req.params.id },
-                    onServerError: async () => {
-                        if (!serverId) return;
-                        clearServerTransition(serverId);
-                        await reconcileServerStatus(serverId).catch((reconcileError) => {
-                            logError('ROUTE:SERVERS:RESTART:RECONCILE', reconcileError, { serverId });
-                        });
-                    },
-                });
-            }
-        }
-    );
-
+    for (const action of ['start', 'stop', 'restart'] as const) router.post(`/:id/${action}`, requireServerPermission(PERMISSIONS.server.power), async (req: AuthenticatedRequest, res: Response) => {
+        try {
+            const id = parseServerId(req.params.id);
+            if (!id) return res.status(400).json({ error: 'Invalid server id' });
+            return res.json(await executeServerPower(id, action, req.user?.username || ''));
+        } catch (error) { return sendRouteError(res, error, { route: `SERVERS:${action}`, fallbackMessage: `Failed to ${action} server`, logContext: { serverId: req.params.id } }); }
+    });
     return router;
 }

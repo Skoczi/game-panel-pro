@@ -1,3 +1,5 @@
+import { signedWebhooks } from './signedWebhooks.js';
+import { apiPower } from './publicApiPower.js';
 import { getDatabase } from '../database/init.js';
 import { userRepository } from '../database/index.js';
 import { fleet, fleetPermissions } from '../fleet/control.js';
@@ -35,5 +37,7 @@ export const publicApiRoutes = publicApi({
     permissions: fleetPermissions,
     resources: apiResources,
     backups: apiBackups,
+    power: apiPower,
+    powerEvent: event => signedWebhooks().then(s => s.enqueue('server.power', { serverId: event.serverId, action: event.action, status: event.status }, event.id)),
     operations: { store: () => operations, normalizeName: normalizeBackupName, start: startApiBackup, readJob: readApiBackupJob },
 });

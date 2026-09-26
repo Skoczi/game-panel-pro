@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Game Panel PRO API",
-    "version": "2.0.49",
+    "version": "2.0.59",
     "description": "Game Panel PRO integration API. Scoped expiring tokens inherit current owner permissions. Native backup creation uses durable admission and never automatically re-dispatches an uncertain request."
   },
   "security": [
@@ -577,6 +577,83 @@
           },
           "500": {
             "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/v1/servers/{id}/power": {
+      "post": {
+        "operationId": "powerServer",
+        "summary": "Start, stop or restart a server (servers.power)",
+        "description": "Requires current server.power permission. Durable at-most-once dispatch per token and Idempotency-Key. Completed means power command confirmed, not game readiness.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_-]{16,128}$"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "action"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "action": {
+                    "type": "string",
+                    "enum": [
+                      "start",
+                      "stop",
+                      "restart"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Power outcome recorded. Location links to operation; status completed or dispatching."
+          },
+          "400": {
+            "description": "Invalid action or key"
+          },
+          "401": {
+            "description": "Invalid token/account"
+          },
+          "403": {
+            "description": "Missing scope"
+          },
+          "404": {
+            "description": "Server inaccessible"
+          },
+          "409": {
+            "description": "Conflicting key or uncertain outcome; never automatically redispatched"
+          },
+          "429": {
+            "description": "Rate limited"
+          },
+          "503": {
+            "description": "Admission unavailable; retry only with same key"
           }
         }
       }

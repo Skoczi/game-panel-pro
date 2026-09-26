@@ -1,7 +1,7 @@
 import { createHash, randomBytes, randomUUID } from 'node:crypto';
 import type { Database } from 'sqlite';
 
-export const API_SCOPES = ['servers.read', 'resources.read', 'backups.read', 'backups.create', 'operations.read'] as const;
+export const API_SCOPES = ['servers.read', 'resources.read', 'backups.read', 'backups.create', 'operations.read', 'servers.power'] as const;
 export type ApiScope = typeof API_SCOPES[number];
 export type ApiToken = {
     id: string; ownerId: number; name: string; scopes: ApiScope[]; serverIds: string[];
@@ -79,6 +79,7 @@ export function tokenAllows(token: ApiToken, serverId: string, scope: ApiScope,
     owner: { enabled: boolean; permissions: readonly string[] | null }, now = Date.now()): boolean {
     if (!owner.enabled || owner.permissions === null || token.revokedAt !== null || token.expiresAt <= now ||
         !token.serverIds.includes(serverId) || !token.scopes.includes(scope)) return false;
+    if (scope === 'servers.power') return owner.permissions.includes('server.power');
     if (scope === 'backups.read' || scope === 'backups.create') return owner.permissions.includes(scope);
     return true;
 }

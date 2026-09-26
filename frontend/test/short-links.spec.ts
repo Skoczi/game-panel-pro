@@ -19,8 +19,9 @@ test.beforeEach(async ({ page }, testInfo) => {
     });
     return route.fulfill({ response });
   });
-  if (testInfo.title !== 'a short destination survives sign-in')
-    await page.addInitScript(() => localStorage.setItem('auth_token', 'test-token'));
+  let signedIn = testInfo.title !== 'a short destination survives sign-in';
+  await page.route('**/api/auth/session', route => signedIn ? route.fulfill({ json: { token: 'test-token' } }) : route.fulfill({ status: 401, json: { error: 'Sign in' } }));
+  await page.route('**/api/auth/login', route => { signedIn = true; return route.fulfill({ json: { token: 'test-token' } }); });
   await page.route('**/api/auth/me', (route) =>
     route.fulfill({
       json: {

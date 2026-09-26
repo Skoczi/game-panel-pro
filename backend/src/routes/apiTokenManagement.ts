@@ -31,7 +31,7 @@ export function apiTokenManagement({ store, permissions }: Dependencies) {
             for (const id of new Set<string>(body.serverIds.map((id: string) => id.toLowerCase()))) {
                 const current = await permissions(id, req.user);
                 if (current === null || body.scopes.some((scope: string) =>
-                    (scope === 'backups.read' || scope === 'backups.create') && !current.includes(scope))) {
+                    ((scope === 'backups.read' || scope === 'backups.create') && !current.includes(scope)) || (scope === 'servers.power' && !current.includes('server.power')))) {
                     res.status(403).json({ error: 'Requested token access exceeds your server permissions' }); return;
                 }
             }

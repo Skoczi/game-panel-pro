@@ -1,3 +1,5 @@
+import { signedWebhookRoutes } from './routes/signedWebhooks.js';
+import { startSignedWebhookWorker } from './services/signedWebhooks.js';
 import { fleetCloneRoutes } from './routes/fleetClone.js';
 import { startOperationalHealthWorker } from './services/operationalHealth.js';
 import { recoverRestartAttempts } from './services/monitoringRecovery.js';
@@ -104,6 +106,7 @@ let linuxGsmRefreshJob: { stop: () => void } | null = null;
 let fileTransferCleanupJob: { stop: () => void } | null = null;
 let downloadTokenCleanupJob: { stop: () => void } | null = null;
 let operationalWorker: ReturnType<typeof startOperationalHealthWorker> | undefined;
+let signedWebhookWorker: ReturnType<typeof startSignedWebhookWorker> | undefined;
 let alertWorker: ReturnType<typeof startAlertWorker> | undefined;
 let gameMonitoringWorker: { stop: () => void } | null = null;
 let fastDownloadWorker: { stop: () => void } | null = null;
@@ -166,6 +169,7 @@ if (!isAgent()) app.use('/api/auth/security', accountSecurityRoutes);
 if (!isAgent()) {
   app.use('/api/v1', publicApiRoutes);
   app.use('/api/v1', publicApiErrorHandler);
+  app.use('/api/signed-webhooks', authMiddleware, signedWebhookRoutes);
   app.use('/api/api-tokens', authMiddleware, apiTokenRoutes);
   app.use('/api/fleet', authMiddleware, fleetCloneRoutes);
 }
@@ -258,6 +262,7 @@ async function startServer(): Promise<void> {
     await recoverRestartAttempts();
     gameMonitoringWorker = startGameMonitoringWorker();
     alertWorker = startAlertWorker();
+    if (!isAgent()) signedWebhookWorker = startSignedWebhookWorker();
     operationalWorker = startOperationalHealthWorker();
 
     httpServer.listen(port, () => {
@@ -290,6 +295,7 @@ function setupGracefulShutdown(): void {
       fastDownloadWorker?.stop();
       gameMonitoringWorker?.stop();
       alertWorker?.stop();
+      signedWebhookWorker?.stop();
       operationalWorker?.stop();
       agentHeartbeat?.stop();
       closeNodeSockets();

@@ -10,7 +10,7 @@ for (const theme of ['light', 'dark']) test(`API token creation, secret disposal
     if (path === '/api/fleet') return route.fulfill({ json: { servers: [{ id: serverId, name: 'My server' }] } });
     if (req.method() === 'POST') {
       mutations++; issued = true;
-      expect(req.postDataJSON()).toMatchObject({ name: 'Monitoring', scopes: ['servers.read', ...(theme === 'dark' ? ['resources.read'] : [])], serverIds: [serverId] });
+      expect(req.postDataJSON()).toMatchObject({ name: 'Monitoring', scopes: ['servers.read', ...(theme === 'dark' ? ['resources.read', 'servers.power', 'operations.read'] : [])], serverIds: [serverId] });
       return route.fulfill({ status: 201, json: { token, secret: 'gpp_fixture_secret' } });
     }
     if (req.method() === 'DELETE') { mutations++; revoked = true; return route.fulfill({ status: 204 }); }
@@ -23,7 +23,7 @@ for (const theme of ['light', 'dark']) test(`API token creation, secret disposal
   await expect(page.locator('.gp-app-input').first()).toHaveCSS('border-top-width', '1px');
   await expect(page.getByRole('button', { name: 'Create token' })).toBeDisabled();
   await page.getByLabel('Token name').fill('Monitoring');
-  if (theme === 'dark') await page.getByRole('switch', { name: 'Read resource measurements' }).check();
+  if (theme === 'dark') { await page.getByRole('switch', { name: 'Read resource measurements' }).check(); await page.getByRole('switch', { name: 'Start, stop and restart servers' }).check(); }
   await page.getByRole('checkbox', { name: /My server/ }).check();
   if (process.env.PLAYWRIGHT_SCREENSHOTS === '1') await page.screenshot({ path: `test-results/api-tokens-${theme}-mobile.png`, fullPage: true, animations: 'disabled' });
   await page.getByRole('button', { name: 'Create token' }).click();

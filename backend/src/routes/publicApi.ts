@@ -11,6 +11,8 @@ type Dependencies = {
     owner: (id: number) => Promise<Owner | null>;
     servers: () => Promise<FleetRow[]>;
     permissions: (server: FleetRow, owner: Owner) => Promise<string[] | null>;
+    power?: (server: FleetRow, ownerId: number, operationId: string, action: 'start' | 'stop' | 'restart') => Promise<void>;
+    powerEvent?: (event: { id: string; serverId: string; action: string; status: string }) => Promise<void>;
     resources?: (server: FleetRow, ownerId: number) => Promise<unknown>;
     backups?: (server: FleetRow, ownerId: number) => Promise<Array<{ name: string }>>;
     operations?: {
@@ -171,6 +173,33 @@ export function publicApi(deps: Dependencies) {
                 ...(operation.state === 'uncertain' ? { error: { code: 'outcome_uncertain', message: 'Dispatch was not confirmed. Inspect panel backup history before submitting a new key. This request will not be dispatched again.' } } : {}) });
         } catch { error(res, 503, 'unavailable', 'Backup admission unavailable. Retry only with the same Idempotency-Key.'); }
     });
+    router.post('/servers/:id/power', async (req, res) => {
+        const token = res.locals.apiToken as ApiToken, owner = res.locals.apiOwner as Owner, operations = deps.operations;
+        if (!token.scopes.includes('servers.power')) { error(res, 403, 'forbidden', 'Token requires servers.power'); return; }
+        const key = req.headers['idempotency-key'], action = req.body?.action;
+        if (typeof key !== 'string' || !/^[A-Za-z0-9_-]{16,128}$/.test(key) || !req.body || Array.isArray(req.body) || Object.keys(req.body).some(k => k !== 'action') || !['start', 'stop', 'restart'].includes(action)) {
+            error(res, 400, 'invalid_request', 'Provide action start, stop or restart and a stable Idempotency-Key'); return;
+        }
+        if (!operations || !deps.power) { error(res, 503, 'unavailable', 'Power API unavailable'); return; }
+        try {
+            const row = (await deps.servers()).find(r => r.id === req.params.id && !r.missing);
+            if (!row || !tokenAllows(token, row.id, 'servers.power', { enabled: owner.enabled, permissions: await deps.permissions(row, owner) })) { error(res, 404, 'not_found', 'Server not found'); return; }
+            const admission = await operations.store().admit({ tokenId: token.id, ownerId: owner.userId, serverId: row.id, nodeId: row.node_id, runtimeId: row.runtime_id, runtimeKey: row.runtime_key, key, name: '', kind: `power.${action as 'start' | 'stop' | 'restart'}` });
+            const op = admission.operation;
+            if (admission.conflict) { error(res, 409, 'idempotency_conflict', 'This key belongs to a different operation'); return; }
+            res.setHeader('Location', `/api/v1/operations/${op.id}`);
+            if (!admission.fresh) res.setHeader('Idempotency-Replayed', 'true');
+            if (admission.fresh) void (async () => {
+                let status = 'uncertain';
+                try { await deps.power!(row, owner.userId, op.id, action); await operations.store().started(op.id, 'power.completed'); status = 'completed'; }
+                catch { await operations.store().uncertain(op.id); }
+                await deps.powerEvent?.({ id: op.id, serverId: row.id, action, status });
+            })().catch(() => console.error('API power outcome could not be persisted', op.id));
+            await deps.store().markUsed(token.id);
+            res.status(op.state === 'uncertain' ? 409 : 202).json({ data: { id: op.id, serverId: row.id, action, status: op.state === 'started' ? 'completed' : op.state === 'admitted' ? 'dispatching' : 'uncertain', createdAt: new Date(op.created_at).toISOString() }, requestId: res.locals.requestId,
+                ...(op.state === 'uncertain' ? { error: { code: 'outcome_uncertain', message: 'Power result was not confirmed. Check server state and Activity before issuing a new key. This operation will not be repeated.' } } : {}) });
+        } catch { error(res, 503, 'unavailable', 'Power admission unavailable; retry only with the same Idempotency-Key'); }
+    });
     router.get('/operations/:id', async (req, res) => {
         const token = res.locals.apiToken as ApiToken, owner = res.locals.apiOwner as Owner, operations = deps.operations;
         if (!token.scopes.includes('operations.read')) { error(res, 403, 'forbidden', 'Token requires operations.read'); return; }
@@ -180,14 +209,14 @@ export function publicApi(deps: Dependencies) {
             const row = operation && operation.owner_id === owner.userId
                 ? (await deps.servers()).find(row => row.id === operation.server_id && !row.missing) : undefined;
             const permissions = row ? await deps.permissions(row, owner) : null;
-            if (!row || !operation || !permissions?.includes('backups.create') ||
+            if (!row || !operation || !permissions?.includes(operation.kind?.startsWith('power.') ? 'server.power' : 'backups.create') ||
                 !tokenAllows(token, row.id, 'operations.read', { enabled: owner.enabled, permissions })) {
                 error(res, 404, 'not_found', 'Operation not found'); return;
             }
             if (row.node_id !== operation.node_id || row.runtime_key !== operation.runtime_key || row.runtime_id !== operation.runtime_id) {
                 error(res, 409, 'runtime_changed', 'The operation belongs to an earlier runtime placement'); return;
             }
-            const job = operation.state === 'started' && operation.job_id ? await operations.readJob(row, owner.userId, operation.job_id) : null;
+            const job = operation.state === 'started' && operation.job_id ? (operation.kind?.startsWith('power.') ? { status: 'completed', startedAt: null, completedAt: null } : await operations.readJob(row, owner.userId, operation.job_id)) : null;
             await deps.store().markUsed(token.id);
             res.json({ data: { id: operation.id, serverId: row.id, createdAt: new Date(operation.created_at).toISOString(),
                 status: job?.status ?? (operation.state === 'admitted' ? 'dispatching' : 'uncertain'),

@@ -733,7 +733,7 @@ export function ServerConsoleTabs({
       </div>}
       {!isMinimized && activeTab && (
         <div
-          className={`flex flex-col min-h-0 ${isFullscreen ? 'flex-1' : ''}`}
+          className={`gp-console-body flex flex-col min-h-0 ${isFullscreen ? 'flex-1' : ''}`}
           style={isFullscreen ? undefined : { height: panelHeight }}
         >
           {isCLIConsoleActive && (

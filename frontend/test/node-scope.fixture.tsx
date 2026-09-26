@@ -1,3 +1,4 @@
+import { apiClient } from '../utils/api';
 import React, { useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { NodeScopeProvider } from '../contexts/NodeScopeContext';
@@ -12,6 +13,7 @@ import '@ovhcloud/ods-themes/default/fonts';
 import '../src/ui/theme/ods-dark.css';
 import '../src/ui/theme/ods-light.css';
 import '../styles/globals.css';
+apiClient.setAuthToken('fixture-token');
 function Fixture() {
   const [tab, setTab] = useState('game-servers');
   const root = sessionStorage.getItem('test-player') !== '1';

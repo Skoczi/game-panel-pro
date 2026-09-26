@@ -7,10 +7,10 @@ import { signNodeRequest } from '../nodes/protocol.js';
 
 /** Fixed internal endpoints only; never accepts a caller-controlled URL or follows redirects. */
 export async function readApiRuntime(row: FleetRow, actorId: number,
-    suffix: 'resources' | 'backups' | 'backups/create-native' | `backups/jobs/${string}`,
-    permissions: string[], maxBytes = 16384, mutation?: { name: string; key: string }) {
-    if (!/^(resources|backups|backups\/create-native|backups\/jobs\/[0-9a-f-]{36})$/.test(suffix)) throw new Error('Invalid runtime endpoint');
-    if (Boolean(mutation) !== (suffix === 'backups/create-native')) throw new Error('Invalid runtime method');
+    suffix: 'start' | 'stop' | 'restart' | 'resources' | 'backups' | 'backups/create-native' | `backups/jobs/${string}`,
+    permissions: string[], maxBytes = 16384, mutation?: { name?: string; key: string }) {
+    if (!/^(start|stop|restart|resources|backups|backups\/create-native|backups\/jobs\/[0-9a-f-]{36})$/.test(suffix)) throw new Error('Invalid runtime endpoint');
+    if (Boolean(mutation) !== (['backups/create-native', 'start', 'stop', 'restart'].includes(suffix))) throw new Error('Invalid runtime method');
     const method = mutation ? 'POST' : 'GET';
     const body = mutation ? JSON.stringify({ name: mutation.name }) : undefined;
     const node = await nodes().get(row.node_id);
@@ -26,11 +26,11 @@ export async function readApiRuntime(row: FleetRow, actorId: number,
                     { actorId, serverId: row.runtime_id, runtimeKey: row.runtime_key, permissions }),
             },
         });
-        const timer = setTimeout(() => request.destroy(new Error('Node resource request timed out')), 15000);
+        const timer = setTimeout(() => request.destroy(new Error('Node request timed out')), ['start', 'stop', 'restart'].includes(suffix) ? 120000 : 15000);
         request.once('close', () => clearTimeout(timer));
         request.once('error', reject);
         request.once('response', response => {
-            if (response.statusCode !== (mutation ? 202 : 200)) { response.resume(); reject(new Error('Runtime endpoint did not confirm the request')); return; }
+            if (response.statusCode !== (suffix === 'backups/create-native' ? 202 : 200)) { response.resume(); reject(new Error('Runtime endpoint did not confirm the request')); return; }
             let bytes = 0; const chunks: Buffer[] = [];
             response.on('data', (chunk: Buffer) => {
                 bytes += chunk.length;
