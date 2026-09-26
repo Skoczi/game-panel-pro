@@ -33,3 +33,7 @@ Testy przeglądarkowe używają Chromium i izolowanych fixture danych. Nie wykon
 
 ### Bezpieczeństwo konta — mobile
 ![Konto](visual-premium-2026-09-26/premium-account-security-dark-390.png)
+
+## Wdrożenie FR1
+
+Frontend live: `2a8e8e0ff8c243dec381f3e1a39ec71a5df7b704`, obraz `gamepanel-pro-frontend:local-20260926-premium-2a8e8e0`. Sprawdzono nginx, trasy aplikacji i nagłówki na origin. Helper potwierdził niezmienione pozostałe kontenery FR1. Rollback: `/opt/gamepanel-pro/local-patches/20260926-premium-2a8e8e0/rollback`. Publiczna strona eserv.pl otwiera poprawny formularz logowania w przeglądarce; brak aktywnej sesji uniemożliwił odbiór zalogowanego panelu live.
