@@ -1,5 +1,7 @@
 # Daily operation and data protection
 
+For the current eserv.pl deployment, schedules, alerting, MFA and recovery receipts see the [26 September operator runbook](ESERV-RUNBOOK.md).
+
 ## Native backup layout
 
 For a Native server using `/data`:

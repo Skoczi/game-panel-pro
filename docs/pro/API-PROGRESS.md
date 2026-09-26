@@ -1,10 +1,10 @@
 # Etap 4 — API integracyjne v1
 
-Wersja 2.0.49, lokalnie. Etap zakończony lokalnie. Panel oraz agent wymagają wspólnej aktualizacji przed wdrożeniem.
+Aktualizacja 26.09.2026: API wdrożone na eserv.pl w lokalnym buildzie 2.0.59; panel i agenty 43e30db. Opis pierwotnego odbioru pozostawiono na końcu.
 
 ## Dostęp
 
-Menu konta → **API tokens**. Nazwa, termin 1–365 dni, konkretne serwery i potrzebne operacje. Scope: `servers.read`, `resources.read`, `backups.read`, `backups.create`, `operations.read`. Tworzenie kopii w formularzu dołącza odczyt jej statusu. Uprawnienia nie są domyślnie rozszerzane na przyszłe serwery.
+Menu konta → **API tokens**. Nazwa, termin 1–365 dni, konkretne serwery i potrzebne operacje. Scope: `servers.read`, `resources.read`, `backups.read`, `backups.create`, `operations.read`, `servers.power`. Tworzenie kopii w formularzu dołącza odczyt jej statusu. Uprawnienia nie są domyślnie rozszerzane na przyszłe serwery.
 
 Losowy sekret `gpp_` ma 256 bitów i pojawia się wyłącznie po utworzeniu. Baza przechowuje SHA-256 sekretu. Lista pokazuje nazwę, zakres, wygaśnięcie, ostatnie użycie i unieważnienie; nie zwraca sekretu ani skrótu. Unieważnienie wymaga potwierdzenia. Po utracie odpowiedzi tworzenia UI wymaga odświeżenia listy; nie ponawia zapisu automatycznie. Sekret nie trafia do pamięci przeglądarki poza stanem otwartego formularza.
 
@@ -21,11 +21,12 @@ Zarządzanie `/api/api-tokens` wymaga sesji panelu. API bearer nie działa na zw
 | GET `/api/v1/servers/{id}/resources` | Zasoby i czas obserwacji |
 | GET `/api/v1/servers/{id}/backups` | Metadane backupów |
 | POST `/api/v1/servers/{id}/backups` | Utworzenie kopii Native, odpowiedź 202 |
-| GET `/api/v1/operations/{id}` | Status własnej operacji backupu |
+| POST `/api/v1/servers/{id}/power` | Start/stop/restart w tle, trwały Idempotency-Key |
+| GET `/api/v1/operations/{id}` | Status własnej operacji backupu lub power |
 
 ID serwera jest globalnym UUID z floty, nie lokalnym numerem runtime. Listy mają `limit` 1–100 (domyślnie 50), `after` i `nextCursor`. Czas jest w UTC ISO 8601. Każda odpowiedź zawiera `requestId`, także w `X-Request-ID`, oraz `Cache-Control: no-store`. Błędy mają `error.code` i `error.message`.
 
-API nie obejmuje restore, terminala, zapisu plików, instalacji ani użytkowników. Działa na panelu; połączenia z agentem są podpisane i delegowane do jednego runtime z minimalnym uprawnieniem. Token klienta nie trafia do agenta. Brak przekierowań, czas żądania do agenta do 15 s, limit odpowiedzi 16 KiB (lista backupów 1 MiB / 2000 wpisów).
+API nie obejmuje restore, terminala, zapisu plików, instalacji ani użytkowników. Działa na panelu; połączenia z agentem są podpisane i delegowane do jednego runtime z minimalnym uprawnieniem. Token klienta nie trafia do agenta. Brak przekierowań, czas żądania do agenta do 15 s (power do 120 s w tle), limit odpowiedzi 16 KiB (lista backupów 1 MiB / 2000 wpisów).
 
 ## Zasoby
 
@@ -41,7 +42,7 @@ Kopia korzysta z istniejących zadań Native: nazwa jest opcjonalna, serwer moż
 
 ## Ograniczenie tempa
 
-120 żądań/min na token i 240/min na rzeczywisty adres połączenia. Wspólny reverse proxy dzieli drugi limit. `X-Forwarded-For` klienta nie wpływa na licznik. 429 zawiera `Retry-After`; liczniki są lokalne w pamięci i zerują się po restarcie. Obsługiwana jest jedna aktywna instancja panelu na bazę, zgodnie z obecnym wdrożeniem.
+120 żądań/min na poprawny token i osobne 240 błędnych uwierzytelnień/min na źródło. Źródłem jest Express req.ip zgodnie z kontrolowaną konfiguracją trust proxy; reverse proxy musi nadpisywać X-Forwarded-For. Błędne tokeny nie konsumują limitu poprawnych integracji. 429 zawiera `Retry-After`; liczniki są lokalne w pamięci i zerują się po restarcie. Obsługiwana jest jedna aktywna instancja panelu na bazę, zgodnie z obecnym wdrożeniem.
 
 ## Przykłady
 
@@ -75,3 +76,5 @@ Nowe tabele `api_tokens` i `api_operations` powstają na panelu. Nie usuwają is
 ## Odbiór lokalny — 21.09.2026
 
 143/143 testów backendu, 165/165 testów UI w headless Chromium, build obu aplikacji. Odbiór Linux: 143 testy backendu, 3 testy awarii, 1 pełna integracja panel–agent. Prawdziwe HTTP potwierdziło ograniczenie tokenu do serwera, unieważnienie, zasoby, listę archiwów, ukończony backup Native i brak drugiej kopii po ponowieniu oraz restarcie panelu. Osobne testy sprawdzają niepewny zapis, przerwany dziennik, zmianę runtime i utratę uprawnień. Bez zrzutów ekranu i bez wdrożenia.
+
+Rozszerzenie sterowania i podpisanych zdarzeń: [API power i webhooki](API-POWER-WEBHOOKS.md).

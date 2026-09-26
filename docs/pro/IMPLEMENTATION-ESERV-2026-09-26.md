@@ -15,8 +15,8 @@ Autoryzacja użytkownika 26.09.2026: realizować P1/P2 i sześć kierunków rozw
 | 9. ReHLDS: mapy, rotacje, admini i dodatki z rollbackiem | Wdrożone abc0579 na FR1/WAW1/WAW2; instalacja i rollback na kopii gry OK |
 | 10. Sekwencje utrzymaniowe z kontrolą wyników | Wdrożone 47b547f na FR1/WAW1/WAW2; sekwencja na kopii gry OK |
 | 11. Klonowanie i migracja serwerów | Wdrożone 6037702 FR1/WAW1/WAW2; podpisany transfer i przygotowanie kopii do przełączenia |
-| 12. API power i podpisane webhooki | Zweryfikowane; przygotowane do wdrożenia |
-| 13. Aktualna dokumentacja, regresja i porządkowanie modułów przy zmianach | Do wykonania |
+| 12. API power i podpisane webhooki | Wdrożone 43e30db FR1/WAW1/WAW2; health i HTTP/WS acceptance OK |
+| 13. Aktualna dokumentacja, regresja i porządkowanie modułów przy zmianach | Zakończone; ESERV-RUNBOOK, 260 backend i 239 unikalnych scenariuszy UI zaliczone |
 
 Repo: `D:/Projects/Skoczi/game-panel-skoczi`, gałąź `codex/eserv-audit-implementation`. Managed worktree nie powstał: chat wskazuje katalog nadrzędny, który nie jest repozytorium. Zachowano raport audytu.
 
@@ -51,3 +51,7 @@ Zadanie 11a: klonowanie Native na tym samym węźle dla root, nowy UUID i porty,
 Zadanie 11b: transfer podpisanym strumieniem, offline backup/SHA-256, nowa tożsamość, trwały postęp i brak replay po przerwaniu. 256/256 Linux, 2 UI, oba buildy OK. Próba dwóch izolowanych agentów na WAW2 19:39:58 UTC: transfer i start/A2S udane, źródło bez zmian. Dokładne ograniczenia i świadome przełączenie ruchu: SERVER-CLONING.md.
 
 Zadanie 12: servers.power + obecne server.power, trwały klucz operacji, wykonywanie w tle i status uncertain bez replay. Osobny webhook HMAC-SHA256, sekret szyfrowany, publiczny DNS przypięty do połączenia TLS, trwała kolejka z deduplikacją po stronie odbiorcy. 260/260 testów Linux; 7 testów powiązanego UI. Poprawiona próba 20:03:23 UTC miała trzy rzeczywiście odrębne bazy (panel/źródło/cel), transfer, A2S i delegowane API start/stop/restart OK; pierwotna gra bez zmian. Wcześniejsza próba 11b współdzieliła bazę /data między procesami — nowa próba usuwa to ograniczenie. Szczegóły API-POWER-WEBHOOKS.md.
+
+Zadanie 13: zaktualizowano README, macierz funkcji, dokumentację API i runbook; power ma wspólną implementację dla UI/API, podpisywanie, magazyn i worker webhooków są oddzielnymi modułami. Pełna regresja UI ujawniła starsze fixture sesji oraz rzeczywisty błąd indeksowania elementu konsoli po dodaniu filtrów. Naprawiono selektor wysokości, 239 scenariuszy ostatecznie zaliczone (222 w pełnym pierwszym przebiegu, korekty 89/90, konsola 50/50). npm audit prod 0/0. Dziewięć znanych nieudanych fixture sprzątnięte po weryfikacji mountów; raporty pozostawiono. Live 20:10 UTC: zdrowe FR1/WAW1/WAW2, wszystkie kontrole operacyjne ok, Discord i niezależny monitor aktywne, oryginalna gra bez restartu. Pełne ograniczenia opisuje ESERV-RUNBOOK.md, w tym CSP Report-Only, brak fizycznego testu iPhone i brak rzeczywistego failover między hostami.
+
+Końcowa kopia control-plane 20:14 UTC: FR1 217209098 B, WAW1 83449727 B, WAW2 83409464 B. Wszystkie trzy SHA-256 i SQLite integrity_check poprawne; archiwa obejmują dokładne obrazy builda 20260926-api-43e30db. Pokwitowanie: /var/lib/eserv-backups/last-success.json na WAW2.

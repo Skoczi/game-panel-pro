@@ -1,4 +1,4 @@
-# Game Panel PRO 2.0.54
+# Game Panel PRO — kod 2.0.59
 
 Niezależny fork OVH Game Panel, rozwijany przez Skoczi. Zachowujemy oryginalne prawa autorskie OVH i licencję Apache 2.0. Projekt bazuje na OVHcloud Game Panel 1.5.0 i kontynuuje rozwój własnego forka.
 
@@ -18,8 +18,16 @@ Wydanie można zainstalować samodzielnie — bez wcześniejszej instalacji OVH 
 
 ## Przed wdrożeniem
 
-Wydanie 2.0.54 aktualizuje panel. Agenci 2.0.52 pozostają kompatybilni i nie wymagają aktualizacji.
+Lokalne wdrożenie eserv.pl z 26.09.2026 ma panel FR1 i agenty WAW1/WAW2 na zgodnym buildzie 2.0.59. Nowe funkcje wymagają capabilities odpowiedniego agenta; aktualizować wszystkie trzy komponenty razem. Szczegóły builda i odbioru: [stan wdrożenia](IMPLEMENTATION-ESERV-2026-09-26.md). Publikacja tego builda jako wydania GitHub nie była częścią prac.
 
 Stare archiwa `.native-backups` nie są usuwane ani automatycznie konwertowane. Nowy format dotyczy układu `data/serverfiles`; inne stare układy wymagają jawnej migracji. Nie zmieniamy automatycznie danych istniejących gier.
 
 [Obsługa i ograniczenia](OPERATIONS.md) · [wdrożenie i rollback](DEPLOYMENT.md) · [macierz funkcji](FEATURES.md) · [changelog](../../CHANGELOG.md) · [miejsce na screeny](../screenshots/README.md).
+
+## Rozszerzenia eserv.pl — 26.09.2026
+
+- [Sesje, MFA/QR, backupy i monitoring — instrukcja operatora](ESERV-RUNBOOK.md).
+- [ReHLDS: mapy, admini, AMXX i katalog sześciu dodatków](REHLDS-ADDONS.md).
+- [Sekwencje utrzymaniowe](MAINTENANCE-WORKFLOWS.md).
+- [Klonowanie i transfer na inny węzeł](SERVER-CLONING.md).
+- [API power i podpisane webhooki](API-POWER-WEBHOOKS.md), [OpenAPI](openapi-v1.json).
