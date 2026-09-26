@@ -1,3 +1,4 @@
+import { ThemeProvider } from '../contexts/ThemeContext';
 import React from 'react';
 import { createRoot } from 'react-dom/client';
 import { AccountSecurityModal } from '../components/AccountSecurityModal';
@@ -7,4 +8,4 @@ import '@ovhcloud/ods-themes/default/fonts';
 import '../src/ui/theme/ods-dark.css';
 import '../src/ui/theme/ods-light.css';
 import '../styles/globals.css';
-createRoot(document.getElementById('root')!).render(<AccountSecurityModal username="Skoczi" onClose={() => { document.getElementById('root')!.textContent = 'Closed'; }} />);
+createRoot(document.getElementById('root')!).render(<ThemeProvider><AccountSecurityModal username="Skoczi" onClose={() => { document.getElementById('root')!.textContent = 'Closed'; }} /></ThemeProvider>);

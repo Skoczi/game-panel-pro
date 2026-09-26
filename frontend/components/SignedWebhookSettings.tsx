@@ -6,7 +6,7 @@ export function SignedWebhookSettings() {
     const [busy, setBusy] = useState(false), [dirty, setDirty] = useState(false), [error, setError] = useState(''), [notice, setNotice] = useState('');
     const refresh = async () => { setBusy(true); setError(''); try { setData(await apiClient.getSignedWebhooks()); setDirty(false); setRotate(false); } catch { setError('Could not load signed webhook settings'); } finally { setBusy(false); } };
     useEffect(() => { void refresh(); }, []);
-    return <section aria-label="Signed integration webhook" className="space-y-4 rounded-xl border border-gray-200 bg-white p-5 dark:border-gray-700 dark:bg-[#111827]">
+    return <section aria-label="Signed integration webhook" className="gp-workflow gp-workflow-card space-y-4">
         <h2 className="text-lg font-semibold">Signed integration webhook</h2>
         <p>Send alert summaries and API power results to your HTTPS receiver. Deliveries contain a signature and stable event ID. Your receiver must verify the signature and ignore duplicate IDs.</p>
         {error && <p role="alert">{error}</p>}{notice && <p role="status">{notice}</p>}

@@ -54,7 +54,7 @@ export function NativeBackupPolicyCard({ serverId, canEdit, canImport, busy, loc
   const disabled = !canEdit || busy || pending || Boolean(importing);
   const inputClass = 'w-full min-h-11 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-cyan-500 disabled:opacity-50';
   const valid = policy && [policy.keepLocal, policy.keepExternal].every(n => Number.isSafeInteger(n) && n >= 1 && n <= 100);
-  return <section aria-label="Backup protection settings" className="rounded-xl border border-slate-400/20 p-5 sm:p-6 space-y-5">
+  return <section aria-label="Backup protection settings" className="gp-workflow gp-workflow-card space-y-5">
     <div className="flex items-start justify-between gap-4">
       <div className="flex items-center gap-3"><Archive size={20} className="text-cyan-500" /><h4 className="font-semibold">Backup protection</h4></div>
       <AppButton aria-label="Reload backup settings" disabled={pending} onClick={() => setReload(n => n + 1)}><RefreshCw size={16} /></AppButton>

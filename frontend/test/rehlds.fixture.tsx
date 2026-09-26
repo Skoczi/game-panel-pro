@@ -4,6 +4,7 @@ import { RehldsManager } from '../components/serverSettings/RehldsManager';
 import { ThemeProvider } from '../contexts/ThemeContext';
 import '@ovhcloud/ods-react/normalize-css';
 import '@ovhcloud/ods-themes/default/css';
+import '@ovhcloud/ods-themes/default/fonts';
 import '../src/ui/theme/ods-dark.css';
 import '../src/ui/theme/ods-light.css';
 import '../styles/globals.css';

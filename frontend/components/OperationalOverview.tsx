@@ -51,7 +51,7 @@ export function OperationalOverview({ scope = 'all', servers = [] }: { scope?: s
     return number ? `/s/${number}/${check.category === 'backup' ? 'backups' : check.category === 'schedule' ? 'schedules' : 'console'}` : null;
   };
   const issues = runtimes.flatMap(runtime => runtime.checks.filter(check => check.status !== 'ok').map(check => ({ ...check, node: runtime.name, id: runtime.id })));
-  return <section aria-label="Operational health" className="mb-4 rounded-xl border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-900">
+  return <section aria-label="Operational health" className="gp-workflow gp-operational mb-4 rounded-xl border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-900">
     <div className="flex flex-wrap items-center justify-between gap-3">
       <h2 className="font-semibold">Needs attention{!loading && !error ? ` · ${issues.length}` : ''}</h2>
       <button type="button" className="gp-fleet-button" onClick={() => { setLoading(true); setRevision(v => v + 1); }}>Refresh checks</button>

@@ -1,0 +1,425 @@
+/* Shared workflow surfaces. Keep native semantics and existing permission gates. */
+html .gp-workflow .gp-app-button[data-ods='button'] {
+  padding: 9px 14px;
+  min-height: 40px;
+  font-size: 13px;
+  line-height: 20px;
+}
+html .gp-workflow .gp-app-button--primary[data-ods='button'] {
+  background: #087e91;
+  color: #fff;
+  border: 1px solid #087e91;
+}
+html .gp-workflow .gp-app-button[data-ods='button']:disabled,
+html .gp-workflow .gp-app-button[data-ods='button'][aria-disabled='true'] {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+html .gp-workflow .gp-workflow-nav .gp-app-button[data-ods='button'] {
+  background: transparent;
+  color: var(--ux-muted);
+  border: 1px solid transparent;
+}
+html .gp-workflow .gp-workflow-nav .gp-app-button[data-ods='button'][aria-pressed='true'] {
+  color: var(--ux-accent);
+  border-color: var(--ux-line);
+  background: var(--ux-tint);
+  box-shadow: 0 1px 3px #00000014;
+}
+html .gp-workflow .gp-workflow-nav .gp-app-button[data-ods='button']:hover {
+  background: var(--ux-tint);
+}
+html.dark .gp-sidebar-nav .gp-app-button[data-ods='button'][aria-current='page'] {
+  background: #153344 !important;
+  color: #79e2ef !important;
+  border-color: #275163 !important;
+  box-shadow: inset 3px 0 #59d7e8;
+}
+html .gp-security-modal[data-ods='modal-content'] {
+  width: min(680px, calc(100vw - 32px));
+  min-width: 0;
+  max-width: calc(100vw - 32px);
+  max-height: calc(100dvh - 48px);
+}
+html .gp-security-modal .gp-security-heading {
+  padding-right: 72px !important;
+}
+.gp-clone-form > section > label + label {
+  display: block;
+  margin-top: 18px;
+}
+:root {
+  --ux-panel: #fff;
+  --ux-inset: #f5f7fa;
+  --ux-line: #dce3eb;
+  --ux-muted: #526176;
+  --ux-ink: #172538;
+  --ux-accent: #087e91;
+  --ux-tint: #e7f6f8;
+}
+.dark {
+  --ux-panel: #111d2d;
+  --ux-inset: #0c1624;
+  --ux-line: #29384b;
+  --ux-muted: #a3b2c6;
+  --ux-ink: #edf3fa;
+  --ux-accent: #59d7e8;
+  --ux-tint: #12303d;
+}
+.gp-workflow {
+  color: var(--ux-ink);
+  font-size: 14px;
+  line-height: 1.6;
+  max-width: 1120px;
+}
+.gp-workflow :is(input:not([type='checkbox']), select, textarea),
+.gp-console-filters :is(input:not([type='checkbox']), select) {
+  box-sizing: border-box;
+  min-height: 42px;
+  border: 1px solid var(--ux-line);
+  border-radius: 8px;
+  background: var(--ux-inset);
+  color: var(--ux-ink);
+  padding: 9px 12px;
+  font-size: 14px;
+  width: 100%;
+}
+.gp-workflow :is(input, select, textarea, button, a, summary):focus-visible,
+.gp-console-filters :focus-visible {
+  outline: 2px solid var(--ux-accent);
+  outline-offset: 3px;
+}
+.gp-workflow input[type='checkbox'],
+.gp-console-filters input[type='checkbox'] {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--ux-accent);
+  flex-shrink: 0;
+}
+.gp-workflow :is(input, select, textarea):disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+.gp-workflow label {
+  font-size: 13px;
+  font-weight: 600;
+}
+.gp-workflow label :is(input, select, textarea) {
+  margin-top: 6px;
+  font-weight: 400;
+}
+.gp-workflow .gp-app-button {
+  min-height: 40px;
+  border-radius: 8px;
+}
+.gp-workflow-intro {
+  margin-bottom: 24px;
+  max-width: 720px;
+}
+.gp-workflow-intro h3 {
+  font-size: 20px;
+  font-weight: 650;
+  margin-bottom: 6px;
+  letter-spacing: -0.025em;
+}
+.gp-workflow-intro p,
+.gp-workflow-muted {
+  color: var(--ux-muted);
+  font-size: 13px;
+}
+.gp-workflow-card {
+  padding: 20px;
+  background: var(--ux-panel);
+  border: 1px solid var(--ux-line);
+  border-radius: 12px;
+  min-width: 0;
+}
+.gp-workflow-card h3,
+.gp-workflow-card h4 {
+  font-weight: 600;
+}
+.gp-workflow-notice {
+  padding: 12px 16px;
+  background: var(--ux-tint);
+  border: 1px solid var(--ux-line);
+  border-radius: 8px;
+  font-size: 13px;
+}
+.gp-workflow [role='alert'] {
+  padding: 12px 16px;
+  border: 1px solid #ef6666;
+  border-radius: 8px;
+  color: var(--ux-ink);
+}
+.gp-workflow-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 6px;
+  border-radius: 10px;
+  background: var(--ux-inset);
+  border: 1px solid var(--ux-line);
+  margin-bottom: 24px;
+}
+.gp-workflow-nav .gp-app-button {
+  background: transparent;
+  border-color: transparent;
+  color: var(--ux-muted);
+}
+.gp-workflow-nav .gp-app-button[aria-pressed='true'] {
+  background: var(--ux-tint);
+  color: var(--ux-accent);
+  border-color: var(--ux-line);
+}
+.gp-workflow-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding-top: 16px;
+  border-top: 1px solid var(--ux-line);
+}
+.gp-workflow details {
+  border-top: 1px solid var(--ux-line);
+  padding-top: 12px;
+}
+.gp-workflow summary {
+  cursor: pointer;
+  color: var(--ux-muted);
+  font-size: 13px;
+  padding: 4px 0;
+}
+.gp-workflow-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 20px;
+}
+.gp-map-list {
+  max-height: 360px;
+  overflow: auto;
+  margin-top: 12px;
+  overscroll-behavior: contain;
+}
+.gp-map-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  min-height: 48px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--ux-line);
+}
+.gp-map-row > span {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.gp-map-row button {
+  min-width: 36px;
+  min-height: 36px;
+  border-radius: 6px;
+  color: var(--ux-accent);
+  background: var(--ux-tint);
+}
+.gp-map-row button:disabled {
+  opacity: 0.35;
+}
+.gp-map-row small {
+  color: var(--ux-muted);
+  width: 24px;
+}
+.gp-clone-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 720px) minmax(220px, 1fr);
+  gap: 24px;
+  align-items: start;
+}
+.gp-clone-form {
+  display: grid;
+  gap: 20px;
+}
+.gp-clone-step {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 600;
+  margin-bottom: 14px;
+}
+.gp-clone-step span {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--ux-tint);
+  color: var(--ux-accent);
+  font-size: 12px;
+}
+.gp-clone-port {
+  display: grid;
+  grid-template-columns: 140px minmax(0, 1fr) 110px;
+  align-items: end;
+  gap: 12px;
+  margin-top: 12px;
+}
+.gp-clone-summary dl {
+  display: grid;
+  gap: 14px;
+  margin-top: 16px;
+}
+.gp-clone-summary dt {
+  color: var(--ux-muted);
+  font-size: 12px;
+}
+.gp-clone-summary dd {
+  overflow-wrap: anywhere;
+  font-weight: 500;
+}
+.gp-security-modal {
+  border-radius: 16px !important;
+  overflow: hidden;
+}
+.gp-security-heading {
+  padding: 24px !important;
+  border-bottom: 1px solid var(--ux-line);
+}
+.gp-security-body {
+  padding: 24px !important;
+  max-height: min(72dvh, 760px);
+}
+.gp-session {
+  display: flex;
+  gap: 16px;
+  align-items: start;
+}
+.gp-session-copy {
+  flex: 1;
+  min-width: 0;
+}
+.gp-session-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 99px;
+  background: var(--ux-tint);
+  color: var(--ux-accent);
+  font-size: 11px;
+  margin-left: 8px;
+}
+.gp-security-steps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 16px;
+  color: var(--ux-muted);
+  font-size: 12px;
+}
+.gp-security-steps span {
+  padding: 4px 10px;
+  border-radius: 99px;
+  background: var(--ux-inset);
+}
+.gp-security-steps [aria-current='step'] {
+  color: var(--ux-accent);
+  background: var(--ux-tint);
+}
+.gp-console-filters {
+  gap: 8px;
+  padding: 10px 12px;
+  background: var(--ux-inset);
+  border-color: var(--ux-line);
+}
+.gp-console-filters input:not([type='checkbox']) {
+  width: auto;
+  flex: 1 1 180px;
+}
+.gp-console-filters select:not([multiple]) {
+  width: auto;
+}
+.gp-console-filters label {
+  font-size: 12px;
+  padding: 8px 0;
+}
+.gp-console-filters > button {
+  min-height: 40px;
+  border-color: var(--ux-line);
+  border-radius: 8px;
+  font-size: 12px;
+}
+.gp-console-filters > span {
+  font-size: 11px;
+  white-space: nowrap;
+}
+.gp-server-stats .gp-server-stat {
+  padding: 14px 16px;
+  border-radius: 10px;
+}
+.gp-server-stats .gp-server-stat small {
+  margin-bottom: 6px;
+  font-size: 12px;
+}
+.gp-operational {
+  max-width: none;
+  border-radius: 12px;
+}
+.gp-operational > details {
+  margin-top: 12px;
+}
+@media (max-width: 760px) {
+  .gp-workflow-grid,
+  .gp-clone-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .gp-clone-summary {
+    order: 0;
+  }
+  .gp-clone-port {
+    grid-template-columns: minmax(0, 1fr) 100px;
+  }
+  .gp-clone-port > span {
+    grid-column: 1 / -1;
+  }
+  .gp-workflow-card {
+    padding: 16px;
+  }
+  .gp-workflow .gp-app-button,
+  .gp-map-row button {
+    min-height: 44px;
+  }
+  .gp-security-heading,
+  .gp-security-body {
+    padding: 16px !important;
+  }
+  .gp-session {
+    flex-wrap: wrap;
+  }
+  .gp-session-copy {
+    flex-basis: 100%;
+  }
+}
+
+/* ODS Input already supplies an outer field surface; avoid nested borders. */
+html .gp-workflow .gp-app-input input {
+  border: 0;
+  background: transparent;
+  min-height: 0;
+  padding: 0;
+  border-radius: 0;
+}
+html .gp-server-page .gp-server-stats .gp-server-stat {
+  padding: 14px 16px;
+  border-radius: 10px;
+}
+html .gp-server-page .gp-server-stats .gp-server-stat small {
+  margin-bottom: 6px;
+  font-size: 12px;
+}
+@media (max-width: 760px) {
+  .gp-clone-summary dl {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+  .gp-workflow :is(input:not([type='checkbox']), select, textarea) {
+    font-size: 16px;
+  }
+  html .gp-workflow .gp-app-button[data-ods='button'] {
+    min-height: 44px;
+  }
+}

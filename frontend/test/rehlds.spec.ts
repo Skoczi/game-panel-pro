@@ -22,6 +22,7 @@ async function mock(page: Page, conflict = false, stopped = false) {
 test('configuration conflict retains draft and sends reviewed file version', async ({ page }) => {
   const writes = await mock(page, true);
   await page.goto('/test/rehlds.fixture.html');
+  await page.getByText('Advanced text editor', { exact: true }).click();
   await page.getByLabel('ReHLDS configuration').fill('de_inferno\n');
   await page.getByRole('button', { name: 'Review changes', exact: true }).click();
   expect(writes).toHaveLength(0);

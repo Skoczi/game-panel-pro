@@ -1,6 +1,6 @@
 /* Shared density for page controls, not editor/terminal content or navigation. */
 :is(.gp-page-layout, .gp-app-modal-content) {
-  --gp-control-height: 36px;
+  --gp-control-height: 40px;
   --gp-control-font: 14px;
 }
 :is(.gp-page-layout, .gp-app-modal-content) .gp-app-button[data-ods='button'] {

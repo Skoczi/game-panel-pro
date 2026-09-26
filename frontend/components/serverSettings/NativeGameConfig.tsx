@@ -63,17 +63,18 @@ export function NativeGameConfig({ serverId, metadata, onOpen, canRead = true, c
     path, root: 'data', label: path.split('/').pop() || path,
   }));
   if (!canRead) return <p>File read permission is required to view Game Config.</p>;
-  return <div className="gp-server-tab-body gp-config-files text-gray-800 dark:text-gray-200">
+  return <div className="gp-workflow gp-server-tab-body gp-config-files text-gray-800 dark:text-gray-200">
     <header className="gp-server-tab-header">
       <h3 className="gp-section-title">Game Config</h3>
       {!loading && !error && <span className="gp-config-file-count">{configFiles.length} {configFiles.length === 1 ? 'file' : 'files'}</span>}
+      {definition && isRoot && ACTIVE_SERVER && ACTIVE_SERVER.runtimeId === serverId && <AppButton aria-pressed={section === 'clone'} onClick={() => setSection(section === 'clone' ? 'settings' : 'clone')}>{section === 'clone' ? 'Back to configuration' : 'Clone server'}</AppButton>}
     </header>
     {definition && template && serverId && <>
       <nav className="gp-config-tabs" aria-label="Game Config sections">
         <button type="button" aria-pressed={section === 'settings'} onClick={() => setSection('settings')}>Settings</button>
         <button type="button" aria-pressed={section === 'files'} onClick={() => setSection('files')}>Configuration files <span>{configFiles.length}</span></button>
         {/\/cstrike\//i.test(definition.path) && <button type="button" aria-pressed={section === 'rehlds'} onClick={() => setSection('rehlds')}>Maps and addons</button>}
-        {isRoot && ACTIVE_SERVER && ACTIVE_SERVER.runtimeId === serverId && <button type="button" aria-pressed={section === 'clone'} onClick={() => setSection('clone')}>Clone server</button>}
+
       </nav>
       <div hidden={section !== 'settings'}><NativeConfigEditor key={`${serverId}:${templateJson}`} serverId={serverId} definition={definition} template={template} active={section === 'settings'} canWrite={canWrite} onOpen={onOpen} onDirtyChange={setConfigDirty} /></div>
     </>}

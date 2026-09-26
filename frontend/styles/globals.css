@@ -1,5 +1,6 @@
 @import 'tailwindcss';
 @import './panel-density.css';
+@import './premium-workflows.css';
 
 @custom-variant dark (&:is(.dark *));
 
