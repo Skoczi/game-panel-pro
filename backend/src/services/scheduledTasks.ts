@@ -1,3 +1,4 @@
+import { normalizeMaintenance, validateMaintenanceServer, runMaintenance, interruptMaintenance, type MaintenancePlan } from './maintenanceWorkflow.js';
 import { applyPendingServerConfiguration } from './serverReconfiguration.js';
 import { isPanelMaintenance } from './panelMaintenance.js';
 import { nativeServerTemplate } from './nativeBackups.js';
@@ -34,6 +35,7 @@ export type ScheduledTaskStep =
     | { type: 'sleep'; seconds: number };
 
 export type ScheduledTaskPayload = {
+    maintenance?: MaintenancePlan;
     pre?: ScheduledTaskStep[];
     post?: ScheduledTaskStep[];
     cleanup?: ScheduledTaskStep[];
@@ -177,6 +179,10 @@ function normalizePayload(type: ScheduledTaskType, value: unknown): ScheduledTas
         payload.includeServerArtifact = normalizeOptionalBoolean(raw.includeServerArtifact, 'payload.includeServerArtifact');
     }
 
+    if (raw.maintenance !== undefined) {
+        if (type !== 'restart' || pre?.length || post?.length || cleanup?.length) throw Object.assign(new Error('Maintenance must be a restart task without separate pre/post/cleanup steps'), { statusCode: 400 });
+        payload.maintenance = normalizeMaintenance(raw.maintenance);
+    }
     return payload;
 }
 
@@ -273,6 +279,7 @@ export async function createScheduledTask(serverId: number, input: {
     const schedule = assertValidCronExpression(input.schedule);
     const enabled = normalizeOptionalBoolean(input.enabled, 'enabled') ?? true;
     const payload = normalizePayload(type, input.payload);
+    if (payload.maintenance) await validateMaintenanceServer(server, payload.maintenance);
     const nextRunAt = computeNextRunAt(schedule, enabled);
 
     const row = await scheduledTaskRepository.create({
@@ -304,6 +311,11 @@ export async function updateScheduledTask(serverId: number, taskId: number, inpu
             : (() => { throw Object.assign(new Error('schedule must be a cron string'), { statusCode: 400 }); })();
     const enabled = normalizeOptionalBoolean(input.enabled, 'enabled') ?? Boolean(current.enabled);
     const payload = normalizePayload(type, input.payload === undefined ? parsePayload(current) : input.payload);
+    if (payload.maintenance) {
+        const server = await serverRepository.findById(serverId);
+        if (!server) throw new Error('Server not found');
+        await validateMaintenanceServer(server, payload.maintenance);
+    }
     const nextRunAt = computeNextRunAt(schedule, enabled);
 
     const updated = await scheduledTaskRepository.update(taskId, {
@@ -438,6 +450,7 @@ async function executeCustomTask(server: GameServerRow & { docker_container_id: 
 
 async function executeScheduledTaskCore(server: GameServerRow & { docker_container_id: string }, row: ScheduledTaskRow): Promise<void> {
     const payload = parsePayload(row);
+    if (payload.maintenance) { await runMaintenance(server, row.id, normalizeMaintenance(payload.maintenance)); return; }
 
     let failure: unknown;
     try {
@@ -541,7 +554,10 @@ async function executeScheduledTask(row: ScheduledTaskRow): Promise<void> {
             `Scheduled ${row.type} failed: ${errorMessage(error)}`,
             TASK_ACTOR
         ).catch(() => undefined);
-        if (claimed) await finishTask(row, 'failed', error).catch(() => undefined);
+        if (claimed) {
+            await finishTask(row, 'failed', error);
+            if (parsePayload(row).maintenance) await scheduledTaskRepository.update(row.id, { enabled: false, nextRunAt: null });
+        }
     } finally {
         releaseMutation?.();
         runningTasks.delete(row.id);
@@ -579,6 +595,7 @@ export function startScheduledTaskRunner(): { stop: () => void } {
     runnerInitialization = (async () => {
         const interrupted = await scheduledTaskRepository.recoverInterrupted([...runningTasks]);
         for (const task of interrupted) {
+            await interruptMaintenance(task.server_id, task.id);
             await actionsRepository.create(task.server_id, 'warning', `Scheduled ${task.type} interrupted; schedule disabled. ${task.last_error}`, TASK_ACTOR)
                 .catch((error) => logError('SERVICE:SCHEDULED_TASKS:RECOVERY_ACTIVITY', error, { taskId: task.id }));
         }

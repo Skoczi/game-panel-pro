@@ -29,6 +29,7 @@ test('scheduler executes the real Native backup for stopped and running servers'
  }, { process, Buffer });
  const row = { id: 1, server_id: 1, type: 'backup', enabled: 1, schedule: '0 5 * * *', payload_json: '{}' };
  const scheduler = loadWithMocks('../src/services/scheduledTasks.ts', {
+        './maintenanceWorkflow.js': { interruptMaintenance: async () => {} },
   './serverReconfiguration.js': { applyPendingServerConfiguration: async () => ({ applied: false }) },
  './panelMaintenance.js': { isPanelMaintenance: () => false },
   './nativeBackups.js': native,

@@ -7,6 +7,7 @@ function fixture() {
  const server={id:1,provider:'linuxgsm',docker_container_id:'game',provider_metadata_json:'{}'};
  const row={id:1,server_id:1,type:'game_command',enabled:1,schedule:'* * * * *',payload_json:JSON.stringify({command:'say hello',pre:[{type:'game_command',command:'before'}],post:[{type:'game_command',command:'after'}],cleanup:[{type:'game_command',command:'cleanup'}]})};
  const scheduler=loadWithMocks('../src/services/scheduledTasks.ts',{
+        './maintenanceWorkflow.js': { interruptMaintenance: async () => {} },
   './serverReconfiguration.js':{},'./panelMaintenance.js':{isPanelMaintenance:()=>false},'./nativeBackups.js':{nativeServerTemplate:()=>null},
   '../database/index.js':{serverRepository:{findById:async()=>server},actionsRepository:{create:async()=>{}},scheduledTaskRepository:{listDue:async()=>[row],lock:async()=>true,findById:async()=>row,finish:async(_id:number,v:any)=>outcomes.push(v.lastStatus)}},
   './nativeOperationLock.js':{enterServerMutation:()=>()=>{}},'../providers/serverMetadata.js':{getRuntimeConfig:()=>({execUser:"1000"})},'../utils/cron.js':cron,'../utils/json.js':{parseJsonObject:JSON.parse},'../utils/logger.js':{logError:()=>{}},'../utils/time.js':{nowIso:()=>new Date().toISOString()},

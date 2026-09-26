@@ -24,6 +24,7 @@ interface ScheduledTask {
   schedule: string;
   enabled: boolean;
   payload: {
+    maintenance?: { version: 1; update: boolean; saveCommand?: string; healthTimeoutSeconds: number };
     pre?: PrePostStep[];
     post?: PrePostStep[];
     cleanup?: PrePostStep[];
@@ -41,6 +42,9 @@ interface ScheduledTask {
 }
 
 interface TaskForm {
+  maintenance: boolean;
+  updateGame: boolean;
+  saveCommand: string;
   type: 'restart' | 'backup' | 'custom' | 'game_command';
   schedule: string;
   enabled: boolean;
@@ -53,6 +57,7 @@ interface TaskForm {
 }
 
 const DEFAULT_FORM: TaskForm = {
+  maintenance: false, updateGame: false, saveCommand: '',
   type: 'restart',
   schedule: '0 5 * * *',
   enabled: true,
@@ -111,6 +116,7 @@ function formatRelative(iso: string | null): string {
 
 function taskFormToPayload(form: TaskForm, showPrePost: boolean, showIncludeServerArtifact: boolean): Record<string, unknown> {
   const base: Record<string, unknown> = {};
+  if (form.type === 'restart' && form.maintenance) return { maintenance: { version: 1, update: form.updateGame, healthTimeoutSeconds: 120, ...(form.saveCommand.trim() ? { saveCommand: form.saveCommand.trim() } : {}) } };
   if (showPrePost) {
     if (form.pre.length) base.pre = form.pre;
     if (form.post.length) base.post = form.post;
@@ -126,6 +132,7 @@ function taskFormToPayload(form: TaskForm, showPrePost: boolean, showIncludeServ
 
 function taskToForm(task: ScheduledTask): TaskForm {
   return {
+    maintenance: Boolean(task.payload.maintenance), updateGame: task.payload.maintenance?.update || false, saveCommand: task.payload.maintenance?.saveCommand || '',
     type: task.type,
     schedule: task.schedule,
     enabled: task.enabled,
@@ -339,6 +346,8 @@ export function ScheduledTasksTab({
     serverBackupSupported &&
     serverGame.toLowerCase().includes('minecraft');
 
+  const [workflowSupported, setWorkflowSupported] = useState(false);
+  const [maintenanceRuns, setMaintenanceRuns] = useState<NonNullable<Awaited<ReturnType<typeof apiClient.getScheduledTasks>>['maintenanceRuns']>>([]);
   const [tasks, setTasks] = useState<ScheduledTask[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -362,6 +371,8 @@ export function ScheduledTasksTab({
     try {
       const res = await apiClient.getScheduledTasks(serverId);
       if (sequence !== loadSequence.current) return;
+      setWorkflowSupported(Boolean(res.maintenanceWorkflow));
+      setMaintenanceRuns(res.maintenanceRuns || []);
       setTasks((res.tasks ?? []) as ScheduledTask[]);
       setError(null);
     } catch (err: any) {
@@ -579,6 +590,15 @@ export function ScheduledTasksTab({
               />
             </div>
 
+            {form.type === 'restart' && workflowSupported && isExternal && serverBackupSupported && <div className="space-y-3 rounded border p-3">
+              <label className="flex items-center gap-2"><input type="checkbox" checked={form.maintenance} onChange={e => setF('maintenance', e.target.checked)} />Maintenance workflow</label>
+              {form.maintenance && <>
+                <p className="text-sm">Save command (optional) → stop → verified backup → update (optional) → start → A2S health check. Requires game query monitoring. Failure stops the game and disables this schedule; review the backup before retrying.</p>
+                <label className="block">Optional game save command<AppInput aria-label="Optional game save command" value={form.saveCommand} onChange={e => setF('saveCommand', e.target.value)} /></label>
+                <label className="flex items-center gap-2"><input type="checkbox" checked={form.updateGame} onChange={e => setF('updateGame', e.target.checked)} />Run the template update recipe</label>
+                <p className="text-sm">The health check waits up to 120 seconds. Existing separate pre/post/cleanup steps are not used by this workflow.</p>
+              </>}
+            </div>}
             {form.type === 'backup' && showIncludeServerArtifact && (
               <div className={`flex items-center justify-between p-3 rounded-lg border ${borderColor} bg-gray-50 dark:bg-gray-900/30`}>
                 <div>
@@ -627,7 +647,7 @@ export function ScheduledTasksTab({
               </div>
             )}
 
-            {showPrePost && (
+            {showPrePost && !(form.type === 'restart' && form.maintenance) && (
               <div className="space-y-5">
                 <p className={`text-xs ${textSecondary}`}>Pre, post and cleanup commands run in the game console. Use any command supported by your game.</p>
                 <StepsEditor
@@ -708,7 +728,7 @@ export function ScheduledTasksTab({
                 >
                   <div className="flex flex-col gap-1.5 min-w-0 flex-1">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <TypeBadge type={task.type} />
+                      <TypeBadge type={task.type} />{task.payload.maintenance && <span className="text-xs">Maintenance workflow</span>}
                       <span className={`text-xs ${textSecondary}`}>{desc}</span>
                     </div>
                     <div className="flex items-center gap-4 flex-wrap">
@@ -725,6 +745,7 @@ export function ScheduledTasksTab({
                       )}
                     </div>
                     {task.enabled && task.nextRuns && <details className={`text-xs ${textSecondary}`}><summary>Next 3 runs · {task.timeZone}</summary>{task.nextRuns.map(date => <div key={date}>{new Date(date).toLocaleString(undefined, { timeZone: task.timeZone, timeZoneName: 'short' })}</div>)}</details>}
+                    {maintenanceRuns.filter(run => run.taskId === task.id).map(run => <details key={run.taskId} className="text-sm"><summary>Workflow steps · {run.status}</summary><ol className="list-decimal pl-5">{run.steps.map(step => <li key={step.name} className="break-words">{step.name}: {step.status}{step.detail && <p className="text-xs break-all">{step.detail}</p>}</li>)}</ol>{run.backup && <p className="break-all">Rollback backup: {run.backup}</p>}</details>)}
                     {!task.lockedAt && ['failed', 'interrupted'].includes(task.lastStatus || '') && task.lastError && (
                       <p className="text-xs text-red-400 truncate">{task.lastError}</p>
                     )}

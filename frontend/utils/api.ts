@@ -844,6 +844,8 @@ class ApiClient {
   async getScheduledTasks(serverId: number) {
     const response = await this.client.get(`/api/servers/${serverId}/scheduled-tasks`);
     return response.data as {
+      maintenanceWorkflow?: boolean;
+      maintenanceRuns?: Array<{ taskId: number; status: string; backup?: string; steps: Array<{ name: string; status: string; detail?: string }> }>;
       tasks: Array<{
         id: number;
         serverId: number;

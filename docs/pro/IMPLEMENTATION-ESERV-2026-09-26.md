@@ -12,8 +12,8 @@ Autoryzacja użytkownika 26.09.2026: realizować P1/P2 i sześć kierunków rozw
 | 6. Alerty i niezależny monitoring | Wdrożone FR1/WAW1/WAW2 a0f7e5c; Discord dostarczony, wszystkie kontrole OK |
 | 7. Ekran Wymaga uwagi / zgodność agentów | Wdrożone 304a71e; gra, zadania, dysk, kopie i capabilities |
 | 8. Konsola, backupy, formularze, dostępność/mobile | Wdrożone 5a4e293; 18 testów UI, 2 backend i live OK |
-| 9. ReHLDS: mapy, rotacje, admini i dodatki z rollbackiem | Gotowe do wdrożenia; 246 testów Linux, 13 UI, instalacja i rollback na kopii gry OK |
-| 10. Sekwencje utrzymaniowe z kontrolą wyników | Do wykonania |
+| 9. ReHLDS: mapy, rotacje, admini i dodatki z rollbackiem | Wdrożone abc0579 na FR1/WAW1/WAW2; instalacja i rollback na kopii gry OK |
+| 10. Sekwencje utrzymaniowe z kontrolą wyników | Gotowe do wdrożenia; 250 testów Linux, test UI, prawdziwa sekwencja na kopii gry OK |
 | 11. Klonowanie i migracja serwerów | Do wykonania |
 | 12. API power i podpisane webhooki | Do wykonania |
 | 13. Aktualna dokumentacja, regresja i porządkowanie modułów przy zmianach | Do wykonania |
@@ -43,3 +43,5 @@ Zadanie 7: status gry i ostatnich zadań bez dublowania już istniejących alert
 Użytkownik dostarczył skrypt instalacji Red-Banana-Official/cstrike1.6_rehlds: ReHLDS, AMXX, ReGameDLL_CS, ReAPI, Metamod-R, Reunion. Katalog ma zawierać te opcje; nie wykonywać skryptu 1:1 (latest, chmod 777, brak rollbacku). Repo zawiera też ReVoice Plus, którego w dostarczonym skrypcie nie ma.
 
 Zadanie 9: katalog sześciu modułów ze skryptu użytkownika, oficjalne przypięte wydania z SHA-256 i zależnościami. Mapy/rotacja, administratorzy Steam ID, lista pluginów AMXX, obowiązkowe snapshoty zmian i kontrola wersji. Instalacja w zatrzymanym serwerze po zweryfikowanej kopii, journaled staging/swap, zachowanie konfiguracji i soli Reunion. Próba WAW2 2026-09-26 18:39:16 UTC: sześć modułów, start/A2S, przywrócenie oryginalnego archiwum i ponowny start/A2S; źródłowy kontener i CFG bez zmian. 246/246 testów Linux, 13/13 UI, oba buildy OK. Szczegóły: REHLDS-ADDONS.md.
+
+Zadanie 10: opcjonalna komenda zapisu, stop, zweryfikowana kopia offline, opcjonalny istniejący native update, start i A2S healthcheck. Ostatni wynik każdego kroku w SQLite, blokada mutacji przez całą sekwencję, przerwanie/błąd wyłącza harmonogram, brak automatycznego replay. 250/250 testów Linux i test formularza mobilnego OK; oba buildy OK. Próba WAW2 18:55:26 UTC przez rzeczywisty scheduler na odizolowanej kopii: stop/backup/start/query success, źródło bez zmian. Aktualizator Steam nie był uruchamiany w próbie; gałąź update i błędy sprawdzone testami z podstawionymi zależnościami. Szczegóły MAINTENANCE-WORKFLOWS.md.

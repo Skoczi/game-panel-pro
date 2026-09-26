@@ -48,6 +48,7 @@ function fixture(filename = ':memory:') {
     let tick: (() => void) | undefined;
     const server = (id: number) => servers.get(id) ?? { id, docker_container_id: `container-${id}`, provider_metadata_json: '{}' };
     const scheduler = loadWithMocks('../src/services/scheduledTasks.ts', {
+        './maintenanceWorkflow.js': { interruptMaintenance: async () => {} },
         './serverReconfiguration.js': { applyPendingServerConfiguration: () => restartHook() },
         './panelMaintenance.js': { isPanelMaintenance: () => false },
         './nativeBackups.js': { nativeServerTemplate: () => null },
