@@ -3,6 +3,7 @@ import { AppButton, AppModal, AppModalBody, AppModalContent, AppModalHeader, App
 import { apiClient } from '../utils/api';
 import { getStoredToken } from '../utils/api/runtime';
 import { ConfirmationModal } from './ConfirmationModal';
+import { AuthenticatorSetup } from './AuthenticatorSetup';
 type Session = { id: string; label: string; createdAt: number; expiresAt: number; current: boolean };
 async function request<T>(path: string, method = 'GET', body?: unknown): Promise<T> {
   const response = await fetch('/api/auth/' + path, { method, credentials: 'same-origin', cache: 'no-store', signal: AbortSignal.timeout(15000),
@@ -12,7 +13,7 @@ async function request<T>(path: string, method = 'GET', body?: unknown): Promise
   if (!response.ok) throw new Error(result.error || 'Security request failed');
   return result;
 }
-export function AccountSecurityModal({ onClose }: { onClose: () => void }) {
+export function AccountSecurityModal({ onClose, username }: { onClose: () => void; username: string }) {
   const [sessions, setSessions] = useState<Session[]>([]), [enabled, setEnabled] = useState<boolean | null>(null);
   const [password, setPassword] = useState(''), [code, setCode] = useState(''), [secret, setSecret] = useState('');
   const [codes, setCodes] = useState<string[]>([]), [busy, setBusy] = useState(false), [error, setError] = useState('');
@@ -43,11 +44,7 @@ export function AccountSecurityModal({ onClose }: { onClose: () => void }) {
             <p>{enabled === null ? 'Loading…' : enabled ? 'Enabled · authenticator or single-use recovery code required at sign-in.' : 'Not enabled. Protect your account with an authenticator app.'}</p>
             {enabled !== null && <>
               <label className="block text-sm">Current password<input className="block w-full rounded border border-gray-400/40 bg-transparent p-2 mt-1" type="password" autoComplete="current-password" value={password} onChange={event => setPassword(event.target.value)} /></label>
-              {secret && <div className="space-y-2 rounded border border-gray-400/40 p-3">
-                <p>Add a time-based account in your authenticator: 6 digits, SHA-1, 30 seconds.</p>
-                <p>Account: {location.hostname}</p><code className="block break-all select-all">{secret}</code>
-                <p>This setup key is shown only during setup. Confirm a generated code to enable protection.</p>
-              </div>}
+              {secret && <AuthenticatorSetup secret={secret} username={username} />}
               {(secret || enabled) && <label className="block text-sm">Authenticator or recovery code<input className="block w-full rounded border border-gray-400/40 bg-transparent p-2 mt-1" autoComplete="one-time-code" value={code} onChange={event => setCode(event.target.value)} /></label>}
               {!enabled && <AppButton disabled={busy || !password || Boolean(secret && !code)} onClick={() => void change(secret ? 'confirm' : 'begin')}>{secret ? 'Confirm authenticator' : 'Set up authenticator'}</AppButton>}
               {enabled && <AppButton disabled={busy || !password || !code} onClick={() => setDisable(true)}>Disable two-factor authentication</AppButton>}

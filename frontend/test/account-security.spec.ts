@@ -10,6 +10,16 @@ for (const width of [390, 1280]) test(`MFA confirmation and recovery acknowledge
   await expect(page.getByText('Test browser')).toBeVisible();
   await page.getByLabel('Current password').fill('fixture-password');
   await page.getByRole('button', { name: 'Set up authenticator' }).press('Enter');
+  const qr = page.getByRole('img', { name: 'Authenticator setup QR code' });
+  await expect(qr).toBeVisible();
+  await expect(qr).toHaveAttribute('src', /^data:image\/png;base64,/);
+  const link = await page.getByRole('link', { name: 'Open in authenticator app' }).getAttribute('href');
+  const uri = new URL(link!);
+  expect(uri.protocol).toBe('otpauth:'); expect(uri.hostname).toBe('totp');
+  expect(decodeURIComponent(uri.pathname)).toBe('/127.0.0.1:Skoczi');
+  expect(Object.fromEntries(uri.searchParams)).toEqual({ secret: 'JBSWY3DPEHPK3PXP', issuer: '127.0.0.1', algorithm: 'SHA1', digits: '6', period: '30' });
+  await page.screenshot({ path: `test-results/authenticator-qr-${width}.png`, fullPage: true });
+  await page.getByText('Enter setup key manually').press('Enter');
   await expect(page.getByText('JBSWY3DPEHPK3PXP')).toBeVisible();
   await page.getByLabel('Authenticator or recovery code').fill('123456');
   await page.getByRole('button', { name: 'Confirm authenticator' }).press('Enter');

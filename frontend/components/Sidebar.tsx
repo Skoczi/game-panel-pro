@@ -817,7 +817,7 @@ export function Sidebar({
         updateInfo={updateInfo}
       />
       {isApiTokensOpen && <ApiTokensModal key={currentUser?.username} onClose={() => setIsApiTokensOpen(false)} />}
-      {isSecurityOpen && <AccountSecurityModal key={currentUser?.username} onClose={() => setIsSecurityOpen(false)} />}
+      {isSecurityOpen && <AccountSecurityModal key={currentUser?.username} username={currentUser?.username || ''} onClose={() => setIsSecurityOpen(false)} />}
 
       <AppModal open={isEasterEggOpen} onOpenChange={setIsEasterEggOpen}>
         <AppModalContent
