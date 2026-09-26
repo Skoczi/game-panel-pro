@@ -9,8 +9,8 @@ Autoryzacja użytkownika 26.09.2026: realizować P1/P2 i sześć kierunków rozw
 | 3. Ograniczone limitery logowania i API | Wdrożone FR1: 955baeb; testy limitów i HTTP/WS OK |
 | 4. Agenty 2.0.59+, backupy, retencja i próba odzyskania | Wdrożone; odzyskanie gry z NFS i bazy panelu sprawdzone |
 | 5. Miejsce FR1 i kontrola wzrostu cache | Wdrożone: odzysk 35,7 GB; codzienna kontrola cache |
-| 6. Alerty i niezależny monitoring | W trakcie wdrożenia; Discord testowy potwierdzony, WAW1 monitor aktywny |
-| 7. Ekran Wymaga uwagi / zgodność agentów | Do wykonania |
+| 6. Alerty i niezależny monitoring | Wdrożone FR1/WAW1/WAW2 a0f7e5c; Discord dostarczony, wszystkie kontrole OK |
+| 7. Ekran Wymaga uwagi / zgodność agentów | W trakcie |
 | 8. Konsola, backupy, formularze, dostępność/mobile | Do wykonania |
 | 9. ReHLDS: mapy, rotacje, admini i dodatki z rollbackiem | Do wykonania |
 | 10. Sekwencje utrzymaniowe z kontrolą wyników | Do wykonania |

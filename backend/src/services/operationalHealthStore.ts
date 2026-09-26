@@ -1,6 +1,6 @@
 import type { Database } from 'sqlite';
 export type HealthStatus = 'ok' | 'warning' | 'critical' | 'unknown';
-export type OperationalCheck = { key: string; category: 'storage' | 'backup'; title: string; status: HealthStatus; detail: string; serverId?: number; observedAt: number };
+export type OperationalCheck = { key: string; category: 'storage' | 'backup' | 'game' | 'schedule'; notify?: boolean; title: string; status: HealthStatus; detail: string; serverId?: number; observedAt: number };
 export function diskHealth(freeBytes: number, totalBytes: number): HealthStatus {
   if (!Number.isFinite(freeBytes) || !Number.isFinite(totalBytes) || totalBytes <= 0 || freeBytes < 0 || freeBytes > totalBytes) return 'unknown';
   const used = 1 - freeBytes / totalBytes;
@@ -21,7 +21,7 @@ export class OperationalHealthStore {
       const old = await this.db.get('SELECT status,since FROM operational_health_checks WHERE key=?', check.key);
       const changed = old?.status !== check.status;
       // Queue notification before updating state; a queue failure must be retried.
-      if (changed && (check.status !== 'ok' || old)) await notify(check, check.status === 'ok');
+      if (check.notify !== false && changed && (check.status !== 'ok' || old)) await notify(check, check.status === 'ok');
       await this.db.run('INSERT INTO operational_health_checks VALUES(?,?,?,?,?) ON CONFLICT(key) DO UPDATE SET payload_json=excluded.payload_json,status=excluded.status,since=excluded.since,observed_at=excluded.observed_at',
         check.key, JSON.stringify(check), check.status, changed ? check.observedAt : old.since, check.observedAt);
     }

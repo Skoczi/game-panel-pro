@@ -1,3 +1,4 @@
+import { OperationalOverview } from './OperationalOverview';
 import { GameMonitoringStatus } from './GameMonitoringStatus';
 import { GameIcon } from './GameIcon';
 import { ServerListStatus } from './ServerListStatus';
@@ -67,6 +68,7 @@ import {
 } from '../utils/fleetRuntime';
 
 type FleetServer = {
+  runtimeId?: number;
   displayId?: string;
   id: string;
   name: string;
@@ -354,6 +356,7 @@ export function FleetWorkspace({
           )}
         </div>
       </header>
+      {administrator && <OperationalOverview scope={scope} servers={servers} />}
       <div className="gp-fleet-toolbar">
         <label className="gp-fleet-search">
           <Search size={18} />

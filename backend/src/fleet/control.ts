@@ -262,6 +262,7 @@ export function mountFleet(app: express.Application) {
                 servers.push({
                     id: row.id,
                     displayId: `SRV-${row.server_number}`,
+                    ...(req.user!.isRoot ? { runtimeId: row.runtime_id } : {}),
                     name: row.name,
                     provider: row.provider,
                     catalogId: row.catalog_id,

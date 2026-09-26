@@ -1,0 +1,23 @@
+import { test, expect } from '@playwright/test';
+for (const width of [390, 1280]) test(`operational incidents, compatibility and refresh at ${width}px`, async ({ page }) => {
+  await page.setViewportSize({ width, height: 900 });
+  let healthy = false;
+  const id = '8346ccb0-2770-486f-b5c9-c68c7c744be9';
+  await page.route('**/api/nodes', route => route.fulfill({ json: { local: { name: 'FR1' }, nodes: [{ id, name: 'WAW1', enabled: 1, status: 'online' }] } }));
+  await page.route('**/api/health', route => route.fulfill({ json: { version: '2.0.59', commit: 'abcdef123', capabilities: { operationalHealth: 1, nativeBackupPolicy: 1, nativeRestoreRecovery: 1, alertRelay: 1 } } }));
+  await page.route(`**/nodes/${id}/runtime/api/health`, route => route.fulfill({ json: { version: '2.0.59', capabilities: {} } }));
+  await page.route('**/api/system/operational-health', route => route.fulfill({ json: { checks: [{ key: 'disk', serverId: 8, category: 'backup', title: 'Disk capacity', detail: healthy ? '49 GiB available' : '1 GiB available', status: healthy ? 'ok' : 'critical', observedAt: Date.now() }] } }));
+  await page.goto('/test/operational.fixture.html');
+  await expect(page.getByRole('heading', { name: 'Needs attention · 5' })).toBeVisible();
+  await expect(page.getByText('1 GiB available', { exact: true }).first()).toBeVisible();
+  await expect(page.getByText('This runtime does not support the required protocol. Update the agent.').first()).toBeVisible();
+  await expect(page.getByRole('link', { name: 'Open backups' })).toHaveAttribute('href', '/s/27/backups');
+  healthy = true;
+  await page.getByRole('button', { name: 'Refresh checks' }).press('Enter');
+  await expect(page.getByRole('heading', { name: 'Needs attention · 4' })).toBeVisible();
+  await page.getByText('Runtime versions and all checks').press('Enter');
+  await expect(page.getByText('49 GiB available')).toBeVisible();
+  await expect(page.getByText('FR1 · 2.0.59 · abcdef1')).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  await page.screenshot({ path: `test-results/operational-${width}.png`, fullPage: true });
+});

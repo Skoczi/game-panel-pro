@@ -32,5 +32,7 @@ test('operational incidents persist across restart, notify only changes and retr
   assert.equal((await store.snapshot(182000)).checks[0].status, 'unknown');
   check.status = 'critical'; await assert.rejects(store.save([check], async () => { throw new Error('queue failed'); }));
   await store.save([check], notify); assert.equal(events.at(-1), 'critical:false');
+  check.notify = false; check.status = 'warning'; const before = events.length;
+  await store.save([check], notify); assert.equal(events.length, before);
   await store.save([], notify); assert.equal((await store.snapshot()).checks.length, 0);
 });
