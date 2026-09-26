@@ -8,7 +8,7 @@ Autoryzacja użytkownika 26.09.2026: realizować P1/P2 i sześć kierunków rozw
 | 2. Odwoływalne sesje, bezpieczne uwierzytelnianie i MFA | Wdrożone FR1: 7bb0d24, 236 testów Linux + 5 UI + HTTP/WS acceptance + live login OK |
 | 3. Ograniczone limitery logowania i API | Wdrożone FR1: 955baeb; testy limitów i HTTP/WS OK |
 | 4. Agenty 2.0.59+, backupy, retencja i próba odzyskania | Wdrożone; odzyskanie gry z NFS i bazy panelu sprawdzone |
-| 5. Miejsce FR1 i kontrola wzrostu cache | Do wykonania |
+| 5. Miejsce FR1 i kontrola wzrostu cache | Wdrożone: odzysk 35,7 GB; codzienna kontrola cache |
 | 6. Alerty i niezależny monitoring | Do wykonania; odbiorca do potwierdzenia jeśli brak wcześniejszego ustalenia |
 | 7. Ekran Wymaga uwagi / zgodność agentów | Do wykonania |
 | 8. Konsola, backupy, formularze, dostępność/mobile | Do wykonania |
@@ -33,3 +33,5 @@ Zadanie 4: oba agenty 2.0.59/32f7753; health i brak restartów innych konteneró
 Doprecyzowanie użytkownika: QR dla iPhone wdrożony na FR1 (frontend 136b338). QR generowany lokalnie, otpauth link, login/issuer, ręczny klucz jako fallback. 5 testów UI i build OK; npm audit prod 0. Fizyczny iPhone nie był użyty do odbioru.
 
 Backup control-plane: codziennie 03:00 UTC (+ do 120 s), systemd timer na WAW2; 14 ostatnich zweryfikowanych archiwów na host, katalog NFS `gamepanel-backups/control-plane`. Źródła FR1/WAW1/WAW2: SQLite backup API + integrity_check, compose/env/release, identity agentów, dokładne obrazy Docker; FR1 także nginx vhost. Klucz odbiorcy na WAW2 ograniczony na FR1/WAW1 przez from/restrict/forced command do eksportu kopii. Pierwsze 3 archiwa sprawdzone (125/78/78 MB). Próba odzyskania FR1: obrazy załadowane, kopia DB/konfiguracji, odszyfrowanie obu kluczy agentów i rzeczywiste logowanie HTTP do testowego konta wyłącznie w kopii — OK. Pełny bootstrap panelu wymaga Docker socket; test uruchamiał moduł auth bez Dockera i sieci, nie testował przełączenia publicznego ruchu ani połączenia odtworzonego panelu z prawdziwymi agentami. Certyfikaty TLS i pliki gier nie wchodzą do kopii control-plane; gra ma odrębny backup NFS.
+
+Zadanie 5: FR1 odzyskał 35 693 494 272 B filesystemu przez prune nieużywanego build cache starszego niż 24 h (max-used-space 8GB, reserved-space 2GB). Obrazy, wolumeny i kontenery pozostały bez zmian; health OK. Timer `eserv-build-cache-gc.timer`: codziennie 04:30 UTC + do 5 min. Wspólna blokada z wdrożeniami; nie restartuje Dockera ani gier.
