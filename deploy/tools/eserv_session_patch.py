@@ -95,6 +95,7 @@ def main():
                 assert backup.execute('PRAGMA integrity_check').fetchone()[0] == 'ok'
         updated = json.loads(json.dumps(old))
         for service, image in images.items(): updated['services'][service]['image'] = image
+        updated['services']['backend'].setdefault('environment', {}).update({'GAMEPANEL_BUILD_COMMIT': args.commit, 'GAMEPANEL_BUILD_ID': args.patch})
         compose = ['docker', 'compose', '--project-directory', str(root), '-f', str(compose_path)]
         try:
             atomic_json(compose_path, updated)

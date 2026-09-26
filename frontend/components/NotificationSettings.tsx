@@ -3,7 +3,7 @@ import { Bell, Save, Send } from 'lucide-react';
 import { AppButton, AppToggle } from '../src/ui/components';
 import { apiClient } from '../utils/api';
 type Settings = { revision: number; enabled: boolean; webhookConfigured: boolean; categories: string[]; recent: Array<{ id: string; title: string; created_at: number; state: string; result: string | null }> };
-const categories = [['game', 'Game outages and recovery'], ['node', 'Node connection'], ['backup', 'Backup and restore failures'], ['schedule', 'Failed or interrupted schedules'], ['recovery', 'Automatic restart attempts']];
+const categories = [['game', 'Game outages and recovery'], ['node', 'Node connection'], ['backup', 'Missing or stale backups and restore failures'], ['storage', 'Low disk space'], ['schedule', 'Failed or interrupted schedules'], ['recovery', 'Automatic restart attempts']];
 export function NotificationSettings() {
     const [data,setData] = useState<Settings|null>(null), [webhook,setWebhook] = useState(''), [dirty,setDirty] = useState(false);
     const [busy,setBusy] = useState(false), [error,setError] = useState(''), [notice,setNotice] = useState('');

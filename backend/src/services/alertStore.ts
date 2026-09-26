@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import type { Database } from 'sqlite';
-export const ALERT_CATEGORIES = ['game', 'node', 'backup', 'schedule', 'recovery'] as const;
+export const ALERT_CATEGORIES = ['game', 'node', 'backup', 'schedule', 'recovery', 'storage'] as const;
 export type AlertCategory = typeof ALERT_CATEGORIES[number];
 export type AlertEvent = { id: string; category: AlertCategory; title: string; detail: string; createdAt: number };
 export type AlertConfig = { enabled: boolean; webhook: string; categories: AlertCategory[] };
@@ -36,7 +36,7 @@ export class AlertStore {
     async save(input: any) {
         const old = await this.config();
         if (!input || Object.keys(input).some(k => !['revision', 'enabled', 'webhook', 'categories'].includes(k)) || typeof input.enabled !== 'boolean'
-            || !Array.isArray(input.categories) || input.categories.some((c: any) => !ALERT_CATEGORIES.includes(c)) || input.categories.length > 5) invalid('Invalid notification settings');
+            || !Array.isArray(input.categories) || input.categories.some((c: any) => !ALERT_CATEGORIES.includes(c)) || input.categories.length > ALERT_CATEGORIES.length) invalid('Invalid notification settings');
         if (input.revision !== old.revision) invalid('Notification settings changed; reload before saving', 409);
         const config: AlertConfig = { enabled: input.enabled, categories: [...new Set<AlertCategory>(input.categories)], webhook: input.webhook === undefined ? old.webhook : webhookUrl(input.webhook) };
         if (config.enabled && !config.webhook) invalid('Set a Discord webhook before enabling notifications');

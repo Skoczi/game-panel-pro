@@ -9,7 +9,7 @@ Autoryzacja użytkownika 26.09.2026: realizować P1/P2 i sześć kierunków rozw
 | 3. Ograniczone limitery logowania i API | Wdrożone FR1: 955baeb; testy limitów i HTTP/WS OK |
 | 4. Agenty 2.0.59+, backupy, retencja i próba odzyskania | Wdrożone; odzyskanie gry z NFS i bazy panelu sprawdzone |
 | 5. Miejsce FR1 i kontrola wzrostu cache | Wdrożone: odzysk 35,7 GB; codzienna kontrola cache |
-| 6. Alerty i niezależny monitoring | Do wykonania; odbiorca do potwierdzenia jeśli brak wcześniejszego ustalenia |
+| 6. Alerty i niezależny monitoring | W trakcie wdrożenia; Discord testowy potwierdzony, WAW1 monitor aktywny |
 | 7. Ekran Wymaga uwagi / zgodność agentów | Do wykonania |
 | 8. Konsola, backupy, formularze, dostępność/mobile | Do wykonania |
 | 9. ReHLDS: mapy, rotacje, admini i dodatki z rollbackiem | Do wykonania |
@@ -35,3 +35,5 @@ Doprecyzowanie użytkownika: QR dla iPhone wdrożony na FR1 (frontend 136b338). 
 Backup control-plane: codziennie 03:00 UTC (+ do 120 s), systemd timer na WAW2; 14 ostatnich zweryfikowanych archiwów na host, katalog NFS `gamepanel-backups/control-plane`. Źródła FR1/WAW1/WAW2: SQLite backup API + integrity_check, compose/env/release, identity agentów, dokładne obrazy Docker; FR1 także nginx vhost. Klucz odbiorcy na WAW2 ograniczony na FR1/WAW1 przez from/restrict/forced command do eksportu kopii. Pierwsze 3 archiwa sprawdzone (125/78/78 MB). Próba odzyskania FR1: obrazy załadowane, kopia DB/konfiguracji, odszyfrowanie obu kluczy agentów i rzeczywiste logowanie HTTP do testowego konta wyłącznie w kopii — OK. Pełny bootstrap panelu wymaga Docker socket; test uruchamiał moduł auth bez Dockera i sieci, nie testował przełączenia publicznego ruchu ani połączenia odtworzonego panelu z prawdziwymi agentami. Certyfikaty TLS i pliki gier nie wchodzą do kopii control-plane; gra ma odrębny backup NFS.
 
 Zadanie 5: FR1 odzyskał 35 693 494 272 B filesystemu przez prune nieużywanego build cache starszego niż 24 h (max-used-space 8GB, reserved-space 2GB). Obrazy, wolumeny i kontenery pozostały bez zmian; health OK. Timer `eserv-build-cache-gc.timer`: codziennie 04:30 UTC + do 5 min. Wspólna blokada z wdrożeniami; nie restartuje Dockera ani gier.
+
+Zadanie 6: Discord przyjął test za pierwszą próbą. Niezależny monitor WAW1 sprawdza HTML/API co minutę, alarm po 3 błędach, recovery po 2 sukcesach; trwały stan zapobiega powtórzeniom. Sekret w /etc/eserv-availability-monitor.json (0600), poza repo. Kontrola operacyjna runtime: dysk 85%/95% lub poniżej 8/2 GiB, backupy 36/72 h, brak kopii krytyczny; kontrola lokalnych/zewnętrznych kopii, harmonogramu i pokwitowań backupów FR1/WAW1/WAW2. Stan i przejścia trwałe w SQLite. 242/242 testy Linux, oba buildy oraz test stanów monitora OK.

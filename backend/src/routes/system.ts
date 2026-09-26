@@ -1,3 +1,4 @@
+import { operationalHealthStore } from '../services/operationalHealth.js';
 import { alertStore } from '../services/alerts.js';
 // Modified by Skoczi: expose the configured IPv4 allowlist to authenticated UI clients.
 import { configuredBindAddresses } from '../utils/bindAddresses.js';
@@ -12,6 +13,11 @@ import { nowIso } from '../utils/time.js';
 import { isAgent } from '../agent/identity.js';
 
 const router = Router();
+
+router.get('/operational-health', rootOnly, async (_req, res) => {
+  try { res.setHeader('Cache-Control', 'no-store'); res.json(await (await operationalHealthStore()).snapshot()); }
+  catch (error) { sendRouteError(res, error, { route: 'OPERATIONAL:READ', fallbackMessage: 'Cannot load operational health' }); }
+});
 
 router.get('/notifications', rootOnly, async (_req, res) => {
   try { res.setHeader('Cache-Control', 'no-store'); res.json(await (await alertStore()).view()); }

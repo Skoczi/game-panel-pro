@@ -24,6 +24,7 @@ test('settings routes require root; appearance exposes no allocations', async ()
         network: { restrictPorts: true, allocations: [] },
     };
     const { default: router } = loadWithMocks('../src/routes/system.ts', {
+        '../services/operationalHealth.js': { operationalHealthStore: async () => ({ snapshot: async () => ({ checks: [] }) }) },
         '../services/alerts.js': { alertStore: async () => ({ view: async () => ({ enabled: false }), save: async () => ({ enabled: false }) }) },
         '../services/alertStore.js': { validateAlertBatch: () => [] },
         express,

@@ -1,3 +1,4 @@
+import { startOperationalHealthWorker } from './services/operationalHealth.js';
 import { recoverRestartAttempts } from './services/monitoringRecovery.js';
 import { startAlertWorker } from './services/alerts.js';
 import { startGameMonitoringWorker } from './services/gameMonitoring.js';
@@ -101,6 +102,7 @@ let periodicHealthReconcile: { stop: () => void } | null = null;
 let linuxGsmRefreshJob: { stop: () => void } | null = null;
 let fileTransferCleanupJob: { stop: () => void } | null = null;
 let downloadTokenCleanupJob: { stop: () => void } | null = null;
+let operationalWorker: ReturnType<typeof startOperationalHealthWorker> | undefined;
 let alertWorker: ReturnType<typeof startAlertWorker> | undefined;
 let gameMonitoringWorker: { stop: () => void } | null = null;
 let fastDownloadWorker: { stop: () => void } | null = null;
@@ -254,6 +256,7 @@ async function startServer(): Promise<void> {
     await recoverRestartAttempts();
     gameMonitoringWorker = startGameMonitoringWorker();
     alertWorker = startAlertWorker();
+    operationalWorker = startOperationalHealthWorker();
 
     httpServer.listen(port, () => {
       logInfo('APP', 'Game Panel backend listening on port ' + port);
@@ -285,6 +288,7 @@ function setupGracefulShutdown(): void {
       fastDownloadWorker?.stop();
       gameMonitoringWorker?.stop();
       alertWorker?.stop();
+      operationalWorker?.stop();
       agentHeartbeat?.stop();
       closeNodeSockets();
 

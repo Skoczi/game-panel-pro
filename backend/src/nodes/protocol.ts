@@ -134,6 +134,7 @@ export function runtimePath(path: string): boolean {
             '/api/system/bind-addresses',
             '/api/system/docker-info',
             '/api/system/disk-usage',
+            '/api/system/operational-health',
         ].includes(pathname)
     );
 }
