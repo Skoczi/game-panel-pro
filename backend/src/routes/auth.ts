@@ -1,4 +1,5 @@
 import { Router, type Request, type Response } from 'express';
+import { LoginRateLimit } from '../services/loginRateLimit.js';
 import { type AuthenticatedRequest, authMiddleware, requireGlobalPermission } from '../middleware/auth.js';
 import { comparePasswords, hashPassword } from '../utils/auth.js';
 import { loginSessions } from '../services/loginSessions.js';
@@ -36,11 +37,6 @@ function asStringArray(value: unknown): string[] | null {
   return arr;
 }
 
-type LoginRateBucket = {
-  attempts: number[];
-  blockedUntil: number;
-};
-
 function readPositiveIntEnv(name: string, fallback: number): number {
   const raw = process.env[name];
   if (!raw) return fallback;
@@ -52,96 +48,18 @@ const LOGIN_RATE_WINDOW_MS = readPositiveIntEnv('LOGIN_RATE_WINDOW_MS', 15 * 60_
 const LOGIN_RATE_MAX_ATTEMPTS = readPositiveIntEnv('LOGIN_RATE_MAX_ATTEMPTS', 10);
 const LOGIN_RATE_BLOCK_MS = readPositiveIntEnv('LOGIN_RATE_BLOCK_MS', 15 * 60_000);
 
-const loginRateByIp = new Map<string, LoginRateBucket>();
-const loginRateByIdentifier = new Map<string, LoginRateBucket>();
-
-function normalizeIp(value: string): string {
-  const trimmed = value.trim();
-  return trimmed.startsWith('::ffff:') ? trimmed.slice(7) : trimmed;
-}
-
-function getClientIp(req: Request): string {
-  if (typeof req.ip === 'string' && req.ip.trim()) {
-    return normalizeIp(req.ip);
-  }
-
-  if (typeof req.socket.remoteAddress === 'string' && req.socket.remoteAddress.trim()) {
-    return normalizeIp(req.socket.remoteAddress);
-  }
-
-  return 'unknown';
-}
-
-function getBucket(map: Map<string, LoginRateBucket>, key: string): LoginRateBucket {
-  let bucket = map.get(key);
-  if (!bucket) {
-    bucket = { attempts: [], blockedUntil: 0 };
-    map.set(key, bucket);
-  }
-  return bucket;
-}
-
-function pruneBucket(bucket: LoginRateBucket, now: number): void {
-  const minTs = now - LOGIN_RATE_WINDOW_MS;
-  bucket.attempts = bucket.attempts.filter((ts) => ts >= minTs);
-  if (bucket.blockedUntil <= now) {
-    bucket.blockedUntil = 0;
-  }
-}
-
-function getRetryAfterMs(map: Map<string, LoginRateBucket>, key: string, now: number): number {
-  const bucket = map.get(key);
-  if (!bucket) return 0;
-
-  pruneBucket(bucket, now);
-  return bucket.blockedUntil > now ? bucket.blockedUntil - now : 0;
-}
-
-function registerLoginFailure(map: Map<string, LoginRateBucket>, key: string, now: number): void {
-  const bucket = getBucket(map, key);
-  pruneBucket(bucket, now);
-  bucket.attempts.push(now);
-
-  if (bucket.attempts.length >= LOGIN_RATE_MAX_ATTEMPTS) {
-    bucket.blockedUntil = now + LOGIN_RATE_BLOCK_MS;
-    bucket.attempts = [];
-  }
-}
-
-function clearLoginRate(map: Map<string, LoginRateBucket>, key: string): void {
-  map.delete(key);
-}
+const loginRateByIp = new LoginRateLimit(readPositiveIntEnv('LOGIN_RATE_IP_MAX_ATTEMPTS', 100), LOGIN_RATE_WINDOW_MS, LOGIN_RATE_BLOCK_MS);
+const loginRateByIdentifier = new LoginRateLimit(LOGIN_RATE_MAX_ATTEMPTS, LOGIN_RATE_WINDOW_MS, LOGIN_RATE_BLOCK_MS);
 
 function ensureLoginRateLimit(req: Request, res: Response, identifier: string): boolean {
-  const now = Date.now();
-  const ipKey = getClientIp(req);
-  const idKey = identifier.toLowerCase();
-
-  const retryMs = Math.max(
-    getRetryAfterMs(loginRateByIp, ipKey, now),
-    getRetryAfterMs(loginRateByIdentifier, idKey, now)
-  );
-
-  if (retryMs <= 0) return true;
-
-  const retryAfterSeconds = Math.max(1, Math.ceil(retryMs / 1000));
+  // Express only reads forwarding information when trust proxy is configured.
+  const ip = (req.ip || req.socket.remoteAddress || 'unknown').replace(/^::ffff:/, '');
+  const sourceRetry = loginRateByIp.take(ip);
+  const retryAfterSeconds = sourceRetry || loginRateByIdentifier.take(identifier.toLowerCase());
+  if (!retryAfterSeconds) return true;
   res.setHeader('Retry-After', String(retryAfterSeconds));
   res.status(429).json({ error: 'Too many login attempts', retryAfterSeconds });
   return false;
-}
-
-function noteLoginFailure(req: Request, identifier: string): void {
-  const now = Date.now();
-  const ipKey = getClientIp(req);
-  const idKey = identifier.toLowerCase();
-
-  registerLoginFailure(loginRateByIp, ipKey, now);
-  registerLoginFailure(loginRateByIdentifier, idKey, now);
-}
-
-function clearLoginFailures(req: Request, identifier: string): void {
-  clearLoginRate(loginRateByIdentifier, identifier.toLowerCase());
-  clearLoginRate(loginRateByIp, getClientIp(req));
 }
 
 // POST /api/auth/register
@@ -249,18 +167,15 @@ router.post('/login', async (req: Request, res: Response) => {
 
     const user = await userRepository.findByUsername(normalizedIdentifier);
     if (!user) {
-      noteLoginFailure(req, normalizedIdentifier);
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
     if (!user.is_enabled) {
-      noteLoginFailure(req, normalizedIdentifier);
       return res.status(403).json({ error: 'Account disabled' });
     }
 
     const validPassword = await comparePasswords(password, user.password_hash);
     if (!validPassword) {
-      noteLoginFailure(req, normalizedIdentifier);
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
@@ -268,11 +183,10 @@ router.post('/login', async (req: Request, res: Response) => {
     if (await mfa.enabled(user.id)) {
       const code = typeof body.code === 'string' ? body.code.trim() : '';
       if (!code || !await mfa.verify(user.id, code)) {
-        noteLoginFailure(req, normalizedIdentifier);
-        return res.status(401).json({ error: code ? 'Invalid or already used authenticator/recovery code' : 'Authenticator code required', mfaRequired: true });
+          return res.status(401).json({ error: code ? 'Invalid or already used authenticator/recovery code' : 'Authenticator code required', mfaRequired: true });
       }
     }
-    clearLoginFailures(req, normalizedIdentifier);
+    loginRateByIdentifier.clear(normalizedIdentifier.toLowerCase());
 
     const token = await issueSession(req, res, user);
 

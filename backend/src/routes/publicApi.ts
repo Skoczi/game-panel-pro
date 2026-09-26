@@ -40,21 +40,22 @@ export function publicApi(deps: Dependencies) {
     const router = Router();
     const sourceLimit = new ApiRateLimit(240), tokenLimit = new ApiRateLimit(120);
     router.use((_req, res, next) => { res.setHeader('Cache-Control', 'no-store'); next(); });
-    router.use((req, res, next) => {
-        // Use the actual peer, never a caller-supplied forwarded header. Shared proxies share this budget.
-        const rate = sourceLimit.take(req.socket.remoteAddress || 'unknown');
-        if (!rate.allowed) {
-            res.setHeader('Retry-After', rate.retryAfterSeconds);
-            error(res, 429, 'rate_limited', 'Too many API requests'); return;
-        }
-        next();
-    });
     router.use(async (req, res, next) => {
         try {
             const match = /^Bearer (gpp_[A-Za-z0-9_-]{43})$/.exec(req.headers.authorization || '');
             const token = match ? await deps.store().authenticate(match[1]) : null;
             const owner = token ? await deps.owner(token.ownerId) : null;
-            if (!token || !owner?.enabled) { error(res, 401, 'unauthorized', 'Invalid or expired API token'); return; }
+            if (!token || !owner?.enabled) {
+                // Invalid credentials have a separate budget. Traffic through one
+                // proxy must not exhaust unrelated authenticated integrations.
+                const source = (req.ip || req.socket.remoteAddress || 'unknown').replace(/^::ffff:/, '');
+                const rate = sourceLimit.take(source);
+                if (!rate.allowed) {
+                    res.setHeader('Retry-After', rate.retryAfterSeconds);
+                    error(res, 429, 'rate_limited', 'Too many invalid API credentials'); return;
+                }
+                error(res, 401, 'unauthorized', 'Invalid or expired API token'); return;
+            }
             const rate = tokenLimit.take(token.id);
             if (!rate.allowed) {
                 res.setHeader('Retry-After', rate.retryAfterSeconds);

@@ -30,6 +30,7 @@ def main():
     parser.add_argument('archive', type=Path)
     parser.add_argument('--patch', required=True)
     parser.add_argument('--commit', required=True)
+    parser.add_argument('--backend-only', action='store_true')
     args = parser.parse_args()
     assert re.fullmatch('[a-z0-9-]{1,70}', args.patch)
     assert re.fullmatch('[0-9a-f]{40}', args.commit)
@@ -40,7 +41,9 @@ def main():
         compose_path = root / 'compose.json'
         old = json.loads(compose_path.read_text())
         release = json.loads((root / 'release.json').read_text())
-        before = inventory({'gamepanel-pro-backend', 'gamepanel-pro-frontend'})
+        services = ['backend'] if args.backend_only else ['backend', 'frontend']
+        excluded = {'gamepanel-pro-' + service for service in services}
+        before = inventory(excluded)
         dest = root / 'local-patches' / args.patch
         dest.mkdir(parents=True, exist_ok=False)
         with tarfile.open(args.archive) as archive:
@@ -56,7 +59,7 @@ def main():
                     with archive.extractfile(member) as source, target.open('wb') as output: shutil.copyfileobj(source, output)
         for target in dest.rglob('*'): target.chmod(0o755 if target.is_dir() else 0o644)
         images = {}
-        for service in ['backend', 'frontend']:
+        for service in services:
             current = json.loads(run('docker', 'inspect', 'gamepanel-pro-' + service))[0]
             assert current['Config']['Labels']['com.docker.compose.project.working_dir'] == str(root)
             base = 'gamepanel-pro-' + service + ':base-' + args.patch
@@ -72,17 +75,18 @@ def main():
         subprocess.run(['docker', 'run', '--rm', '--network', 'none', '--memory', '512m', '--cpus', '1', '--tmpfs', '/data',
             '-v', str(dest / 'backend/test/integration/session-acceptance.mjs') + ':/app/backend/test/integration/session-acceptance.mjs:ro',
             '--entrypoint', 'node', images['backend'], 'test/integration/session-acceptance.mjs'], check=True, timeout=45)
-        run('docker', 'run', '--rm', '--network', 'none', images['frontend'], 'nginx', '-t')
-        html = (dest / 'frontend/dist/index.html').read_bytes()
-        smoke = run('docker', 'run', '-d', '--memory', '256m', '-p', '127.0.0.1::8080', images['frontend'])
-        try:
-            port = json.loads(run('docker', 'inspect', smoke))[0]['NetworkSettings']['Ports']['8080/tcp'][0]['HostPort']
-            for attempt in range(15):
-                try: verify('http://127.0.0.1:' + port, html); break
-                except (OSError, AssertionError):
-                    if attempt == 14: raise
-                    time.sleep(1)
-        finally: run('docker', 'rm', '-f', smoke)
+        if not args.backend_only:
+            run('docker', 'run', '--rm', '--network', 'none', images['frontend'], 'nginx', '-t')
+            html = (dest / 'frontend/dist/index.html').read_bytes()
+            smoke = run('docker', 'run', '-d', '--memory', '256m', '-p', '127.0.0.1::8080', images['frontend'])
+            try:
+                port = json.loads(run('docker', 'inspect', smoke))[0]['NetworkSettings']['Ports']['8080/tcp'][0]['HostPort']
+                for attempt in range(15):
+                    try: verify('http://127.0.0.1:' + port, html); break
+                    except (OSError, AssertionError):
+                        if attempt == 14: raise
+                        time.sleep(1)
+            finally: run('docker', 'rm', '-f', smoke)
         rollback = dest / 'rollback'; rollback.mkdir(mode=0o700)
         for filename in ['compose.json', 'release.json', 'backend.env']: shutil.copy2(root / filename, rollback / filename)
         with sqlite3.connect('file:' + str(root / 'data/game-panel.db') + '?mode=ro', uri=True) as source:
@@ -95,10 +99,10 @@ def main():
         try:
             atomic_json(compose_path, updated)
             run(*compose, 'config', '--quiet')
-            run(*compose, 'up', '-d', '--no-deps', '--no-build', '--pull', 'never', 'backend', 'frontend')
+            run(*compose, 'up', '-d', '--no-deps', '--no-build', '--pull', 'never', *services)
             for attempt in range(40):
                 try:
-                    verify('http://127.0.0.1:18080', html)
+                    if not args.backend_only: verify('http://127.0.0.1:18080', html)
                     with urllib.request.urlopen('http://127.0.0.1:18081/api/health', timeout=3) as response: assert response.status == 200
                     request = urllib.request.Request('http://127.0.0.1:18081/api/auth/session', data=b'{}', headers={'Content-Type': 'application/json', 'Origin': 'https://eserv.pl', 'X-GP-Session': '1'})
                     try: urllib.request.urlopen(request, timeout=3); raise AssertionError('Empty session accepted')
@@ -108,7 +112,7 @@ def main():
                 except (OSError, AssertionError):
                     if attempt == 39: raise
                     time.sleep(1)
-            assert before == inventory({'gamepanel-pro-backend', 'gamepanel-pro-frontend'}), 'Other containers changed'
+            assert before == inventory(excluded), 'Other containers changed'
             final = dict(release)
             for service, image in images.items(): final[service + 'Image'] = image; final[service + 'Commit'] = args.commit
             final['localPatch'] = {'id': args.patch, 'commit': args.commit, **images}
@@ -119,7 +123,7 @@ def main():
         except BaseException:
             # Additive session tables can remain; never overwrite live DB writes.
             atomic_json(compose_path, old); atomic_json(root / 'release.json', release)
-            run(*compose, 'up', '-d', '--no-deps', '--no-build', '--pull', 'never', 'backend', 'frontend')
+            run(*compose, 'up', '-d', '--no-deps', '--no-build', '--pull', 'never', *services)
             raise
 
 
