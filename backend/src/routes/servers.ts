@@ -1,3 +1,4 @@
+import { serverCloneRoutes } from './serverClone.js';
 import { rehldsRoutes } from './rehlds.js';
 import { nativeGameConfigRoutes } from './nativeGameConfig.js';
 import { gameMonitoringRoutes } from './gameMonitoring.js';
@@ -51,6 +52,7 @@ router.use('/:id', (req, res, next) => {
 // /api/servers/:id/file
 router.use('/:id/game-config', nativeGameConfigRoutes);
 router.use('/:id/rehlds', rehldsRoutes);
+router.use('/:id/clone', serverCloneRoutes);
 router.use('/:id/monitoring', gameMonitoringRoutes);
 router.use('/:id/fastdownload', fastDownloadRoutes);
 router.use('/:id/file', serverFileRoutes);

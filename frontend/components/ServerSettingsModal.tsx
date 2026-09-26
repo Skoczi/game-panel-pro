@@ -914,7 +914,7 @@ export function ServerSettingsModal({
           />
         }
         gameConfigContent={
-          isNative ? <NativeGameConfig serverId={serverId} metadata={serverProviderMetadataJson} canRead={canUseFileManager} canWrite={canWriteFiles} onDirtyChange={setGameConfigDirty}
+          isNative ? <NativeGameConfig isRoot={Boolean(currentUser?.isRoot)} serverId={serverId} metadata={serverProviderMetadataJson} canRead={canUseFileManager} canWrite={canWriteFiles} onDirtyChange={setGameConfigDirty}
             onOpen={(path, root) => { const go = () => { hasUserSelectedTabRef.current = true; setCurrentRoot(root); handleOpenFileManagerAtPath(path); }; if (gameConfigDirty) requestConfirm('Discard configuration changes?', 'Your unsaved Game Config changes will be lost.', async () => { setGameConfigDirty(false); go(); }); else go(); }} /> : <GameConfigTab
             serverGame={serverGame}
             serverProvider={serverProvider}

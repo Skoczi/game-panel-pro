@@ -10,6 +10,7 @@ export const runtimeCapabilities = Object.freeze({
     operationalHealth: 1,
     rehldsContent: 1,
         maintenanceWorkflow: 1,
+        nativeClone: 1,
     fastDownload: 1,
     versionedFiles: 1,
     backupJobs: 1,

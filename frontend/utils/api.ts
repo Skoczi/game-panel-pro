@@ -105,7 +105,7 @@ export interface NativeProtectionSummary {
   warnings: string[];
 }
 export interface BackupJob {
-  id: string; kind: 'backup' | 'restore' | 'import' | 'addon'; status: 'running' | 'completed' | 'failed' | 'interrupted';
+  id: string; kind: 'backup' | 'restore' | 'import' | 'addon' | 'clone'; status: 'running' | 'completed' | 'failed' | 'interrupted';
   actor?: string;
   startedAt: string; completedAt?: string; error?: string;
   result?: { ok: boolean; exitCode: number; stdout?: string; stderr?: string };
@@ -946,6 +946,8 @@ class ApiClient {
     return `${API_BASE_URL}${res.data.path as string}`;
   }
 
+  async previewClone(fleetId: string) { return (await this.client.get(`/api/fleet/${fleetId}/clone`)).data; }
+  async startClone(fleetId: string, input: unknown) { return (await this.client.post(`/api/fleet/${fleetId}/clone`, input)).data; }
   async getRehldsContent(serverId: number, section: string) {
     return (await this.client.get(`/api/servers/${serverId}/rehlds/${section}`)).data;
   }

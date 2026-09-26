@@ -1,3 +1,4 @@
+import { fleetCloneRoutes } from './routes/fleetClone.js';
 import { startOperationalHealthWorker } from './services/operationalHealth.js';
 import { recoverRestartAttempts } from './services/monitoringRecovery.js';
 import { startAlertWorker } from './services/alerts.js';
@@ -166,6 +167,7 @@ if (!isAgent()) {
   app.use('/api/v1', publicApiRoutes);
   app.use('/api/v1', publicApiErrorHandler);
   app.use('/api/api-tokens', authMiddleware, apiTokenRoutes);
+  app.use('/api/fleet', authMiddleware, fleetCloneRoutes);
 }
 app.use('/api/branding', brandingRoutes);
 // /api/download/:token
