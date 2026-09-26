@@ -41,3 +41,7 @@ Frontend live: `2a8e8e0ff8c243dec381f3e1a39ec71a5df7b704`, obraz `gamepanel-pro-
 ## Korekta bocznych informacji konsoli
 
 Zgłoszenie użytkownika ujawniło nakładanie ikon po zmniejszeniu paddingu kart. Usunięto pozycjonowanie absolutne ikon i wprowadzono osobną kolumnę grid. Wartości i etykiety zajmują drugą kolumnę, adres z przyciskiem kopiowania może się zawijać. Server status i Game response współdzielą kartę; monitoring jest renderowany tylko dla `monitoring.enabled`, z zachowaniem odróżnienia stanu kontenera i gry. Dodano test braku kolizji ikon z zawartością oraz jednej karty statusu przy 390 i 1440 px, z monitoringiem i bez.
+
+## Zwijane wyszukiwanie konsoli
+
+Pasek wyszukiwania i filtrów jest domyślnie zamknięty. Przycisk Search z lupą znajduje się przy Copy / Clear / Full screen. Otwarcie ustawia focus w wyszukiwaniu; zamknięcie przyciskiem lub Escape resetuje filtry, a Escape oddaje focus przyciskowi. Stan jest sygnalizowany przez aria-expanded.

@@ -12,10 +12,13 @@ for (const width of [390, 1280]) test(`console filters preserve raw buffer at ${
   await page.setViewportSize({ width, height: 900 });
   await page.goto('/test/console-tools.fixture.html');
   await expect(page.getByText('Repeated warning', { exact: true })).toHaveCount(2);
+  await expect(page.getByRole('textbox', { name: 'Search console logs' })).toHaveCount(0);
+  await page.getByRole('button', { name: 'Search console logs', exact: true }).click();
+  await expect(page.getByRole('textbox', { name: 'Search console logs' })).toBeFocused();
   await page.getByLabel('Group repeats').check();
   await expect(page.getByText('Repeated warning', { exact: true })).toHaveCount(1);
   await expect(page.getByLabel('2 repeats')).toBeVisible();
-  await page.getByLabel('Search console logs').fill('FAILED');
+  await page.getByRole('textbox', { name: 'Search console logs' }).fill('FAILED');
   await expect(page.getByText('Failed to load map', { exact: true })).toBeVisible();
   await page.getByLabel('Console log level').selectOption('warning');
   await expect(page.getByText('No logs match these filters.')).toBeVisible();
@@ -25,5 +28,9 @@ for (const width of [390, 1280]) test(`console filters preserve raw buffer at ${
   expect(raw).toContain('SteamAPI_IsSteamRunning');
   expect(raw).toContain('Server started');
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  await page.getByRole('textbox', { name: 'Search console logs' }).press('Escape');
+  await expect(page.getByRole('button', { name: 'Search console logs' })).toBeFocused();
+  await expect(page.getByRole('button', { name: 'Search console logs' })).toHaveAttribute('aria-expanded', 'false');
+  await expect(page.getByText('Repeated warning', { exact: true })).toHaveCount(2);
   await page.screenshot({ path: `test-results/console-tools-${width}.png`, fullPage: true });
 });

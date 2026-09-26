@@ -1,6 +1,6 @@
 import { consoleView } from '../utils/consoleView';
-import { Terminal, Trash2, X, Copy, ArrowDown, CornerDownLeft, Maximize2, Minimize2 } from 'lucide-react';
-import { memo, useState, useRef, useEffect, useLayoutEffect, useMemo, Fragment } from 'react';
+import { Terminal, Trash2, X, Copy, Search, ArrowDown, CornerDownLeft, Maximize2, Minimize2 } from 'lucide-react';
+import { memo, useId, useState, useRef, useEffect, useLayoutEffect, useMemo, Fragment } from 'react';
 import { AppButton, AppToggle } from '../src/ui/components';
 import { useBodyScrollLock } from '../src/ui/utils/useBodyScrollLock';
 import { ansiToHtml, stripAnsi } from '../utils/ansi';
@@ -149,6 +149,9 @@ export function ServerConsoleTabs({
     return () => window.clearTimeout(timer);
   }, [autoScrollServer]);
   const [showTimestamps, setShowTimestamps] = useState(false);
+  const searchId = useId();
+  const [searchOpen, setSearchOpen] = useState(false);
+  const closeSearch = () => { setSearchOpen(false); setLogSearch(''); setLogLevel('all'); setGroupLogs(false); };
   const [logSearch, setLogSearch] = useState('');
   const [logLevel, setLogLevel] = useState('all');
   const [groupLogs, setGroupLogs] = useState(false);
@@ -692,6 +695,15 @@ export function ServerConsoleTabs({
               size="compact"
             />
           </div>
+          {!isCLIConsoleActive && activeServer && <AppButton
+            id={`${searchId}-toggle`}
+            tone="ghost"
+            aria-label="Search console logs"
+            aria-expanded={searchOpen}
+            aria-controls={`${searchId}-filters`}
+            onClick={() => searchOpen ? closeSearch() : setSearchOpen(true)}
+            className={`inline-flex h-8 items-center gap-2 px-2 sm:px-3 rounded ${tabHoverBg} transition-colors ${searchOpen ? 'text-cyan-400' : textSecondary} text-sm`}
+          ><Search className="w-3 h-3" /><span className="gp-console-tool-label hidden sm:inline">Search</span></AppButton>}
           <AppButton
             tone="ghost"
             onClick={handleCopyActiveLogs}
@@ -722,8 +734,8 @@ export function ServerConsoleTabs({
         </div>
       </div>
 
-      {!isCLIConsoleActive && activeServer && <div className="gp-console-filters shrink-0 flex flex-wrap items-center gap-2 border-b border-gray-700 bg-gp-surface-input p-2 text-sm text-gray-700 dark:text-gray-200">
-        <input aria-label="Search console logs" placeholder="Search logs…" value={logSearch} onChange={e => setLogSearch(e.target.value)} className="min-w-0 flex-1 rounded border border-gray-600 bg-gray-800 px-2 py-1" />
+      {!isCLIConsoleActive && activeServer && searchOpen && <div id={`${searchId}-filters`} onKeyDown={event => { if (event.key === 'Escape') { event.stopPropagation(); closeSearch(); document.getElementById(`${searchId}-toggle`)?.focus(); } }} className="gp-console-filters shrink-0 flex flex-wrap items-center gap-2 border-b border-gray-700 bg-gp-surface-input p-2 text-sm text-gray-700 dark:text-gray-200">
+        <input autoFocus aria-label="Search console logs" placeholder="Search logs…" value={logSearch} onChange={e => setLogSearch(e.target.value)} className="min-w-0 flex-1 rounded border border-gray-600 bg-gray-800 px-2 py-1" />
         <select aria-label="Console log level" value={logLevel} onChange={e => setLogLevel(e.target.value)} className="rounded border border-gray-600 bg-gray-800 px-2 py-1">
           <option value="all">All levels</option>{['info', 'warning', 'error', 'success', 'command', 'action'].map(level => <option key={level} value={level}>{level}</option>)}
         </select>
