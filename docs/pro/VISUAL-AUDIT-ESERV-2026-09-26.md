@@ -54,3 +54,5 @@ Pełny redesign nie jest ukończony w ramach tego audytu. Powyższe wartości s�
 ## Bieżąca poprawka — weryfikacja
 
 Przeniesiono OperationalOverview do Host Status, zachowując zakres węzła i mapowanie odnośników do serwerów. Zastąpiono dwa pozycyjne selektory CSS selektorem obszaru logów. Frontend build: OK (istniejące ostrzeżenie o dużym chunku Monaco). 54 dotychczasowe testy UI oraz dwa dodatkowe testy lokalizacji i geometrii: OK. Oceniono zrzut konsoli 1440 px: usunięty pusty obszar nad logami. To poprawka funkcjonalnego układu, nie zakończony redesign.
+
+Wdrożenie FR1: frontend `ea48cdb`, obraz `gamepanel-pro-frontend:local-20260926-visual-ea48cdb`. Smoke test tras i nagłówków na origin przeszedł; helper potwierdził brak restartów pozostałych kontenerów FR1. Rollback: `/opt/gamepanel-pro/local-patches/20260926-visual-ea48cdb/rollback`. Publiczny odczyt przez Python urllib zwrócił HTTP 403; nie potwierdzono w tej sesji wyglądu zalogowanego panelu live po wdrożeniu.
