@@ -1,3 +1,5 @@
+import { CloneManager } from './CloneManager';
+import { ACTIVE_SERVER } from '../../utils/nodeContext';
 import { normalizeRehldsStartup } from '../../../backend/src/templates/rehldsStartup';
 import { GameMonitoringCard } from './GameMonitoringCard';
 import { FastDownloadCard } from './FastDownloadCard';
@@ -181,6 +183,7 @@ export function ContainerConfigTab({
   onOpenFileManagerDirectory,
   canWriteFiles,
 }: ContainerConfigTabProps) {
+  const [cloneLoaded, setCloneLoaded] = useState(false);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -787,6 +790,13 @@ export function ContainerConfigTab({
               {saving ? 'Saving…' : 'Save changes'}
             </AppButton>
           </div>
+        )}
+        {nativeSnapshot && isRoot && serverId && ACTIVE_SERVER?.runtimeId === serverId && (
+          <details className="gp-workflow gp-workflow-card" onToggle={event => { if (event.currentTarget.open) setCloneLoaded(true); }}>
+            <summary className="font-semibold">Clone server</summary>
+            <p className="gp-workflow-muted mt-2">Create an independent copy on this host or transfer it to another node.</p>
+            {cloneLoaded && <div className="mt-5"><CloneManager key={ACTIVE_SERVER.id} fleetId={ACTIVE_SERVER.id} serverId={serverId} /></div>}
+          </details>
         )}
         {canDelete && serverId && serverName && <DeleteServerSection serverId={serverId} serverName={serverName} />}
       </div>

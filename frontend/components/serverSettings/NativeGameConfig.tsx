@@ -1,5 +1,3 @@
-import { CloneManager } from './CloneManager';
-import { ACTIVE_SERVER } from '../../utils/nodeContext';
 import { RehldsManager } from './RehldsManager';
 import { useEffect, useMemo, useState } from 'react';
 import { apiClient } from '../../utils/api';
@@ -11,7 +9,7 @@ import { cs16GameConfig } from '../../../backend/src/templates/gameConfig';
 import type { GameTemplate } from '../../utils/gameTemplates';
 
 // Discover links from this server's actual files, not a LinuxGSM catalog path.
-export function NativeGameConfig({ serverId, metadata, onOpen, canRead = true, canWrite = false, isRoot = false, onDirtyChange }: {
+export function NativeGameConfig({ serverId, metadata, onOpen, canRead = true, canWrite = false, onDirtyChange }: {
   canRead?: boolean; canWrite?: boolean; isRoot?: boolean; onDirtyChange?: (dirty: boolean) => void;
   serverId?: number | null; metadata?: string | null; onOpen: (path: string, root: string) => void;
 }) {
@@ -67,7 +65,6 @@ export function NativeGameConfig({ serverId, metadata, onOpen, canRead = true, c
     <header className="gp-server-tab-header">
       <h3 className="gp-section-title">Game Config</h3>
       {!loading && !error && <span className="gp-config-file-count">{configFiles.length} {configFiles.length === 1 ? 'file' : 'files'}</span>}
-      {definition && isRoot && ACTIVE_SERVER && ACTIVE_SERVER.runtimeId === serverId && <AppButton aria-pressed={section === 'clone'} onClick={() => setSection(section === 'clone' ? 'settings' : 'clone')}>{section === 'clone' ? 'Back to configuration' : 'Clone server'}</AppButton>}
     </header>
     {definition && template && serverId && <>
       <nav className="gp-config-tabs" aria-label="Game Config sections">
@@ -79,7 +76,6 @@ export function NativeGameConfig({ serverId, metadata, onOpen, canRead = true, c
       <div hidden={section !== 'settings'}><NativeConfigEditor key={`${serverId}:${templateJson}`} serverId={serverId} definition={definition} template={template} active={section === 'settings'} canWrite={canWrite} onOpen={onOpen} onDirtyChange={setConfigDirty} /></div>
     </>}
     {definition && /\/cstrike\//i.test(definition.path) && serverId && <div hidden={section !== 'rehlds'}><RehldsManager serverId={serverId} canWrite={canWrite} onOpen={onOpen} onDirtyChange={setAddonsDirty} /></div>}
-    {definition && isRoot && ACTIVE_SERVER && ACTIVE_SERVER.runtimeId === serverId && <div hidden={section !== 'clone'}><CloneManager fleetId={ACTIVE_SERVER.id} serverId={serverId!} /></div>}
     <div hidden={Boolean(definition) && section !== 'files'}>
     {loading && <div className="gp-config-file-state" role="status"><RefreshCw size={18} className="animate-spin" />Loading configuration files…</div>}
     {error && <div className="gp-config-file-state is-error" role="alert">{error}</div>}
