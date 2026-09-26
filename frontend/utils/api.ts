@@ -946,6 +946,8 @@ class ApiClient {
     return `${API_BASE_URL}${res.data.path as string}`;
   }
 
+  async startTransfer(fleetId: string, input: unknown) { return (await this.client.post(`/api/fleet/${fleetId}/transfer`, input)).data; }
+  async readTransfer(jobId: string) { return (await this.client.get(`/api/fleet/transfers/${jobId}`)).data.job; }
   async previewClone(fleetId: string) { return (await this.client.get(`/api/fleet/${fleetId}/clone`)).data; }
   async startClone(fleetId: string, input: unknown) { return (await this.client.post(`/api/fleet/${fleetId}/clone`, input)).data; }
   async getRehldsContent(serverId: number, section: string) {

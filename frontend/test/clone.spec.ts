@@ -20,3 +20,28 @@ test('clone requires stopped source and review, retains submitted ports, and fit
   await expect(page.getByLabel('udp 0 public port')).toHaveValue('27025');
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
 });
+
+test('transfer selects another node and restores durable progress after reload', async ({ page }) => {
+  let submitted: any, job: any = null;
+  await page.route('**/api/**', async route => {
+    const url = new URL(route.request().url());
+    if (!url.pathname.startsWith('/api/')) return route.continue();
+    if (route.request().method() === 'POST') {
+      expect(url.pathname).toBe('/api/fleet/fixture/transfer');
+      submitted = route.request().postDataJSON();
+      job = { id: 'transfer-id', status: 'running', stage: 'Copying and verifying archive', targetId: 9 };
+      return route.fulfill({ status: 202, json: { job } });
+    }
+    if (url.pathname.includes('/transfers/')) return route.fulfill({ json: { job } });
+    return route.fulfill({ json: { name: 'Source', stopped: true, fingerprint: 'reviewed', ports: { tcp: [], udp: [] }, targets: [{ id: 'target-id', name: 'WAW1', location: 'Warsaw' }], changes: ['Source retained'], transfer: job } });
+  });
+  await page.goto('/test/clone.fixture.html');
+  await page.getByLabel('Destination node').selectOption('target-id');
+  await page.getByRole('button', { name: 'Review clone', exact: true }).click();
+  await page.getByRole('button', { name: 'Create backup and transfer' }).click();
+  await expect(page.getByRole('status')).toContainText('Copying and verifying archive');
+  expect(submitted.targetNode).toBe('target-id');
+  await page.reload();
+  await expect(page.getByRole('status')).toContainText('Copying and verifying archive');
+  await expect(page.getByRole('button', { name: 'Review clone', exact: true })).toBeDisabled();
+});

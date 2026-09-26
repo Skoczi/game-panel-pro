@@ -1,4 +1,4 @@
-import { serverCloneRoutes } from './serverClone.js';
+import { serverCloneRoutes, cloneImportRoutes } from './serverClone.js';
 import { rehldsRoutes } from './rehlds.js';
 import { nativeGameConfigRoutes } from './nativeGameConfig.js';
 import { gameMonitoringRoutes } from './gameMonitoring.js';
@@ -26,6 +26,7 @@ import { createNativeUpdateRoutes } from './servers/nativeUpdate.js';
 import { createAvailablePortRoutes } from './servers/availablePorts.js';
 
 const router = Router();
+router.use('/clone-import', cloneImportRoutes);
 // Check membership before reporting mutation conflicts or acquiring locks.
 router.use('/:id', (req: AuthenticatedRequest, res, next) => {
     if (!/^\d+$/.test(req.params.id)) return next();

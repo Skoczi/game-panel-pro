@@ -5,11 +5,12 @@ import { loadWithMocks } from './loadWithMocks.js';
 function fixture() {
   let creates = 0;
   const server: any = { id: 8, runtime_uuid: 'source-key', docker_container_id: 'source', provider_metadata_json: '{}', runtime_config_json: '{}', ports_json: '{}', env_json: '[]', mounts_json: '[]' };
-  const empty = Object.fromEntries(['node:fs', 'node:path', 'node:stream/promises', './nativeRestore.js', './nativeProtection.js', './nativeOperationLock.js', './portAllocationLock.js', './hostPortAvailability.js', './cpuTopology.js', './storageReserve.js', '../utils/storage.js', '../templates/nativeContract.js', '../utils/ports.js', '../providers/runtimeConfig.js', '../utils/docker/client.js', './nativeRestoreJournal.js'].map(name => [name, {}]));
+  const empty = Object.fromEntries(['node:fs', 'node:path', 'node:stream/promises', './nativeImages.js', './nativeRestore.js', './nativeProtection.js', './nativeOperationLock.js', './portAllocationLock.js', './hostPortAvailability.js', './cpuTopology.js', './storageReserve.js', '../utils/storage.js', '../templates/nativeContract.js', '../utils/ports.js', '../providers/runtimeConfig.js', '../utils/docker/client.js', './nativeRestoreJournal.js'].map(name => [name, {}]));
   const subject = loadWithMocks('../src/services/serverClone.ts', { ...empty,
     'node:crypto': crypto,
     '../database/index.js': { serverRepository: { findById: async () => server, create: async () => { creates++; return 9; } } },
     './nativeBackups.js': { nativeServerTemplate: () => ({ mounts: [{ key: 'data', containerPath: '/data' }] }) },
+    '../providers/runtimeConfig.js': { parseStoredMounts: () => [{ key: 'data', containerPath: '/data' }] },
     '../utils/docker.js': { checkContainerStatus: async () => 'running' },
   });
   return { subject, server, creates: () => creates };
