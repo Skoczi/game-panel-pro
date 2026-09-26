@@ -1,3 +1,4 @@
+import { RehldsManager } from './RehldsManager';
 import { useEffect, useMemo, useState } from 'react';
 import { apiClient } from '../../utils/api';
 import { FileText, FolderOpen, ArrowUpRight, RefreshCw } from 'lucide-react';
@@ -26,6 +27,9 @@ export function NativeGameConfig({ serverId, metadata, onOpen, canRead = true, c
     return file && /ReHLDS|Counter.Strike\s*1\.6/i.test(template?.name || '') ? cs16GameConfig(file.path, file.root) : undefined;
   }, [template]);
   const [section, setSection] = useState('settings');
+  const [configDirty, setConfigDirty] = useState(false);
+  const [addonsDirty, setAddonsDirty] = useState(false);
+  useEffect(() => { onDirtyChange?.(configDirty || addonsDirty); }, [configDirty, addonsDirty, onDirtyChange]);
   useEffect(() => {
     let cancelled = false;
     setLoading(true); setError(''); setFiles([]);
@@ -66,9 +70,11 @@ export function NativeGameConfig({ serverId, metadata, onOpen, canRead = true, c
       <nav className="gp-config-tabs" aria-label="Game Config sections">
         <button type="button" aria-pressed={section === 'settings'} onClick={() => setSection('settings')}>Settings</button>
         <button type="button" aria-pressed={section === 'files'} onClick={() => setSection('files')}>Configuration files <span>{configFiles.length}</span></button>
+        {/\/cstrike\//i.test(definition.path) && <button type="button" aria-pressed={section === 'rehlds'} onClick={() => setSection('rehlds')}>Maps and addons</button>}
       </nav>
-      <div hidden={section !== 'settings'}><NativeConfigEditor key={`${serverId}:${templateJson}`} serverId={serverId} definition={definition} template={template} active={section === 'settings'} canWrite={canWrite} onOpen={onOpen} onDirtyChange={onDirtyChange} /></div>
+      <div hidden={section !== 'settings'}><NativeConfigEditor key={`${serverId}:${templateJson}`} serverId={serverId} definition={definition} template={template} active={section === 'settings'} canWrite={canWrite} onOpen={onOpen} onDirtyChange={setConfigDirty} /></div>
     </>}
+    {definition && /\/cstrike\//i.test(definition.path) && serverId && <div hidden={section !== 'rehlds'}><RehldsManager serverId={serverId} canWrite={canWrite} onOpen={onOpen} onDirtyChange={setAddonsDirty} /></div>}
     <div hidden={Boolean(definition) && section !== 'files'}>
     {loading && <div className="gp-config-file-state" role="status"><RefreshCw size={18} className="animate-spin" />Loading configuration files…</div>}
     {error && <div className="gp-config-file-state is-error" role="alert">{error}</div>}

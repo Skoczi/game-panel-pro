@@ -105,7 +105,7 @@ export interface NativeProtectionSummary {
   warnings: string[];
 }
 export interface BackupJob {
-  id: string; kind: 'backup' | 'restore' | 'import'; status: 'running' | 'completed' | 'failed' | 'interrupted';
+  id: string; kind: 'backup' | 'restore' | 'import' | 'addon'; status: 'running' | 'completed' | 'failed' | 'interrupted';
   actor?: string;
   startedAt: string; completedAt?: string; error?: string;
   result?: { ok: boolean; exitCode: number; stdout?: string; stderr?: string };
@@ -625,6 +625,7 @@ class ApiClient {
     const url = URL.createObjectURL(response.data); const link=document.createElement('a'); link.href=url; link.download=name; link.click(); setTimeout(()=>URL.revokeObjectURL(url),1000);
   }
 
+  async readBackupJob(serverId: number, id: string): Promise<BackupJob> { return (await this.client.get(`/api/servers/${serverId}/backups/jobs/${encodeURIComponent(id)}`)).data.job; }
   async listBackupJobs(serverId: number): Promise<BackupJob[]> {
     const response = await this.client.get(`/api/servers/${serverId}/backups/jobs`);
     if (!Array.isArray(response.data.jobs)) throw new Error('Agent does not support persistent backup jobs');
@@ -943,6 +944,18 @@ class ApiClient {
     return `${API_BASE_URL}${res.data.path as string}`;
   }
 
+  async getRehldsContent(serverId: number, section: string) {
+    return (await this.client.get(`/api/servers/${serverId}/rehlds/${section}`)).data;
+  }
+  async saveRehldsContent(serverId: number, section: string, payload: { content?: string; version: string; restore?: string }) {
+    return (await this.client.put(`/api/servers/${serverId}/rehlds/${section}`, payload)).data;
+  }
+  async previewRehldsAddons(serverId: number, modules: string[]) {
+    return (await this.client.get(`/api/servers/${serverId}/rehlds/addons`, { params: { modules: modules.join(',') } })).data;
+  }
+  async installRehldsAddons(serverId: number, modules: string[], fingerprint: string) {
+    return (await this.client.post(`/api/servers/${serverId}/rehlds/addons`, { modules, fingerprint })).data;
+  }
   async getNativeGameConfig(serverId: number) {
     const response = await this.client.get(`/api/servers/${serverId}/game-config`);
     return response.data as { definition: import('../../backend/src/templates/types').GameConfigDefinition | null };

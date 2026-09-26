@@ -11,8 +11,8 @@ Autoryzacja użytkownika 26.09.2026: realizować P1/P2 i sześć kierunków rozw
 | 5. Miejsce FR1 i kontrola wzrostu cache | Wdrożone: odzysk 35,7 GB; codzienna kontrola cache |
 | 6. Alerty i niezależny monitoring | Wdrożone FR1/WAW1/WAW2 a0f7e5c; Discord dostarczony, wszystkie kontrole OK |
 | 7. Ekran Wymaga uwagi / zgodność agentów | Wdrożone 304a71e; gra, zadania, dysk, kopie i capabilities |
-| 8. Konsola, backupy, formularze, dostępność/mobile | W trakcie |
-| 9. ReHLDS: mapy, rotacje, admini i dodatki z rollbackiem | Do wykonania |
+| 8. Konsola, backupy, formularze, dostępność/mobile | Wdrożone 5a4e293; 18 testów UI, 2 backend i live OK |
+| 9. ReHLDS: mapy, rotacje, admini i dodatki z rollbackiem | Gotowe do wdrożenia; 246 testów Linux, 13 UI, instalacja i rollback na kopii gry OK |
 | 10. Sekwencje utrzymaniowe z kontrolą wyników | Do wykonania |
 | 11. Klonowanie i migracja serwerów | Do wykonania |
 | 12. API power i podpisane webhooki | Do wykonania |
@@ -39,3 +39,7 @@ Zadanie 5: FR1 odzyskał 35 693 494 272 B filesystemu przez prune nieużywanego 
 Zadanie 6: Discord przyjął test za pierwszą próbą. Niezależny monitor WAW1 sprawdza HTML/API co minutę, alarm po 3 błędach, recovery po 2 sukcesach; trwały stan zapobiega powtórzeniom. Sekret w /etc/eserv-availability-monitor.json (0600), poza repo. Kontrola operacyjna runtime: dysk 85%/95% lub poniżej 8/2 GiB, backupy 36/72 h, brak kopii krytyczny; kontrola lokalnych/zewnętrznych kopii, harmonogramu i pokwitowań backupów FR1/WAW1/WAW2. Stan i przejścia trwałe w SQLite. 242/242 testy Linux, oba buildy oraz test stanów monitora OK.
 
 Zadanie 7: status gry i ostatnich zadań bez dublowania już istniejących alertów. Widok root agreguje dane węzłów, pokazuje brakujące capabilities i dokładne buildy, linki do właściwego serwera przez trwały numer SRV. Testy 390/1280px, 13 testów backendu, buildy i HTTP/WS acceptance OK; aktualizacja FR1/WAW1/WAW2 bez restartu gry.
+
+Użytkownik dostarczył skrypt instalacji Red-Banana-Official/cstrike1.6_rehlds: ReHLDS, AMXX, ReGameDLL_CS, ReAPI, Metamod-R, Reunion. Katalog ma zawierać te opcje; nie wykonywać skryptu 1:1 (latest, chmod 777, brak rollbacku). Repo zawiera też ReVoice Plus, którego w dostarczonym skrypcie nie ma.
+
+Zadanie 9: katalog sześciu modułów ze skryptu użytkownika, oficjalne przypięte wydania z SHA-256 i zależnościami. Mapy/rotacja, administratorzy Steam ID, lista pluginów AMXX, obowiązkowe snapshoty zmian i kontrola wersji. Instalacja w zatrzymanym serwerze po zweryfikowanej kopii, journaled staging/swap, zachowanie konfiguracji i soli Reunion. Próba WAW2 2026-09-26 18:39:16 UTC: sześć modułów, start/A2S, przywrócenie oryginalnego archiwum i ponowny start/A2S; źródłowy kontener i CFG bez zmian. 246/246 testów Linux, 13/13 UI, oba buildy OK. Szczegóły: REHLDS-ADDONS.md.

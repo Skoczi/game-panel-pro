@@ -86,7 +86,7 @@ export async function createNativeBackup(server: GameServerRow & { docker_contai
         const recordWarning = await recordNativeBackup(path.join(directory, filename), live).then(() => '', () => 'Archive created and checked, but its protection record could not be saved.');
         const protection = await finishNativeBackup(server, path.join(directory, filename), live,
             recordWarning ? { ...policy, automaticRetention: false } : policy);
-        return { ok: true, exitCode: 0, stdout: `Native ${live ? 'live ' : ''}backup created: ${filename}${live ? '. Files may have changed during backup; game consistency is not guaranteed.' : ''} ${protection}`.trim(), stderr: recordWarning };
+        return { ok: true, name: filename, exitCode: 0, stdout: `Native ${live ? 'live ' : ''}backup created: ${filename}${live ? '. Files may have changed during backup; game consistency is not guaranteed.' : ''} ${protection}`.trim(), stderr: recordWarning };
     } finally {
         if (temporary) await fs.unlink(temporary).catch(() => {});
         busy.delete(server.id);
