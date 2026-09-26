@@ -17,4 +17,5 @@ RUN cd frontend && NODE_OPTIONS="--max-old-space-size=${NODE_BUILD_HEAP_MB}" npm
 FROM ${NGINX_IMAGE}
 COPY --from=build /app/frontend/dist /usr/share/nginx/html
 COPY frontend/nginx.conf /etc/nginx/conf.d/default.conf
+COPY frontend/security-headers.conf /etc/nginx/security-headers.conf
 EXPOSE 8080

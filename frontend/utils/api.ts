@@ -37,7 +37,6 @@ import {
   CATALOG_BASE_URL,
   clearCookieValue,
   getStoredToken,
-  setCookieValue,
 } from './api/runtime';
 
 export type {
@@ -205,7 +204,7 @@ class ApiClient {
     this.token = token;
     this.client.defaults.headers.common['Authorization'] = `Bearer ${token}`;
     localStorage.setItem(AUTH_TOKEN_KEY, token);
-    setCookieValue(AUTH_TOKEN_KEY, token);
+    clearCookieValue(AUTH_TOKEN_KEY);
   }
 
   clearAuth() {

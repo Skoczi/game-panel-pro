@@ -34,17 +34,17 @@ const getCookieValue = (name: string): string | null => {
   return match ? decodeURIComponent(match[1]) : null;
 };
 
-export const setCookieValue = (name: string, value: string) => {
-  if (typeof document === 'undefined') return;
-  document.cookie = `${name}=${encodeURIComponent(value)}; path=/; SameSite=Lax`;
-};
-
 export const clearCookieValue = (name: string) => {
   if (typeof document === 'undefined') return;
   document.cookie = `${name}=; Max-Age=0; path=/; SameSite=Lax`;
 };
 
 export const getStoredToken = (): string | null => {
-  return localStorage.getItem(AUTH_TOKEN_KEY) || getCookieValue(AUTH_TOKEN_KEY);
+  // Migrate cookie-only sessions once, then remove the redundant credential.
+  // HTTP/WS requests authenticate explicitly and never need this cookie.
+  const token = localStorage.getItem(AUTH_TOKEN_KEY) || getCookieValue(AUTH_TOKEN_KEY);
+  if (token) localStorage.setItem(AUTH_TOKEN_KEY, token);
+  clearCookieValue(AUTH_TOKEN_KEY);
+  return token;
 };
 import { ACTIVE_NODE, ACTIVE_SERVER } from '../nodeContext';
