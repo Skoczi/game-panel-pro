@@ -780,3 +780,18 @@ test('a full rolling console buffer counts new logs and keeps following the tail
   await expect.poll(remaining).toBeLessThan(2);
   await expect(jump).not.toBeVisible();
 });
+
+
+test('console filters stay compact and log body fills the available desktop space', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await page.goto('/test/server-page.fixture.html?longLogs#/nodes/local/servers/7/console');
+  const filters = page.locator('.gp-console-filters:visible');
+  const body = page.locator('.gp-console-body:visible');
+  await expect(filters).toBeVisible();
+  await expect.poll(async () => (await filters.boundingBox())?.height || 1000).toBeLessThan(120);
+  const filterBox = (await filters.boundingBox())!;
+  const bodyBox = (await body.boundingBox())!;
+  expect(bodyBox.y - (filterBox.y + filterBox.height)).toBeLessThan(8);
+  expect(bodyBox.height).toBeGreaterThan(250);
+  await page.screenshot({ path: 'test-results/console-layout-audit.png', fullPage: true });
+});

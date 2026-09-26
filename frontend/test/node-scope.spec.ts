@@ -155,3 +155,13 @@ test('ordinary users do not get the infrastructure selector or node registry', a
   await expect(page.getByRole('combobox', { name: /^Node scope/ })).toHaveCount(0);
   expect(requests).toBe(0);
 });
+
+
+test('operational checks belong to Host Status rather than Game Servers', async ({ page }) => {
+  await page.goto('/test/node-scope.fixture.html');
+  await expect(page.getByRole('region', { name: 'Operational health' })).toHaveCount(0);
+  await page.getByRole('button', { name: /Host Status$/ }).click();
+  await expect(page.getByRole('region', { name: 'Operational health' })).toBeVisible();
+  await page.getByRole('button', { name: /Game Servers$/ }).click();
+  await expect(page.getByRole('region', { name: 'Operational health' })).toHaveCount(0);
+});

@@ -722,7 +722,7 @@ export function ServerConsoleTabs({
         </div>
       </div>
 
-      {!isCLIConsoleActive && activeServer && <div className="flex flex-wrap items-center gap-2 border-b border-gray-700 bg-gp-surface-input p-2 text-sm text-gray-700 dark:text-gray-200">
+      {!isCLIConsoleActive && activeServer && <div className="gp-console-filters shrink-0 flex flex-wrap items-center gap-2 border-b border-gray-700 bg-gp-surface-input p-2 text-sm text-gray-700 dark:text-gray-200">
         <input aria-label="Search console logs" placeholder="Search logs…" value={logSearch} onChange={e => setLogSearch(e.target.value)} className="min-w-0 flex-1 rounded border border-gray-600 bg-gray-800 px-2 py-1" />
         <select aria-label="Console log level" value={logLevel} onChange={e => setLogLevel(e.target.value)} className="rounded border border-gray-600 bg-gray-800 px-2 py-1">
           <option value="all">All levels</option>{['info', 'warning', 'error', 'success', 'command', 'action'].map(level => <option key={level} value={level}>{level}</option>)}
