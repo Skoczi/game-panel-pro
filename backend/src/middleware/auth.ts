@@ -6,6 +6,7 @@ import { parsePositiveIntId } from '../utils/ids.js';
 import { logError } from '../utils/logger.js';
 import { PERMISSIONS } from '../permissions.js';
 import { isAgent } from '../agent/identity.js';
+import { loginSessions } from '../services/loginSessions.js';
 import type { Delegation } from '../nodes/delegation.js';
 
 export interface AuthenticatedRequest extends Request {
@@ -48,6 +49,11 @@ export async function authMiddleware(
 
     if (payload.tokenVersion !== user.token_version) {
       res.status(401).json({ error: 'Invalid token' });
+      return;
+    }
+
+    if (!isAgent() && !await (await loginSessions()).active(payload.sessionId, user.id, user.token_version)) {
+      res.status(401).json({ error: 'Session expired or revoked' });
       return;
     }
 

@@ -26,13 +26,8 @@ export const WS_URL = browserHost
 
 export const AUTH_TOKEN_KEY = 'auth_token';
 
-const getCookieValue = (name: string): string | null => {
-  if (typeof document === 'undefined') return null;
-  const match = document.cookie.match(
-    new RegExp(`(?:^|; )${name.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&')}=([^;]*)`)
-  );
-  return match ? decodeURIComponent(match[1]) : null;
-};
+let accessToken: string | null = null;
+export const setMemoryToken = (token: string | null) => { accessToken = token; };
 
 export const clearCookieValue = (name: string) => {
   if (typeof document === 'undefined') return;
@@ -40,11 +35,10 @@ export const clearCookieValue = (name: string) => {
 };
 
 export const getStoredToken = (): string | null => {
-  // Migrate cookie-only sessions once, then remove the redundant credential.
-  // HTTP/WS requests authenticate explicitly and never need this cookie.
-  const token = localStorage.getItem(AUTH_TOKEN_KEY) || getCookieValue(AUTH_TOKEN_KEY);
-  if (token) localStorage.setItem(AUTH_TOKEN_KEY, token);
+  // Legacy bearer tokens are no longer accepted as browser sessions. The only
+  // persistent credential is the server's HttpOnly refresh cookie.
+  localStorage.removeItem(AUTH_TOKEN_KEY);
   clearCookieValue(AUTH_TOKEN_KEY);
-  return token;
+  return accessToken;
 };
 import { ACTIVE_NODE, ACTIVE_SERVER } from '../nodeContext';

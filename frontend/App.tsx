@@ -547,9 +547,9 @@ function AppContent() {
     void loadCurrentUser();
   };
 
-  const handleLogout = () => {
+  const clearLoggedOutState = () => {
     nativeSubscriptions.current.clear();
-    apiClient.logout();
+    apiClient.clearAuth();
     clearAppCache();
     resetSession();
     setMobileMenuOpen(false);
@@ -572,7 +572,12 @@ function AppContent() {
     setInstallPlan([]);
   };
 
-  handleLogoutRef.current = handleLogout;
+  const handleLogout = async () => {
+    await apiClient.logout();
+    clearLoggedOutState();
+  };
+
+  handleLogoutRef.current = clearLoggedOutState;
 
   useEffect(() => {
     apiClient.setUnauthorizedHandler(() => {

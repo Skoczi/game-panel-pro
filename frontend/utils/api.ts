@@ -37,6 +37,7 @@ import {
   CATALOG_BASE_URL,
   clearCookieValue,
   getStoredToken,
+  setMemoryToken,
 } from './api/runtime';
 
 export type {
@@ -130,6 +131,9 @@ export interface FileTransferJob {
 class ApiClient {
   private client: AxiosInstance;
   private token: string | null = null;
+  private sessionRefresh: Promise<string | null> | null = null;
+  private refreshTimer: ReturnType<typeof setTimeout> | undefined;
+  private authGeneration = 0;
   private readonly realtime: RealtimeGateway;
   private unauthorizedHandler: (() => void) | null = null;
 
@@ -201,13 +205,27 @@ class ApiClient {
   }
 
   setAuthToken(token: string) {
+    this.authGeneration++;
     this.token = token;
     this.client.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-    localStorage.setItem(AUTH_TOKEN_KEY, token);
+    setMemoryToken(token);
+    localStorage.removeItem(AUTH_TOKEN_KEY);
     clearCookieValue(AUTH_TOKEN_KEY);
+    clearTimeout(this.refreshTimer);
+    this.scheduleSessionRefresh(4 * 60 * 1000);
+  }
+
+  private scheduleSessionRefresh(delay: number) {
+    const generation = this.authGeneration;
+    this.refreshTimer = setTimeout(() => { void this.restoreSession().catch(() => {
+      if (generation === this.authGeneration && this.token) this.scheduleSessionRefresh(30000);
+    }); }, delay);
   }
 
   clearAuth() {
+    this.authGeneration++;
+    clearTimeout(this.refreshTimer);
+    setMemoryToken(null);
     clearEditorDrafts();
     this.token = null;
     delete this.client.defaults.headers.common['Authorization'];
@@ -221,8 +239,8 @@ class ApiClient {
     return this.token || getStoredToken();
   }
 
-  async login(username: string, password: string) {
-    const response = await this.client.post('/api/auth/login', { username, password });
+  async login(username: string, password: string, code?: string) {
+    const response = await this.client.post('/api/auth/login', { username, password, code });
     const data = response.data as {
       success: true;
       user: {
@@ -302,7 +320,28 @@ class ApiClient {
     return data;
   }
 
-  logout() {
+  async restoreSession(): Promise<string | null> {
+    if (this.sessionRefresh) return this.sessionRefresh;
+    const generation = this.authGeneration;
+    this.sessionRefresh = (async () => {
+      const response = await fetch('/api/auth/session', { method: 'POST', credentials: 'same-origin', signal: AbortSignal.timeout(15000),
+        headers: { 'Content-Type': 'application/json', 'X-GP-Session': '1' }, body: '{}' });
+      if (generation !== this.authGeneration) return null;
+      if (response.status === 401) { this.clearAuth(); this.unauthorizedHandler?.(); return null; }
+      if (!response.ok) throw new Error('Session refresh unavailable');
+      const data = await response.json();
+      if (typeof data.token !== 'string') throw new Error('Invalid session response');
+      if (generation !== this.authGeneration) return null;
+      this.setAuthToken(data.token);
+      return data.token;
+    })().finally(() => { this.sessionRefresh = null; });
+    return this.sessionRefresh;
+  }
+
+  async logout() {
+    const response = await fetch('/api/auth/logout', { method: 'POST', credentials: 'same-origin', signal: AbortSignal.timeout(15000),
+      headers: { 'Content-Type': 'application/json', 'X-GP-Session': '1' }, body: '{}' });
+    if (!response.ok) throw new Error('Sign-out could not be confirmed. Please retry.');
     this.clearAuth();
   }
 

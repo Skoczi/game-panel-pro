@@ -8,6 +8,7 @@ import {
     streamFileDownload,
 } from '../services/fileTransfers.js';
 import { isAgent } from '../agent/identity.js';
+import { loginSessions } from '../services/loginSessions.js';
 import { serverRepository, userRepository } from '../database/index.js';
 import { userHasServerPermission } from '../middleware/auth.js';
 import { verifyToken, extractTokenFromHeader } from '../utils/auth.js';
@@ -37,6 +38,7 @@ router.get('/:token', async (req: Request, res: Response) => {
             if (
                 !user?.is_enabled ||
                 user.token_version !== claim.tokenVersion ||
+                !await (await loginSessions()).active(claim.sessionId, user.id, user.token_version) ||
                 !(await userHasServerPermission(
                     {
                         userId: user.id,

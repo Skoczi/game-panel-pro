@@ -1,6 +1,9 @@
 import { Router, type Request, type Response } from 'express';
 import { type AuthenticatedRequest, authMiddleware, requireGlobalPermission } from '../middleware/auth.js';
-import { comparePasswords, generateToken, hashPassword } from '../utils/auth.js';
+import { comparePasswords, hashPassword } from '../utils/auth.js';
+import { loginSessions } from '../services/loginSessions.js';
+import { mfaStore } from '../services/mfa.js';
+import { clearSessionCookie, issueSession, sessionAccessToken, sessionCookie, trustedSessionRequest } from '../services/sessionHttp.js';
 import { userRepository, serverMemberRepository } from '../database/index.js';
 import { asNonEmptyString } from './users.js';
 import { sendRouteError } from '../utils/routeErrors.js';
@@ -8,6 +11,7 @@ import { PERMISSIONS } from '../permissions.js';
 import { requireBodyObject } from '../utils/httpValidation.js';
 
 const router = Router();
+router.use((_req, res, next) => { res.setHeader('Cache-Control', 'no-store'); next(); });
 
 function isStrongEnoughPassword(password: string): boolean {
   return password.length >= 8;
@@ -260,14 +264,17 @@ router.post('/login', async (req: Request, res: Response) => {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
+    const mfa = await mfaStore();
+    if (await mfa.enabled(user.id)) {
+      const code = typeof body.code === 'string' ? body.code.trim() : '';
+      if (!code || !await mfa.verify(user.id, code)) {
+        noteLoginFailure(req, normalizedIdentifier);
+        return res.status(401).json({ error: code ? 'Invalid or already used authenticator/recovery code' : 'Authenticator code required', mfaRequired: true });
+      }
+    }
     clearLoginFailures(req, normalizedIdentifier);
 
-    const token = generateToken({
-      userId: user.id,
-      username: user.username,
-      isRoot: Boolean(user.is_root),
-      tokenVersion: user.token_version,
-    });
+    const token = await issueSession(req, res, user);
 
     return res.json({
       success: true,
@@ -376,14 +383,8 @@ router.post('/change-password', authMiddleware, async (req: AuthenticatedRequest
     await userRepository.updatePassword(req.user!.userId, newPasswordHash);
 
     const refreshed = await userRepository.findById(req.user!.userId);
-    const token = refreshed
-      ? generateToken({
-          userId: refreshed.id,
-          username: refreshed.username,
-          isRoot: Boolean(refreshed.is_root),
-          tokenVersion: refreshed.token_version,
-        })
-      : undefined;
+    await (await loginSessions()).revokeAll(req.user!.userId);
+    const token = refreshed ? await issueSession(req, res, refreshed) : undefined;
 
     return res.json({ success: true, message: 'Password changed successfully', token });
   } catch (error) {
@@ -392,6 +393,51 @@ router.post('/change-password', authMiddleware, async (req: AuthenticatedRequest
       fallbackMessage: 'Failed to change password',
     });
   }
+});
+
+router.post('/session', async (req, res) => {
+  res.setHeader('Cache-Control', 'no-store');
+  if (!trustedSessionRequest(req, res)) return;
+  try {
+    const session = await (await loginSessions()).fromSecret(sessionCookie(req));
+    const user = session ? await userRepository.findById(session.user_id) : undefined;
+    if (!session || !user?.is_enabled || user.token_version !== session.token_version) {
+      clearSessionCookie(res);
+      return res.status(401).json({ error: 'Session expired or revoked' });
+    }
+    return res.json({ token: sessionAccessToken(user, session) });
+  } catch {
+    return res.status(503).json({ error: 'Session service unavailable' });
+  }
+});
+
+router.post('/logout', async (req, res) => {
+  res.setHeader('Cache-Control', 'no-store');
+  if (!trustedSessionRequest(req, res)) return;
+  try {
+    const store = await loginSessions(), session = await store.fromSecret(sessionCookie(req));
+    if (session) await store.revoke(session.user_id, session.id);
+    clearSessionCookie(res);
+    return res.json({ success: true });
+  } catch {
+    return res.status(503).json({ error: 'Sign-out could not be confirmed. Please retry.' });
+  }
+});
+
+router.get('/sessions', authMiddleware, async (req: AuthenticatedRequest, res) => {
+  res.setHeader('Cache-Control', 'no-store');
+  try {
+    const rows = await (await loginSessions()).list(req.user!.userId);
+    return res.json({ sessions: rows.map(row => ({ id: row.id, label: row.label,
+      createdAt: row.created_at, expiresAt: row.expires_at, current: row.id === req.user!.sessionId })) });
+  } catch { return res.status(503).json({ error: 'Unable to list sessions' }); }
+});
+router.delete('/sessions/:id', authMiddleware, async (req: AuthenticatedRequest, res) => {
+  try {
+    await (await loginSessions()).revoke(req.user!.userId, req.params.id);
+    if (req.params.id === req.user!.sessionId) clearSessionCookie(res);
+    return res.json({ success: true });
+  } catch { return res.status(503).json({ error: 'Unable to revoke session' }); }
 });
 
 export default router;

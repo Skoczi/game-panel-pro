@@ -19,6 +19,7 @@ import {
 } from '../src/ui/components';
 import { PanelUpdateModal } from './PanelUpdateModal';
 import { ApiTokensModal } from './ApiTokensModal';
+import { AccountSecurityModal } from './AccountSecurityModal';
 import { apiClient, type PanelUpdateCheck } from '../utils/api';
 import { useBodyScrollLock } from '../src/ui/utils/useBodyScrollLock';
 
@@ -75,6 +76,7 @@ function LegalList({ items }: { items: string[] }) {
 }
 
 interface UserMenuRowProps {
+  onSecurity: () => void;
   onApiTokens: () => void;
   currentUserInitial: string;
   currentUserLabel: string;
@@ -85,6 +87,7 @@ interface UserMenuRowProps {
 }
 
 function UserMenuRow({
+  onSecurity,
   onApiTokens,
   currentUserInitial,
   currentUserLabel,
@@ -160,6 +163,10 @@ function UserMenuRow({
               <KeyRound className="h-4 w-4 text-[var(--color-cyan-400)]" />
               Change password
             </button>
+            <button type="button" onClick={() => { setOpen(false); onSecurity(); }}
+              className={`flex w-full items-center gap-2.5 px-3 py-2.5 text-sm font-medium transition-colors ${isDark ? 'text-[#eef4fa] hover:bg-[#1c2e47]' : 'text-gray-800 hover:bg-gray-100'}`}>
+              <KeyRound className="h-4 w-4 text-[var(--color-cyan-400)]" />Account security
+            </button>
             <button type="button" onClick={() => { setOpen(false); onApiTokens(); }}
               className={`flex w-full items-center gap-2.5 px-3 py-2.5 text-sm font-medium transition-colors ${isDark ? 'text-[#eef4fa] hover:bg-[#1c2e47]' : 'text-gray-800 hover:bg-gray-100'}`}>
               <KeyRound className="h-4 w-4 text-[var(--color-cyan-400)]" />API tokens
@@ -195,6 +202,7 @@ export function Sidebar({
 }: SidebarProps) {
   const [isLegalModalOpen, setIsLegalModalOpen] = useState(false);
   const [isApiTokensOpen, setIsApiTokensOpen] = useState(false);
+  const [isSecurityOpen, setIsSecurityOpen] = useState(false);
   const [isEasterEggOpen, setIsEasterEggOpen] = useState(false);
   useBodyScrollLock(isLegalModalOpen || isEasterEggOpen);
   const [logoClickCount, setLogoClickCount] = useState(0);
@@ -318,6 +326,7 @@ export function Sidebar({
         <div className="border-y bg-transparent px-2 py-2.5 border-white/10">
           <UserMenuRow
             onApiTokens={() => setIsApiTokensOpen(true)}
+            onSecurity={() => setIsSecurityOpen(true)}
             currentUserInitial={currentUserInitial}
             currentUserLabel={currentUserLabel}
             isDark={isDark}
@@ -808,6 +817,7 @@ export function Sidebar({
         updateInfo={updateInfo}
       />
       {isApiTokensOpen && <ApiTokensModal key={currentUser?.username} onClose={() => setIsApiTokensOpen(false)} />}
+      {isSecurityOpen && <AccountSecurityModal key={currentUser?.username} onClose={() => setIsSecurityOpen(false)} />}
 
       <AppModal open={isEasterEggOpen} onOpenChange={setIsEasterEggOpen}>
         <AppModalContent

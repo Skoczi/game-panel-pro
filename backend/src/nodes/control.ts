@@ -9,6 +9,7 @@ import { getConfig } from '../config.js';
 import { authMiddleware, rootOnly, type AuthenticatedRequest } from '../middleware/auth.js';
 import { userRepository } from '../database/index.js';
 import { verifyToken } from '../utils/auth.js';
+import { loginSessions } from '../services/loginSessions.js';
 import { NodeStore, NodeRemovalError } from './store.js';
 import { NODE_ID, RequestVerifier, runtimePath, signNodeRequest, secret } from './protocol.js';
 import { nodeTls, proxyRuntime } from './transport.js';
@@ -307,7 +308,8 @@ async function activeUser(token: string) {
         !user ||
         payload.delegation ||
         !user.is_enabled ||
-        user.token_version !== payload.tokenVersion
+        user.token_version !== payload.tokenVersion ||
+        !await (await loginSessions()).active(payload.sessionId, user.id, user.token_version)
     )
         throw new Error('Access denied');
     return user;

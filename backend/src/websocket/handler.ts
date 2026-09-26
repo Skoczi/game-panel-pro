@@ -25,6 +25,7 @@ import { logError } from '../utils/logger.js';
 import { PERMISSIONS } from '../permissions.js';
 import { serverPermissions } from '../middleware/auth.js';
 import { isAgent } from '../agent/identity.js';
+import { loginSessions } from '../services/loginSessions.js';
 import { serverDelegation } from '../fleet/control.js';
 
 const WS_AUTH_TIMEOUT_MS = 3_000;
@@ -60,6 +61,11 @@ async function ensureWsUserEnabled(ws: AuthenticatedWebSocket): Promise<boolean>
     return true;
   }
   const user = await userRepository.findById(ws.userId);
+  if (!isAgent() && (!user || !ws.tokenExpiresAt || ws.tokenExpiresAt <= now ||
+      !await (await loginSessions()).active(ws.sessionId, ws.userId, user.token_version))) {
+    ws.close(1008, 'Session expired or revoked');
+    return false;
+  }
   if (!user) {
     sendSafe(ws, { type: 'error', error: 'Unauthorized' });
     ws.close(1008, 'Unauthorized');

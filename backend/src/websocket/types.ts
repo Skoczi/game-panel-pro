@@ -36,6 +36,8 @@ export interface AuthenticatedWebSocket extends WebSocket {
     isAlive?: boolean;
     isRoot?: boolean;
     tokenVersion?: number;
+    sessionId?: string;
+    tokenExpiresAt?: number;
     delegation?: Delegation;
     selectedServer?: string;
     runtimeScope?: number;

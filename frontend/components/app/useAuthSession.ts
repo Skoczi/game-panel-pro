@@ -174,7 +174,7 @@ export function useAuthSession() {
 
     const verifyToken = async () => {
       try {
-        const token = apiClient.getAuthToken();
+        const token = apiClient.getAuthToken() || await apiClient.restoreSession();
         if (!token) {
           if (!cancelled) {
             setIsAuthenticated(false);

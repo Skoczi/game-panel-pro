@@ -7,6 +7,7 @@ import { loadWithMocks } from './loadWithMocks.js';
 
 test('settings routes require root; appearance exposes no allocations', async () => {
     const { rootOnly } = loadWithMocks('../src/middleware/auth.ts', {
+        '../services/loginSessions.js': {},
         '../agent/identity.js': { isAgent: () => false },
         '../utils/auth.js': {},
         '../database/index.js': {},

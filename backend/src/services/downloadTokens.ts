@@ -4,6 +4,7 @@ export interface DownloadTokenData {
     serverId: number;
     userId: number;
     tokenVersion: number;
+    sessionId?: string;
     runtimeKey: string;
     root: string;
     path: string;

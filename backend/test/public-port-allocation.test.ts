@@ -58,7 +58,8 @@ test('allocation mutation lock rejects overlapping writes and releases idempoten
     lock.enterPortAllocationMutation()();
 });
 test('available-port route is administrator-only and returns uncached runtime inventory', async () => {
-    const { rootOnly } = loadWithMocks('../src/middleware/auth.ts', { '../agent/identity.js': {}, '../utils/auth.js': {}, '../database/index.js': {}, '../utils/ids.js': {}, '../utils/logger.js': {}, '../permissions.js': {} });
+    const { rootOnly } = loadWithMocks('../src/middleware/auth.ts', {
+        '../services/loginSessions.js': {}, '../agent/identity.js': {}, '../utils/auth.js': {}, '../database/index.js': {}, '../utils/ids.js': {}, '../utils/logger.js': {}, '../permissions.js': {} });
     const module = loadWithMocks('../src/routes/servers/availablePorts.ts', {
         '../../database/index.js': {}, '../../permissions.js': { PERMISSIONS: { server: { edit: 'server.edit' } } },
         '../../providers/runtimeConfig.js': {}, '../../services/hostPortAvailability.js': {}, '../../services/globalSettings.js': {},

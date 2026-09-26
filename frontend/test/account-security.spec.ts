@@ -1,0 +1,24 @@
+import { test, expect } from '@playwright/test';
+for (const width of [390, 1280]) test(`MFA confirmation and recovery acknowledgement at ${width}px`, async ({ page }) => {
+  await page.setViewportSize({ width, height: 850 });
+  let enabled = false;
+  await page.route('**/api/auth/security', route => route.fulfill({ json: { mfaEnabled: enabled } }));
+  await page.route('**/api/auth/sessions', route => route.fulfill({ json: { sessions: [{ id: 'fixture', label: 'Test browser', current: true, createdAt: Date.now(), expiresAt: Date.now() + 43200000 }] } }));
+  await page.route('**/api/auth/security/begin', route => route.fulfill({ json: { secret: 'JBSWY3DPEHPK3PXP' } }));
+  await page.route('**/api/auth/security/confirm', route => { enabled = true; return route.fulfill({ json: { token: 'fixture-token', recoveryCodes: ['fixture-recovery-code'] } }); });
+  await page.goto('/test/account-security.fixture.html');
+  await expect(page.getByText('Test browser')).toBeVisible();
+  await page.getByLabel('Current password').fill('fixture-password');
+  await page.getByRole('button', { name: 'Set up authenticator' }).press('Enter');
+  await expect(page.getByText('JBSWY3DPEHPK3PXP')).toBeVisible();
+  await page.getByLabel('Authenticator or recovery code').fill('123456');
+  await page.getByRole('button', { name: 'Confirm authenticator' }).press('Enter');
+  await expect(page.getByText('fixture-recovery-code')).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(page.getByRole('heading', { name: 'Account security' })).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  await page.screenshot({ path: `test-results/account-security-${width}.png`, fullPage: true });
+  await page.getByRole('button', { name: 'I saved these codes' }).press('Enter');
+  await page.keyboard.press('Escape');
+  await expect(page.getByText('Closed', { exact: true })).toBeVisible();
+});

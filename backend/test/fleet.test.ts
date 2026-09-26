@@ -270,6 +270,7 @@ test('delegation is single-server, excludes global permissions and is bound to p
 test('delegated HTTP permissions never fall back to an agent-local user with the same numeric ID', async () => {
     let localReads = 0;
     const auth = loadWithMocks('../src/middleware/auth.ts', {
+        '../services/loginSessions.js': {},
         '../agent/identity.js': { isAgent: () => true },
         '../utils/auth.js': {},
         '../utils/ids.js': { parsePositiveIntId: Number },

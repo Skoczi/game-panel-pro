@@ -11,6 +11,7 @@ import { publicApiErrorHandler } from './routes/publicApi.js';
 import { requestContext } from './middleware/requestContext.js';
 import { recoverRestoreTransactions } from './services/nativeRestoreRecovery.js';
 import { getConfig } from './config.js';
+import { loginSessions } from './services/loginSessions.js';
 import { initializeTemplates, templateRoutes } from './templates/routes.js';
 import { recoverNativeOperations } from './services/nativeRuntime.js';
 import cors, { type CorsOptions } from 'cors';
@@ -33,6 +34,7 @@ import { ensureRootUserExists } from './database/bootstrap.js';
 import { initializeGlobalSettings } from './services/globalSettings.js';
 import { authMiddleware, errorHandler } from './middleware/auth.js';
 import authRoutes from './routes/auth.js';
+import accountSecurityRoutes from './routes/accountSecurity.js';
 import userRoutes from './routes/users.js';
 import serverMembersRoutes from './routes/serverMembers.js';
 import serverRoutes from './routes/servers.js';
@@ -118,7 +120,7 @@ const corsOptions: CorsOptions = {
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'Idempotency-Key'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'Idempotency-Key', 'X-GP-Session'],
   exposedHeaders: ['ETag', 'X-Request-ID', 'Retry-After', 'Location', 'Idempotency-Replayed'],
 };
 
@@ -157,6 +159,7 @@ if (isAgent())
 
 // /api/auth
 app.use('/api/auth', authRoutes);
+if (!isAgent()) app.use('/api/auth/security', accountSecurityRoutes);
 if (!isAgent()) {
   app.use('/api/v1', publicApiRoutes);
   app.use('/api/v1', publicApiErrorHandler);
@@ -221,6 +224,7 @@ async function startServer(): Promise<void> {
       await initializeTemplates();
       await initializeFleet();
       await initializePublicApi();
+      await loginSessions();
     }
     logInfo('APP', 'Database initialized');
 

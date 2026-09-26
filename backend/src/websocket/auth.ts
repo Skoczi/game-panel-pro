@@ -16,6 +16,8 @@ export function authenticateFromRequest(ws: AuthenticatedWebSocket, req: Incomin
         ws.userId = user.userId;
         ws.isRoot = Boolean(user.isRoot);
         ws.tokenVersion = user.tokenVersion;
+        ws.sessionId = user.sessionId;
+        ws.tokenExpiresAt = user.exp ? user.exp * 1000 : undefined;
         ws.delegation = user.delegation;
         return true;
     } catch {
@@ -35,6 +37,8 @@ export function authenticateFromMessage(ws: AuthenticatedWebSocket, message: WSM
         ws.userId = user.userId;
         ws.isRoot = Boolean(user.isRoot);
         ws.tokenVersion = user.tokenVersion;
+        ws.sessionId = user.sessionId;
+        ws.tokenExpiresAt = user.exp ? user.exp * 1000 : undefined;
         ws.delegation = user.delegation;
         return true;
     } catch {
