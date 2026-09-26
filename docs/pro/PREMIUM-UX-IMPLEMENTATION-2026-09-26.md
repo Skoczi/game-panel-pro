@@ -37,3 +37,7 @@ Testy przeglądarkowe używają Chromium i izolowanych fixture danych. Nie wykon
 ## Wdrożenie FR1
 
 Frontend live: `2a8e8e0ff8c243dec381f3e1a39ec71a5df7b704`, obraz `gamepanel-pro-frontend:local-20260926-premium-2a8e8e0`. Sprawdzono nginx, trasy aplikacji i nagłówki na origin. Helper potwierdził niezmienione pozostałe kontenery FR1. Rollback: `/opt/gamepanel-pro/local-patches/20260926-premium-2a8e8e0/rollback`. Publiczna strona eserv.pl otwiera poprawny formularz logowania w przeglądarce; brak aktywnej sesji uniemożliwił odbiór zalogowanego panelu live.
+
+## Korekta bocznych informacji konsoli
+
+Zgłoszenie użytkownika ujawniło nakładanie ikon po zmniejszeniu paddingu kart. Usunięto pozycjonowanie absolutne ikon i wprowadzono osobną kolumnę grid. Wartości i etykiety zajmują drugą kolumnę, adres z przyciskiem kopiowania może się zawijać. Server status i Game response współdzielą kartę; monitoring jest renderowany tylko dla `monitoring.enabled`, z zachowaniem odróżnienia stanu kontenera i gry. Dodano test braku kolizji ikon z zawartością oraz jednej karty statusu przy 390 i 1440 px, z monitoringiem i bez.

@@ -378,8 +378,8 @@ export function ServerManagementPage({
                     <Activity className="gp-stat-icon" size={19} aria-hidden="true" />
                     <small>Server status <span className="gp-runtime-id">{ACTIVE_SERVER?.displayId}</span></small>
                     <span className={`gp-server-status ${status.className}`}><span className="gp-runtime-dot" aria-hidden="true" />{status.label}</span>
+                    {server.monitoring?.enabled && <div className="gp-server-game-response" aria-label="Game response"><GameMonitoringStatus summary={server.monitoring} runtimeStatus={server.status} detailed /></div>}
                   </div>
-                  {server.monitoring?.enabled && <div className="gp-server-stat"><small>Game response</small><GameMonitoringStatus summary={server.monitoring} runtimeStatus={server.status} detailed /></div>}
                   <div className="gp-server-stat" title={uptime === null ? 'Uptime unavailable from this runtime' : 'Time since the server container started'}>
                     <Clock className="gp-stat-icon" size={19} aria-hidden="true" />
                     <small>Uptime</small>
@@ -388,7 +388,7 @@ export function ServerManagementPage({
                   <div className="gp-server-stat">
                     <Globe className="gp-stat-icon" size={19} aria-hidden="true" />
                     <small>Connection address</small>
-                    <strong className="gp-server-address">{address}</strong>
+                    <div className="gp-server-address-row"><strong className="gp-server-address">{address}</strong>
                     {server.port && (
                       <button
                         onClick={() => {
@@ -401,7 +401,7 @@ export function ServerManagementPage({
                       >
                         <Copy size={16} />
                       </button>
-                    )}
+                    )}</div>
                   </div>
                   <div className="gp-server-stat">
                     <Cpu className="gp-stat-icon" size={19} aria-hidden="true" />

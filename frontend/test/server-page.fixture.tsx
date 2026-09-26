@@ -64,6 +64,7 @@ function Fixture() {
         provider: 'external',
         providerMetadataJson: metadata,
         status: new URLSearchParams(location.search).get('status') || 'running',
+        monitoring: location.search.includes('monitoring') ? { enabled: true, state: 'online', checkedAt: new Date().toISOString(), staleAfterSeconds: 60, latencyMs: 21, failures: 0, info: { map: 'cs_militia', players: 0, maxPlayers: 16 } } : undefined,
         connectionHost: '51.75.61.237',
         port: 27050,
         resources: { cpuCores: 0.12, cpuLimitCores: 2, cpuLimitPercent: 6, memoryBytes: 312 * 1024 ** 2, memoryLimitBytes: 1024 ** 3, memoryLimitPercent: 30.5, diskBytes: 1024 ** 3, nodeFreeBytes: 100 * 1024 ** 3 },

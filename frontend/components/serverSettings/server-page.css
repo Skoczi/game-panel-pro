@@ -420,22 +420,32 @@
   align-content: start;
 }
 .gp-server-stats .gp-server-stat {
-  position: relative;
-  padding: 18px 16px 18px 56px;
+  display: grid;
+  grid-template-columns: 20px minmax(0, 1fr);
+  column-gap: 12px;
+  row-gap: 6px;
+  align-content: center;
+  padding: 14px 16px;
   border-radius: 12px;
   min-height: 86px;
 }
+.gp-server-stats .gp-server-stat > :not(.gp-stat-icon) { grid-column: 2; min-width: 0; }
 .gp-server-stats .gp-stat-icon {
-  position: absolute;
-  left: 18px;
-  top: 22px;
+  position: static;
+  grid-column: 1;
+  grid-row: 1 / span 2;
+  align-self: start;
+  margin-top: 2px;
   color: var(--gp-accent);
 }
-.gp-server-stats .gp-server-stat small {
+.gp-server-stats .gp-server-stat > small {
   font-size: 12px;
-  margin-bottom: 8px;
+  margin: 0;
   color: var(--gp-muted);
 }
+.gp-server-address-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.gp-server-game-response { padding-top: 12px; margin-top: 6px; border-top: 1px solid var(--gp-border); }
+.gp-server-game-response .gp-game-monitor { margin-top: 0; }
 .gp-server-stats .gp-server-stat strong {
   color: var(--gp-foreground);
   font-size: 18px;

@@ -795,3 +795,24 @@ test('console filters stay compact and log body fills the available desktop spac
   expect(bodyBox.height).toBeGreaterThan(250);
   await page.screenshot({ path: 'test-results/console-layout-audit.png', fullPage: true });
 });
+
+
+for (const width of [390, 1440]) for (const monitoring of [false, true]) test(`console detail icons stay separate and status shares game response ${width} ${monitoring}`, async ({ page }) => {
+  await page.setViewportSize({width,height:1000});
+  await page.goto(`/test/server-page.fixture.html${monitoring ? '?monitoring' : ''}#/nodes/local/servers/7/console`);
+  const cards = page.locator('.gp-server-stats .gp-server-stat');
+  await expect(cards).toHaveCount(7);
+  const status = page.locator('.gp-server-runtime-status');
+  await expect(status).toContainText('Running');
+  await expect(status.locator('.gp-game-monitor')).toHaveCount(monitoring ? 1 : 0);
+  if (monitoring) { await expect(status).toContainText('Game responding'); await expect(status).toContainText('cs_militia'); }
+  const overlaps = await cards.evaluateAll(cards => cards.flatMap(card => {
+    const icon = card.querySelector('.gp-stat-icon')!.getBoundingClientRect();
+    return [...card.children].filter(child => !child.classList.contains('gp-stat-icon')).map(child => {
+      const text = child.getBoundingClientRect();
+      return icon.right > text.left;
+    });
+  }));
+  expect(overlaps.some(Boolean)).toBe(false);
+  await page.locator('.gp-server-stats').screenshot({path:`test-results/console-details-${width}-${monitoring}.png`});
+});
