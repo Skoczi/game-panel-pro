@@ -6,8 +6,8 @@ Autoryzacja użytkownika 26.09.2026: realizować P1/P2 i sześć kierunków rozw
 |---|---|
 | 1. Nagłówki HTML i usunięcie cookie z tokenem | Wdrożone FR1: 1e2a36c, build + 2 testy UI + smoke nginx/root/SPA/404 + live OK; script CSP Report-Only |
 | 2. Odwoływalne sesje, bezpieczne uwierzytelnianie i MFA | Wdrożone FR1: 7bb0d24, 236 testów Linux + 5 UI + HTTP/WS acceptance + live login OK |
-| 3. Ograniczone limitery logowania i API | W toku |
-| 4. Agenty 2.0.59+, backupy, retencja i próba odzyskania | Do wykonania; miejsce zewnętrzne do ustalenia na podstawie infrastruktury |
+| 3. Ograniczone limitery logowania i API | Wdrożone FR1: 955baeb; testy limitów i HTTP/WS OK |
+| 4. Agenty 2.0.59+, backupy, retencja i próba odzyskania | Wdrożone; odzyskanie gry z NFS i bazy panelu sprawdzone |
 | 5. Miejsce FR1 i kontrola wzrostu cache | Do wykonania |
 | 6. Alerty i niezależny monitoring | Do wykonania; odbiorca do potwierdzenia jeśli brak wcześniejszego ustalenia |
 | 7. Ekran Wymaga uwagi / zgodność agentów | Do wykonania |
@@ -27,3 +27,9 @@ Zadanie 2: JWT 15 min tylko w pamięci, sesja 12 h w HttpOnly/Secure/SameSite=St
 Rollback zadania 2: `/opt/gamepanel-pro/local-patches/20260926-sessions-7bb0d24/rollback`. Kopia SQLite wykonana online i sprawdzona integrity_check. Baza nie jest automatycznie cofana; przed ręcznym rollbackiem po aktywacji MFA trzeba uwzględnić, że poprzedni kod nie egzekwował MFA.
 
 Zadanie 3: logowanie ma maks. 10 tys. wpisów na mapę, usuwa wygasłe wpisy i rezerwuje próbę przed bcrypt. Domyślnie 10 prób/login i 100 prób/IP na 15 min, blokada 15 min; poprawne logowanie czyści tylko licznik loginu. API: 240 błędnych uwierzytelnień/min na źródło i niezależne 120/min/poprawny token. Źródło przez Express req.ip zgodnie z trust proxy; FR1 nadpisuje X-Forwarded-For w nginx, backend jest na localhost. Liczniki są lokalne dla procesu, resetują się przy restarcie. 4 testy związanych ścieżek + build OK.
+
+Zadanie 4: oba agenty 2.0.59/32f7753; health i brak restartów innych kontenerów potwierdzone. WAW2 ma OVH NFS `/mnt/ovh-backup/gamepanel-backups`; kopie gry 7 lokalnych/14 zewnętrznych, backup codziennie 03:15 UTC (zadanie 4 w runtime 8). Pierwsza kopia zewnętrzna zakończona i sprawdzona SHA-256. Znaleziono i poprawiono odrzucanie 32-znakowych runtime ID w externalBackupStore; 4 testy Linux OK. Próba odtworzenia z OVH o 17:25:35 UTC: import ze sprawdzeniem sumy, produkcyjny restore, start izolowanego kontenera, A2S de_dust/0/16; źródłowy kontener i server.cfg bez zmian. Testowy kontener i dane po udanej próbie usunięte, raport pozostawiony w `/srv/gamepanel-agent/restore-tests`.
+
+Doprecyzowanie użytkownika: QR dla iPhone wdrożony na FR1 (frontend 136b338). QR generowany lokalnie, otpauth link, login/issuer, ręczny klucz jako fallback. 5 testów UI i build OK; npm audit prod 0. Fizyczny iPhone nie był użyty do odbioru.
+
+Backup control-plane: codziennie 03:00 UTC (+ do 120 s), systemd timer na WAW2; 14 ostatnich zweryfikowanych archiwów na host, katalog NFS `gamepanel-backups/control-plane`. Źródła FR1/WAW1/WAW2: SQLite backup API + integrity_check, compose/env/release, identity agentów, dokładne obrazy Docker; FR1 także nginx vhost. Klucz odbiorcy na WAW2 ograniczony na FR1/WAW1 przez from/restrict/forced command do eksportu kopii. Pierwsze 3 archiwa sprawdzone (125/78/78 MB). Próba odzyskania FR1: obrazy załadowane, kopia DB/konfiguracji, odszyfrowanie obu kluczy agentów i rzeczywiste logowanie HTTP do testowego konta wyłącznie w kopii — OK. Pełny bootstrap panelu wymaga Docker socket; test uruchamiał moduł auth bez Dockera i sieci, nie testował przełączenia publicznego ruchu ani połączenia odtworzonego panelu z prawdziwymi agentami. Certyfikaty TLS i pliki gier nie wchodzą do kopii control-plane; gra ma odrębny backup NFS.
