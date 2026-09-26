@@ -1,3 +1,4 @@
+import type { BackupVerification } from './backupPresentation';
 import type { GameMonitoringConfig, GameMonitoringSettings } from '../../backend/src/templates/types';
 import type { FastDownloadStatus } from '../components/serverSettings/FastDownloadCard';
 import { nodesRequest } from './nodesApi';
@@ -573,6 +574,7 @@ class ApiClient {
     return response.data as {
       path: string;
       entries: Array<{
+        verification?: BackupVerification;
         name: string;
         type: 'file' | 'dir' | 'symlink';
         size: number;

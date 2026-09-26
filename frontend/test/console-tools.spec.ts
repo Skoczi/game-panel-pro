@@ -1,0 +1,29 @@
+import { test, expect } from '@playwright/test';
+import { readFile } from 'node:fs/promises';
+import { backupLabel, backupAge } from '../utils/backupPresentation';
+test('backup labels preserve custom names and distinguish generated names', () => {
+  const tail = '2026-09-26T17-22-35-310Z-359f2d17-422e-4025-8053-8a866c4e85ae.tar.gz';
+  expect(backupLabel(`native-live-Before update-${tail}`)).toBe('Before update');
+  expect(backupLabel(`native-live-${tail}`)).toBe('Live backup');
+  expect(backupLabel('custom.tar.gz')).toBe('custom.tar.gz');
+  expect(backupAge('bad')).toBe('Age unavailable');
+});
+for (const width of [390, 1280]) test(`console filters preserve raw buffer at ${width}px`, async ({ page }) => {
+  await page.setViewportSize({ width, height: 900 });
+  await page.goto('/test/console-tools.fixture.html');
+  await expect(page.getByText('Repeated warning', { exact: true })).toHaveCount(2);
+  await page.getByLabel('Group repeats').check();
+  await expect(page.getByText('Repeated warning', { exact: true })).toHaveCount(1);
+  await expect(page.getByLabel('2 repeats')).toBeVisible();
+  await page.getByLabel('Search console logs').fill('FAILED');
+  await expect(page.getByText('Failed to load map', { exact: true })).toBeVisible();
+  await page.getByLabel('Console log level').selectOption('warning');
+  await expect(page.getByText('No logs match these filters.')).toBeVisible();
+  const [download] = await Promise.all([page.waitForEvent('download'), page.getByRole('button', { name: 'Download raw buffer' }).click()]);
+  const raw = await readFile((await download.path())!, 'utf8');
+  expect(raw.match(/Repeated warning/g)?.length).toBe(2);
+  expect(raw).toContain('SteamAPI_IsSteamRunning');
+  expect(raw).toContain('Server started');
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  await page.screenshot({ path: `test-results/console-tools-${width}.png`, fullPage: true });
+});

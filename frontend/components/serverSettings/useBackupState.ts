@@ -42,6 +42,7 @@ export function useBackupState({ serverId, isActive, isLinuxGSMGame }: UseBackup
           path: joinPath(result.path || '/', entry.name),
           size: entry.size,
           modifiedAt: entry.modifiedAt,
+          verification: entry.verification,
         }))
         .sort((a, b) => new Date(b.modifiedAt).getTime() - new Date(a.modifiedAt).getTime());
       setBackupsPath(result.path || '/');

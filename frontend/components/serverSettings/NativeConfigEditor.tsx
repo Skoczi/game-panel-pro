@@ -97,7 +97,7 @@ export function NativeConfigEditor({ serverId, definition, template, active, can
   return <div className="gp-config-editor">
     <div className="gp-config-overview">
       <span className="gp-config-overview-icon"><SlidersHorizontal size={24} /></span>
-      <div><h4>Server configuration</h4><p>Name, match rules and player access.</p><code>{snapshot?.path || definition.path}</code></div>
+      <div><h4>Server configuration</h4><code>{snapshot?.path || definition.path}</code></div>
       <span className="gp-config-profile-badge">{fields.length} settings</span>
     </div>
     <div className="gp-config-editor-toolbar">

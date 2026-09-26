@@ -33,8 +33,8 @@
 .gp-config-tabs button { padding:10px 16px; border-radius:8px; color:var(--config-muted); font-size:13px; font-weight:600; }
 .gp-config-tabs button[aria-pressed=true] { color:var(--config-accent); background:color-mix(in srgb,var(--config-accent) 10%,transparent); }
 .gp-config-tabs span { font-size:11px; margin-left:8px; opacity:.7; }
-.gp-config-overview { display:flex; align-items:center; gap:18px; padding:24px; border:1px solid var(--config-border); border-radius:16px; background:linear-gradient(115deg,color-mix(in srgb,var(--config-accent) 7%,var(--config-card)),var(--config-card) 75%); }
-.gp-config-overview-icon { display:grid; place-items:center; width:52px; height:52px; flex-shrink:0; border-radius:14px; background:color-mix(in srgb,var(--config-accent) 10%,transparent); color:var(--config-accent); }
+.gp-config-overview { display:flex; align-items:center; gap:12px; padding:12px; border:1px solid var(--config-border); border-radius:16px; background:linear-gradient(115deg,color-mix(in srgb,var(--config-accent) 7%,var(--config-card)),var(--config-card) 75%); }
+.gp-config-overview-icon { display:grid; place-items:center; width:36px; height:36px; flex-shrink:0; border-radius:14px; background:color-mix(in srgb,var(--config-accent) 10%,transparent); color:var(--config-accent); }
 .gp-config-overview > div { flex:1; min-width:0; }
 .gp-config-overview h4 { margin:0; font-size:19px; font-weight:600; letter-spacing:-.02em; }
 .gp-config-overview p { color:var(--config-muted); font-size:13px; margin:5px 0 10px; }
@@ -88,7 +88,7 @@
 @media(max-width:700px) {
   .gp-config-field input,.gp-config-field select { font-size:16px; min-height:44px; }
   .gp-config-section-grid { grid-template-columns:1fr; }
-  .gp-config-overview { padding:18px; gap:12px; flex-wrap:wrap; }
+  .gp-config-overview { padding:10px; gap:12px; flex-wrap:wrap; }
   .gp-config-overview h4 { font-size:17px; }
   .gp-config-profile-badge { display:none; }
   .gp-config-editor-toolbar > span { line-height:1.5; }

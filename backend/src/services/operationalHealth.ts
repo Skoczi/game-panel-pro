@@ -51,18 +51,18 @@ export async function collectOperationalHealth(): Promise<OperationalCheck[]> {
         const record = await readNativeBackupRecord(path.join(directory, entry.name));
         if (record) latest = Math.max(latest || 0, Date.parse(record.createdAt));
       }
-      add({ ...base, key: `backup:${server.id}`, title: `${server.name} Â· local backup`, status: backupAgeHealth(latest, now), detail: ageDetail(latest, now) });
+      add({ ...base, key: `backup:${server.id}`, title: `${server.name} · local backup`, status: backupAgeHealth(latest, now), detail: ageDetail(latest, now) });
       const tasks = await scheduledTaskRepository.listForServer(server.id);
       const enabled = tasks.some(task => task.type === 'backup' && task.enabled);
-      add({ ...base, key: `schedule:${server.id}`, title: `${server.name} Â· backup schedule`, status: enabled ? 'ok' : 'warning', detail: enabled ? 'Automatic backup schedule enabled.' : 'No enabled backup schedule.' });
+      add({ ...base, key: `schedule:${server.id}`, title: `${server.name} · backup schedule`, status: enabled ? 'ok' : 'warning', detail: enabled ? 'Automatic backup schedule enabled.' : 'No enabled backup schedule.' });
       const policy = await readNativeBackupPolicy(server.id);
       if (policy.externalCopy) {
         try {
           const copies = await listExternalBackups(server), latest = copies.length ? Math.max(...copies.map(copy => Date.parse(copy.createdAt))) : null;
-          add({ ...base, key: `external:${server.id}`, title: `${server.name} Â· external backup`, status: backupAgeHealth(latest, now), detail: ageDetail(latest, now) });
-        } catch { add({ ...base, key: `external:${server.id}`, title: `${server.name} Â· external backup`, status: 'unknown', detail: 'External backup storage could not be inspected.' }); }
-      } else add({ ...base, key: `external:${server.id}`, title: `${server.name} Â· external backup`, status: 'warning', detail: 'External copies are disabled.' });
-    } catch { add({ ...base, key: `backup:${server.id}`, title: `${server.name} Â· backup protection`, status: 'unknown', detail: 'Backup protection could not be inspected.' }); }
+          add({ ...base, key: `external:${server.id}`, title: `${server.name} · external backup`, status: backupAgeHealth(latest, now), detail: ageDetail(latest, now) });
+        } catch { add({ ...base, key: `external:${server.id}`, title: `${server.name} · external backup`, status: 'unknown', detail: 'External backup storage could not be inspected.' }); }
+      } else add({ ...base, key: `external:${server.id}`, title: `${server.name} · external backup`, status: 'warning', detail: 'External copies are disabled.' });
+    } catch { add({ ...base, key: `backup:${server.id}`, title: `${server.name} · backup protection`, status: 'unknown', detail: 'Backup protection could not be inspected.' }); }
   }
   if (process.env.GAMEPANEL_CONTROL_BACKUP_STATUS) {
     try {
@@ -72,7 +72,7 @@ export async function collectOperationalHealth(): Promise<OperationalCheck[]> {
       const last = Date.parse(`${stamp[1]}-${stamp[2]}-${stamp[3]}T${stamp[4]}:${stamp[5]}:${stamp[6]}Z`);
       for (const host of ['fr1', 'waw1', 'waw2']) {
         const verified = report.backups.some((r: any) => typeof r.name === 'string' && r.name.startsWith(host + '-') && r.sqliteIntegrity === 'ok');
-        add({ key: 'control-backup:' + host, category: 'backup', title: `${host.toUpperCase()} Â· control-plane backup`, status: backupAgeHealth(verified ? last : null, now), detail: ageDetail(verified ? last : null, now) });
+        add({ key: 'control-backup:' + host, category: 'backup', title: `${host.toUpperCase()} · control-plane backup`, status: backupAgeHealth(verified ? last : null, now), detail: ageDetail(verified ? last : null, now) });
       }
     } catch { add({ key: 'control-backup', category: 'backup', title: 'Control-plane backup', status: 'unknown', detail: 'Backup verification receipt unavailable.' }); }
   }

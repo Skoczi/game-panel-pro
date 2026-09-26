@@ -10,8 +10,8 @@ Autoryzacja użytkownika 26.09.2026: realizować P1/P2 i sześć kierunków rozw
 | 4. Agenty 2.0.59+, backupy, retencja i próba odzyskania | Wdrożone; odzyskanie gry z NFS i bazy panelu sprawdzone |
 | 5. Miejsce FR1 i kontrola wzrostu cache | Wdrożone: odzysk 35,7 GB; codzienna kontrola cache |
 | 6. Alerty i niezależny monitoring | Wdrożone FR1/WAW1/WAW2 a0f7e5c; Discord dostarczony, wszystkie kontrole OK |
-| 7. Ekran Wymaga uwagi / zgodność agentów | W trakcie |
-| 8. Konsola, backupy, formularze, dostępność/mobile | Do wykonania |
+| 7. Ekran Wymaga uwagi / zgodność agentów | Wdrożone 304a71e; gra, zadania, dysk, kopie i capabilities |
+| 8. Konsola, backupy, formularze, dostępność/mobile | W trakcie |
 | 9. ReHLDS: mapy, rotacje, admini i dodatki z rollbackiem | Do wykonania |
 | 10. Sekwencje utrzymaniowe z kontrolą wyników | Do wykonania |
 | 11. Klonowanie i migracja serwerów | Do wykonania |
@@ -37,3 +37,5 @@ Backup control-plane: codziennie 03:00 UTC (+ do 120 s), systemd timer na WAW2; 
 Zadanie 5: FR1 odzyskał 35 693 494 272 B filesystemu przez prune nieużywanego build cache starszego niż 24 h (max-used-space 8GB, reserved-space 2GB). Obrazy, wolumeny i kontenery pozostały bez zmian; health OK. Timer `eserv-build-cache-gc.timer`: codziennie 04:30 UTC + do 5 min. Wspólna blokada z wdrożeniami; nie restartuje Dockera ani gier.
 
 Zadanie 6: Discord przyjął test za pierwszą próbą. Niezależny monitor WAW1 sprawdza HTML/API co minutę, alarm po 3 błędach, recovery po 2 sukcesach; trwały stan zapobiega powtórzeniom. Sekret w /etc/eserv-availability-monitor.json (0600), poza repo. Kontrola operacyjna runtime: dysk 85%/95% lub poniżej 8/2 GiB, backupy 36/72 h, brak kopii krytyczny; kontrola lokalnych/zewnętrznych kopii, harmonogramu i pokwitowań backupów FR1/WAW1/WAW2. Stan i przejścia trwałe w SQLite. 242/242 testy Linux, oba buildy oraz test stanów monitora OK.
+
+Zadanie 7: status gry i ostatnich zadań bez dublowania już istniejących alertów. Widok root agreguje dane węzłów, pokazuje brakujące capabilities i dokładne buildy, linki do właściwego serwera przez trwały numer SRV. Testy 390/1280px, 13 testów backendu, buildy i HTTP/WS acceptance OK; aktualizacja FR1/WAW1/WAW2 bez restartu gry.

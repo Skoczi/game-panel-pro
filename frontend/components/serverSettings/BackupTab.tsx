@@ -1,3 +1,4 @@
+import { backupLabel, backupAge, type BackupVerification } from '../../utils/backupPresentation';
 import { NativeRetentionPanel } from './NativeRetentionPanel';
 import { NativeBackupPolicyCard } from './NativeBackupPolicyCard';
 import { NativeProtectionCard } from './NativeProtectionCard';
@@ -21,6 +22,7 @@ import {
 } from 'lucide-react';
 
 interface BackupItem {
+  verification?: BackupVerification;
   name: string;
   path: string;
   size: number;
@@ -355,10 +357,11 @@ export function BackupTab({
                       ) : (
                         <div className="flex items-center gap-2 mb-1">
                           <h5 className={`font-medium ${textPrimary} text-sm md:text-base break-words`}>
-                            {backup.name}
+                            {backupLabel(backup.name)}
                           </h5>
                           {canRenameBackups && (
                             <AppButton
+                              aria-label={`Rename ${backupLabel(backup.name)}`}
                               onClick={() => startRename(backup)}
                               className="p-1 rounded text-gray-400 hover:text-[var(--color-cyan-400)] hover:bg-[var(--color-cyan-400)]/10 flex-shrink-0"
                             >
@@ -367,6 +370,8 @@ export function BackupTab({
                           )}
                         </div>
                       )}
+                      <p className="mb-2 text-xs text-gray-500">{backupAge(backup.verification?.createdAt || backup.modifiedAt)} · Local copy{backup.verification ? ` · ${backup.verification.mode === 'live' ? 'Captured while running' : 'Captured while stopped'} · Archive validated` : ' · Verification unavailable'}</p>
+                      <details className="mb-2 text-xs text-gray-500"><summary className="cursor-pointer">Archive details</summary><p className="break-all">{backup.name}</p>{backup.verification && <p>Validated: {new Date(backup.verification.validatedAt).toLocaleString()}. Live copies may need game-specific recovery.</p>}</details>
                       <div className="flex items-center gap-3 md:gap-4 text-xs text-gray-500 flex-wrap">
                         <div className="flex items-center gap-1">
                           <Calendar className="w-3 h-3" />

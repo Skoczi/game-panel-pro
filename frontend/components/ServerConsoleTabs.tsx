@@ -1,3 +1,4 @@
+import { consoleView } from '../utils/consoleView';
 import { Terminal, Trash2, X, Copy, ArrowDown, CornerDownLeft, Maximize2, Minimize2 } from 'lucide-react';
 import { memo, useState, useRef, useEffect, useLayoutEffect, useMemo, Fragment } from 'react';
 import { AppButton, AppToggle } from '../src/ui/components';
@@ -66,9 +67,10 @@ const getLogColor = (type: LogEntry['type']) => {
   }
 };
 
-const ServerLogLine = memo(function ServerLogLine({ log }: { log: LogEntry }) {
+const ServerLogLine = memo(function ServerLogLine({ log }: { log: LogEntry & { repeats?: number } }) {
   const panelMessage = log.message.startsWith('[GamePanel] ');
   return <div className="mb-1 flex items-start gap-2 rounded px-1 leading-5 hover:bg-white/5">
+    {log.repeats && log.repeats > 1 ? <span className="shrink-0 rounded bg-gray-700 px-1 text-cyan-300" aria-label={`${log.repeats} repeats`}>×{log.repeats}</span> : null}
     <span className="gp-log-time shrink-0 text-gray-500">[{log.displayTime ?? formatLogDisplayTime(log.timestamp)}]</span>
     <AnsiLine className={`m-0 inline-block min-w-max flex-none whitespace-pre font-mono text-sm ${panelMessage ? 'text-cyan-400 font-semibold' : getLogColor(log.type)}`} message={log.message} />
   </div>;
@@ -147,6 +149,9 @@ export function ServerConsoleTabs({
     return () => window.clearTimeout(timer);
   }, [autoScrollServer]);
   const [showTimestamps, setShowTimestamps] = useState(false);
+  const [logSearch, setLogSearch] = useState('');
+  const [logLevel, setLogLevel] = useState('all');
+  const [groupLogs, setGroupLogs] = useState(false);
   const cliContainerRef = useRef<HTMLDivElement>(null);
   const serverContainerRef = useRef<HTMLDivElement>(null);
   const isProgrammaticCliScrollRef = useRef(false);
@@ -160,6 +165,13 @@ export function ServerConsoleTabs({
     const entries = activeTab && activeTab !== 'cli-console' ? logs[activeTab] || [] : [];
     return entries.filter(log => stripAnsi(log.message).trim() !== STEAM_CLIENT_PROBE);
   }, [activeTab, logs]);
+  const displayedLogs = useMemo(() => consoleView(activeLogs, logSearch, logLevel, groupLogs), [activeLogs, logSearch, logLevel, groupLogs]);
+  const downloadRaw = () => {
+    const raw = activeTab ? logs[activeTab] || [] : [];
+    const blob = new Blob([raw.map(log => `[${log.timestamp}] ${log.message}`).join('\n')], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob), link = document.createElement('a');
+    link.href = url; link.download = 'console-buffer.log'; link.click(); setTimeout(() => URL.revokeObjectURL(url), 1000);
+  };
   const cliTail = cliMessages[cliMessages.length - 1]?.id;
   const serverTail = activeLogs[activeLogs.length - 1]?.id;
   const openTabServers = servers.filter((server) => openTabs.includes(server.id));
@@ -710,6 +722,15 @@ export function ServerConsoleTabs({
         </div>
       </div>
 
+      {!isCLIConsoleActive && activeServer && <div className="flex flex-wrap items-center gap-2 border-b border-gray-700 bg-gp-surface-input p-2 text-sm text-gray-700 dark:text-gray-200">
+        <input aria-label="Search console logs" placeholder="Search logs…" value={logSearch} onChange={e => setLogSearch(e.target.value)} className="min-w-0 flex-1 rounded border border-gray-600 bg-gray-800 px-2 py-1" />
+        <select aria-label="Console log level" value={logLevel} onChange={e => setLogLevel(e.target.value)} className="rounded border border-gray-600 bg-gray-800 px-2 py-1">
+          <option value="all">All levels</option>{['info', 'warning', 'error', 'success', 'command', 'action'].map(level => <option key={level} value={level}>{level}</option>)}
+        </select>
+        <label className="flex items-center gap-1"><input type="checkbox" checked={groupLogs} onChange={e => setGroupLogs(e.target.checked)} />Group repeats</label>
+        <button type="button" onClick={downloadRaw} className="rounded border border-gray-600 px-2 py-1">Download raw buffer</button>
+        <span className="text-gray-600 dark:text-gray-400">{displayedLogs.length}/{activeLogs.length} lines</span>
+      </div>}
       {!isMinimized && activeTab && (
         <div
           className={`flex flex-col min-h-0 ${isFullscreen ? 'flex-1' : ''}`}
@@ -797,14 +818,14 @@ export function ServerConsoleTabs({
                   onScroll={handleServerScroll}
                   className={`gp-console-terminal h-full ${terminalBg} p-2 overflow-y-auto overflow-x-auto hide-scrollbar font-mono text-sm ${showTimestamps ? '' : 'gp-console-hide-time'}`}
                 >
-                  {activeLogs.length === 0 ? (
+                  {displayedLogs.length === 0 ? (
                     <div className="py-8 text-center text-gray-500">
                       <Terminal className="mx-auto mb-2 h-12 w-12 opacity-50" />
-                      <p>No logs yet. Execute an action to see logs.</p>
+                      <p>{activeLogs.length ? 'No logs match these filters.' : 'No logs yet. Execute an action to see logs.'}</p>
                     </div>
                   ) : (
                     <Fragment key={activeTab}>
-                      {activeLogs.map(log => <ServerLogLine key={log.id} log={log} />)}
+                      {displayedLogs.map(log => <ServerLogLine key={log.id} log={log} />)}
                     </Fragment>
                   )}
                 </div>

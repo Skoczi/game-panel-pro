@@ -1,3 +1,4 @@
+import { backupLabel, backupAge } from '../../utils/backupPresentation';
 import { useEffect, useId, useState } from 'react';
 import { Archive, DownloadCloud, RefreshCw, Save } from 'lucide-react';
 import { AppButton, AppInput, AppToggle } from '../../src/ui/components';
@@ -83,7 +84,7 @@ export function NativeBackupPolicyCard({ serverId, canEdit, canImport, busy, loc
       {copyError && <p role="alert" className="text-sm text-red-500">{copyError}</p>}
       {copies?.length === 0 && <p className="text-sm text-slate-500">No completed external copies found.</p>}
       {copies && copies.length > 0 && <div className="max-h-80 overflow-auto space-y-3">{copies.map(copy => <div key={copy.name} className="rounded-lg border border-slate-400/15 p-3 space-y-2">
-        <p className="text-xs break-all font-mono">{copy.name}</p>
+        <p className="text-sm break-words font-medium">{backupLabel(copy.name)}</p><p className="text-xs text-slate-500">{backupAge(copy.createdAt)} · External copy · Checksum checked on import</p><details className="text-xs"><summary>Archive details</summary><p className="break-all font-mono">{copy.name}</p></details>
         <div className="flex flex-wrap items-center justify-between gap-3"><p className="text-xs text-slate-500 dark:text-slate-400">{resourceBytes(copy.sizeBytes)} · {new Date(copy.createdAt).toLocaleString()} · {copy.mode}</p>
           <AppButton disabled={!canImport || busy || Boolean(importing) || localNames.includes(copy.name)} onClick={() => void retrieve(copy.name)}><DownloadCloud size={16} className="mr-2" />{importing === copy.name ? 'Importing…' : localNames.includes(copy.name) ? 'Available locally' : 'Import to local backups'}</AppButton>
         </div>
