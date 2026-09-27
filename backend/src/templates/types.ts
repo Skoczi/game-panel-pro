@@ -9,7 +9,7 @@ export type GameTemplate = {
     };
     ports: Array<{ key: string; label: string; protocol: 'tcp' | 'udp'; container: number; suggested: number; env: string; linuxgsmKey: string; sameAs?: string }>;
     variables: Array<{ key: string; label: string; type: 'string' | 'integer' | 'boolean'; required: boolean; secret: boolean; default: string }>;
-    mounts: Array<{ key: string; containerPath: string }>;
+    mounts: Array<{ key: string; containerPath: string; shared?: { package: string; sha256: string; path: string } }>;
     monitoring?: { protocol: 'a2s'; queryPort: string };
     fastDownload?: { enabled: boolean; gameRoot?: string; folders?: string[]; compression?: 'none' | 'bzip2'; configFile?: string };
     configFiles?: Array<{ root: string; path: string; label: string }>;

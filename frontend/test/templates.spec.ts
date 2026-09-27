@@ -1,5 +1,23 @@
 import { test, expect } from '@playwright/test';
 import { SOURCE_TEMPLATES } from '../../backend/src/templates/sourceTemplates';
+test('native storage chooses an immutable shared package without accepting host paths', async ({page}) => {
+  await mock(page);
+  const document = SOURCE_TEMPLATES[0].document;
+  await page.route('**/api/game-templates',r=>r.fulfill({json:{templates:[{...row,document}]}}));
+  await page.route('**/api/system/shared-files',r=>r.fulfill({json:{available:true,packages:[{id:'assets-1',name:'Game assets',version:'1',sha256:'b'.repeat(64)}]}}));
+  let saved:any;
+  await page.route('**/api/game-templates/builtin-cs16/versions',r=>{saved=r.request().postDataJSON();return r.fulfill({json:{...row,version:2,document:saved.document}});});
+  await page.goto('/test/templates.fixture.html');
+  await page.getByRole('button',{name:'Manage',exact:true}).click();
+  await page.getByRole('tab',{name:'Storage',exact:true}).click();
+  await page.getByText('Add shared folder',{exact:true}).click();
+  await expect(page.getByRole('combobox',{name:'Shared package'})).toContainText('Game assets');
+  await page.getByLabel('Folder in package',{exact:true}).fill('vpks');
+  await page.getByRole('button',{name:'Add folder',exact:true}).click();
+  await page.getByRole('button',{name:'Save new draft version'}).click();
+  await expect(page.getByRole('status')).toContainText('Draft v2 saved');
+  expect(saved.document.mounts.at(-1).shared).toEqual({package:'assets-1',sha256:'b'.repeat(64),path:'vpks'});
+});
 const definition = {
   schemaVersion: 1,
   name: 'Counter-Strike 1.6',

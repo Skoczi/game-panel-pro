@@ -1,3 +1,4 @@
+import * as sharedFiles from '../src/services/sharedFiles.js';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import * as crypto from 'node:crypto';
@@ -6,7 +7,7 @@ function fixture() {
   let creates = 0;
   const server: any = { id: 8, runtime_uuid: 'source-key', docker_container_id: 'source', provider_metadata_json: '{}', runtime_config_json: '{}', ports_json: '{}', env_json: '[]', mounts_json: '[]' };
   const empty = Object.fromEntries(['node:fs', 'node:path', 'node:stream/promises', './nativeImages.js', './nativeRestore.js', './nativeProtection.js', './nativeOperationLock.js', './portAllocationLock.js', './hostPortAvailability.js', './cpuTopology.js', './storageReserve.js', '../utils/storage.js', '../templates/nativeContract.js', '../utils/ports.js', '../providers/runtimeConfig.js', '../utils/docker/client.js', './nativeRestoreJournal.js'].map(name => [name, {}]));
-  const subject = loadWithMocks('../src/services/serverClone.ts', { ...empty,
+  const subject = loadWithMocks('../src/services/serverClone.ts', { './sharedFiles.js': sharedFiles, ...empty,
     'node:crypto': crypto,
     '../database/index.js': { serverRepository: { findById: async () => server, create: async () => { creates++; return 9; } } },
     './nativeBackups.js': { nativeServerTemplate: () => ({ mounts: [{ key: 'data', containerPath: '/data' }] }) },

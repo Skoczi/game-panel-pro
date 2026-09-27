@@ -34,7 +34,7 @@ export async function getServerFsRoot(params: {
     if (params.root === 'native-backups') {
         return { server, root: 'native-backups', rootDir: await nativeBackupDirectory(server), roots: [] };
     }
-    const mounts = parseStoredMounts(server);
+    const mounts = parseStoredMounts(server).filter(m => !m.shared);
     const roots = mounts.map((mount) => ({
         key: mount.key,
         containerPath: mount.containerPath,
@@ -57,7 +57,7 @@ export async function getServerFsRoot(params: {
 
 export async function listServerFileRoots(serverId: number): Promise<{ roots: FileRoot[] }> {
     const server = await getServerOrThrow(serverId);
-    const roots = parseStoredMounts(server).map((mount) => ({
+    const roots = parseStoredMounts(server).filter(m => !m.shared).map((mount) => ({
         key: mount.key,
         containerPath: mount.containerPath,
     }));
@@ -123,6 +123,13 @@ export async function assertPublicServerPath(serverId: number, filename: string,
         }
     }
     const target = path.resolve(filename);
+    const storage = getServerStoragePaths(serverId).dataDir;
+    for (const mount of parseStoredMounts(server).filter(m => m.shared && m.containerPath.startsWith('/data/'))) {
+        const shared = path.resolve(storage, mount.containerPath.slice('/data/'.length));
+        if (target === shared || target.startsWith(shared + path.sep) || (recursive && shared.startsWith(target + path.sep)))
+            throw Object.assign(new Error('Shared game files are read only. Open Nodes → Shared files to manage packages.'), {statusCode:403});
+    }
+    if (path.basename(target) === '.eserv-shared-files.json') throw Object.assign(new Error('This manifest is managed by the panel'), {statusCode:403});
     const actual = await canonical(target), privateRoot = await canonical(reserved);
     const overlaps = (file: string, privateDir: string) => file === privateDir || file.startsWith(privateDir + path.sep) || (recursive && privateDir.startsWith(file + path.sep));
     if (overlaps(target, reserved) || overlaps(actual, privateRoot)) {

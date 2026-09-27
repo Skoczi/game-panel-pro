@@ -13,13 +13,13 @@ export const SOURCE_MODULES = [
   {
     id: "metamod",
     name: "Metamod:Source",
-    games: ["css", "csgo", "cs2"],
+    games: ["css", "csgo", "cs2", "classic"],
     requires: [],
   },
   {
     id: "sourcemod",
     name: "SourceMod",
-    games: ["css", "csgo"],
+    games: ["css", "csgo", "classic"],
     requires: ["metamod"],
   },
   {
@@ -43,7 +43,7 @@ export const SOURCE_MODULES = [
   version: SOURCE_ADDON_SOURCES.find((s) => s.id === m.id)!.version,
 }));
 export const sourceModulePackage = (game: SourceGame, module: string) =>
-  game === "cs2" && module === "metamod" ? "metamod-cs2" : module;
+  game === "classic" && ["metamod", "sourcemod"].includes(module) ? module + "-classic" : game === "cs2" && module === "metamod" ? "metamod-cs2" : module;
 export const sourceModuleVersion = (game: SourceGame, module: string) =>
   SOURCE_ADDON_SOURCES.find((s) => s.id === sourceModulePackage(game, module))!
     .version;
@@ -60,6 +60,7 @@ export function sourceSelection(game: SourceGame, value: unknown) {
   return [...module.requires, module.id];
 }
 export function sourcePackagePath(module: string, raw: string, base: string) {
+  if (module.endsWith("-classic")) module = module.replace("-classic", "");
   if (module === "metamod-cs2") module = "metamod";
   let name = raw.replace(/^\.\//, "").replace(/\/$/, "");
   if (!name) return null;
@@ -245,5 +246,7 @@ export async function downloadSourcePackage(
   const bytes = Buffer.concat(chunks);
   if (createHash("sha256").update(bytes).digest("hex") !== source.sha256)
     throw new Error("Framework checksum mismatch");
-  return unpackSourcePackage(module, bytes, source.kind, base);
+  const files = await unpackSourcePackage(module, bytes, source.kind, base);
+  if (module === 'metamod-classic') files.set(base + '/addons/metamod.vdf', Buffer.from('"Plugin"\n{\n  "file" "csco/csgo/addons/metamod/bin/server"\n}\n'));
+  return files;
 }

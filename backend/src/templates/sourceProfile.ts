@@ -1,14 +1,14 @@
 import type { GameTemplate, GameConfigDefinition } from "./types.js";
 
-export type SourceGame = "css" | "csgo" | "cs2";
+export type SourceGame = "css" | "csgo" | "cs2" | "classic";
 export function sourceProfile(template?: GameTemplate | null) {
   if (template?.schemaVersion !== 2) return null;
   const game = template.runtime?.catalogId;
-  if (!["css", "csgo", "cs2"].includes(game)) return null;
+  if (!["css", "csgo", "cs2", "classic"].includes(game)) return null;
   const base =
     game === "cs2"
       ? "serverfiles/game/csgo"
-      : `serverfiles/${game === "css" ? "cstrike" : "csgo"}`;
+      : `serverfiles/${game === "classic" ? "csco/csgo" : game === "css" ? "cstrike" : "csgo"}`;
   if (
     !template.configFiles?.some(
       (f) => f.root === "data" && f.path === `/${base}/cfg/server.cfg`,
@@ -19,7 +19,7 @@ export function sourceProfile(template?: GameTemplate | null) {
 }
 export function sourceGameConfig(game: SourceGame): GameConfigDefinition {
   const base =
-    game === "cs2" ? "game/csgo" : game === "css" ? "cstrike" : "csgo";
+    game === "classic" ? "csco/csgo" : game === "cs2" ? "game/csgo" : game === "css" ? "cstrike" : "csgo";
   return {
     format: "valve-cfg",
     root: "data",

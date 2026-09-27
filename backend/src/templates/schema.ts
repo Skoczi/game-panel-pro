@@ -1,4 +1,5 @@
 // Versioned templates. Native commands are reviewed and published by root administrators.
+import { sharedReference } from '../services/sharedFiles.js';
 import { createHash } from 'node:crypto';
 import { GAME_ICONS, MAX_GAME_ICON_BYTES } from './gameIcons.js';
 import type { GameTemplate } from './types.js';
@@ -94,10 +95,11 @@ export function validateTemplate(input: unknown): GameTemplate {
     });
     unique([...variables.map(v => v.key), ...ports.filter(p => p.env).map(p => p.env)]);
     const mounts = list(v.mounts, 12).map(raw => {
-        const m = object(raw, ['key', 'containerPath']);
+        const m = object(raw, ['key', 'containerPath', 'shared']);
         const containerPath = text(m.containerPath, 160);
         if (!/^\/(?:[a-zA-Z0-9_-]+\/?)+$/.test(containerPath) || /^\/(?:proc|sys|dev|etc|run|var)(?:\/|$)/.test(containerPath)) throw new TemplateError('Use a data directory inside the container; host/system paths are not accepted');
-        return { key: identifier(m.key), containerPath: containerPath.replace(/\/$/, '') };
+        if (m.shared && (v.schemaVersion !== 2 || m.key === 'data' || containerPath === '/data')) throw new TemplateError('Shared packages require a separate native mount');
+        return { key: identifier(m.key), containerPath: containerPath.replace(/\/$/, ''), ...(m.shared ? { shared: sharedReference(m.shared) } : {}) };
     });
     unique(mounts.map(m => m.key)); unique(mounts.map(m => m.containerPath));
     let configFiles: GameTemplate['configFiles'];

@@ -6,6 +6,7 @@ import { Server, Plus, RefreshCw, ExternalLink, Network } from 'lucide-react';
 import { nodesRequest, type ExecutionNode, type LocalNode } from '../utils/nodesApi';
 import { LocalNodeProfile, LocalRuntimeInfo } from './LocalNodeProfile';
 import { ACTIVE_NODE, openFleet } from '../utils/nodeContext';
+import { SharedFiles } from './SharedFiles';
 import { NodeNetwork } from './NodeNetwork';
 import {
   AppModal,
@@ -41,7 +42,7 @@ export function Nodes() {
   const [showCreate, setShowCreate] = useState(false);
   const [enrollment, setEnrollment] = useState<{ nodeId: string; token: string } | null>(null);
   const [selected, setSelected] = useState<{ id: string; name: string } | null>(null);
-  const [nodeTab, setNodeTab] = useState<'overview' | 'network'>('overview');
+  const [nodeTab, setNodeTab] = useState<'overview' | 'network' | 'shared'>('overview');
   const [allocationDirty, setAllocationDirty] = useState(false);
   const [draft, setDraft] = useState({ name: '', origin: '', location: '' });
   const [deleting, setDeleting] = useState<ExecutionNode | null>(null);
@@ -125,7 +126,7 @@ export function Nodes() {
           aria-label="Node settings sections"
           className="flex flex-wrap gap-2 rounded-xl border border-slate-200 p-2 dark:border-slate-700"
         >
-          {(['overview', 'network'] as const).map((tab) => (
+          {(['overview', 'network', 'shared'] as const).map((tab) => (
             <button
               key={tab}
               aria-current={nodeTab === tab ? 'page' : undefined}
@@ -138,11 +139,11 @@ export function Nodes() {
                 }
               }}
             >
-              {tab === 'overview' ? 'Overview' : 'Network & IPs'}
+              {tab === 'overview' ? 'Overview' : tab === 'shared' ? 'Shared files' : 'Network & IPs'}
             </button>
           ))}
         </nav>
-        {nodeTab === 'network' ? (
+        {nodeTab === 'shared' ? <SharedFiles key={selected.id} nodeId={selected.id} onDirtyChange={setAllocationDirty} /> : nodeTab === 'network' ? (
           <NodeNetwork key={selected.id} nodeId={selected.id} nodeName={local ? localNode?.name || 'Local' : selected.name} onDirtyChange={setAllocationDirty} />
         ) : (
           <section className={`${card} space-y-4`}>

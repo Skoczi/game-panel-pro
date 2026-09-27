@@ -24,6 +24,7 @@ def main():
     p = argparse.ArgumentParser(); p.add_argument('archive', type=Path); p.add_argument('--root', required=True, type=Path)
     p.add_argument('--container', required=True); p.add_argument('--patch', required=True); p.add_argument('--commit', required=True)
     p.add_argument('--external-root', type=Path)
+    p.add_argument('--shared-files', action='store_true')
     p.add_argument('--control-backup-status', action='store_true')
     args = p.parse_args(); os.umask(0o077)
     root = args.root.resolve(); assert root in [Path('/srv/eserv-agent'), Path('/srv/gamepanel-agent')]
@@ -57,6 +58,12 @@ def main():
                 source.backup(backup); assert backup.execute('PRAGMA integrity_check').fetchone()[0] == 'ok'
         updated = json.loads(json.dumps(old)); service = updated['services']['agent']; service['image'] = image
         service.setdefault('environment', {}).update({'GAMEPANEL_BUILD_COMMIT': args.commit, 'GAMEPANEL_BUILD_ID': args.patch})
+        if args.shared_files:
+            shared = root / 'shared-files'; shared.mkdir(mode=0o755, exist_ok=True)
+            assert not shared.is_symlink()
+            service['environment']['GAMEPANEL_SHARED_FILES_ROOT'] = str(shared)
+            if not any(str(shared) in str(v) for v in service.get('volumes', [])):
+                service.setdefault('volumes', []).append({'type':'bind', 'source':str(shared), 'target':str(shared), 'bind':{'create_host_path':False}})
         if args.control_backup_status:
             assert root == Path('/srv/gamepanel-agent')
             assert Path('/var/lib/eserv-backups/last-success.json').is_file()

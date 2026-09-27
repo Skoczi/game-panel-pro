@@ -1,11 +1,14 @@
+import { sharedReference, type SharedReference } from '../services/sharedFiles.js';
 export type MountsPayload = Array<{
     key?: unknown;
     containerPath?: unknown;
+    shared?: unknown;
 }>;
 
 export type NormalizedMount = {
     key: string;
     containerPath: string;
+    shared?: SharedReference;
 };
 
 const MOUNT_KEY_RE = /^[a-zA-Z0-9_-]{1,40}$/;
@@ -52,6 +55,7 @@ export function normalizeMountsPayload(payload: unknown): NormalizedMount[] | nu
         mounts.push({
             key,
             containerPath,
+            ...(raw.shared ? { shared: sharedReference(raw.shared) } : {}),
         });
     }
 

@@ -1,5 +1,7 @@
 // Official release assets, reviewed 2026-09-27. Never resolve latest at install time.
 export const SOURCE_ADDON_SOURCES = [
+  { id: "metamod-classic", version: "2.0.0.1350", url: "https://mms.alliedmods.net/mmsdrop/2.0/mmsource-2.0.0-git1350-linux.tar.gz", sha256: "3c80c8612f53001d13be94daa05c6e8ec4b8214e05b287e94893e82edd143bd0", kind: "tar" },
+  { id: "sourcemod-classic", version: "1.13.0.7243", url: "https://sm.alliedmods.net/smdrop/1.13/sourcemod-1.13.0-git7243-linux.tar.gz", sha256: "1cbb57a4617e5234aa1a3a6cd2799bde6762d3028b7437263798929b5f9fcbce", kind: "tar" },
   {
     id: "metamod",
     version: "1.12.0.1227",

@@ -10,6 +10,7 @@ export const runtimeCapabilities = Object.freeze({
     operationalHealth: 1,
     rehldsContent: 1,
     sourceAddons: 1,
+    sharedFiles: 1,
     templateLinkedPorts: 1,
         maintenanceWorkflow: 1,
         nativeClone: 1,

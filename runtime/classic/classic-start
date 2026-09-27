@@ -1,0 +1,13 @@
+#!/bin/bash
+set -euo pipefail
+cd /data/serverfiles
+[[ "$MAP" =~ ^[A-Za-z0-9_/-]+$ && "$MAP" != *..* ]] || { echo 'Invalid starting map'; exit 2; }
+[[ "$MAX_PLAYERS" =~ ^[0-9]+$ ]] && ((10#$MAX_PLAYERS >= 1 && 10#$MAX_PLAYERS <= 64)) || exit 2
+[[ "$TICKRATE" =~ ^[0-9]+$ ]] && ((10#$TICKRATE >= 32 && 10#$TICKRATE <= 128)) || exit 2
+[[ "${GSLT:-}" =~ ^[A-Za-z0-9]*$ ]] || exit 2
+mkdir -p /data/.steam/sdk32
+cp /opt/classic-assets/steamclient.so /data/.steam/sdk32/steamclient.so
+token=(); [[ -z "${GSLT:-}" ]] || token=(+sv_setsteamaccount "$GSLT")
+export HOME=/data
+# Keep the package's own srcds_run and its mod-specific loader setup intact.
+exec /usr/local/lib/gamepanel/source-console /bin/bash ./srcds_run -game csco/csgo -tickrate "$TICKRATE" -maxplayers_override "$MAX_PLAYERS" -console -usercon -port "$SERVER_PORT" +ip 0.0.0.0 -strictportbind -norestart +tv_port "${TV_PORT:-27020}" +map "$MAP" +exec server.cfg "${token[@]}" "$@"

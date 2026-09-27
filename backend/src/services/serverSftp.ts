@@ -91,9 +91,13 @@ export async function updateServerSftp(serverId: number, input: unknown): Promis
     const stat = await fs.stat(actual);
     if (!stat.isDirectory() || stat.uid !== 1000 || stat.gid !== 1000) throw fail('The game directory must be owned by the managed game user (1000:1000)', 409);
     const password = randomBytes(24).toString('base64url');
+    const protectedPaths = parseStoredMounts(server).filter(m => m.shared && m.containerPath.startsWith('/data/serverfiles/')).map(m => m.containerPath.slice('/data/serverfiles'.length));
+    const permissions: Record<string, string[]> = { '/': ['list', 'download', 'upload', 'overwrite', 'delete_files', 'delete_dirs', 'rename', 'create_dirs', 'chtimes'] };
+    for (const folder of protectedPaths) permissions[folder] = [];
     const account = { username: identity.username, status: 1, password, home_dir: `/servers/${identity.relative}`, uid: 1000, gid: 1000, max_sessions: 8,
-      permissions: { '/': ['list', 'download', 'upload', 'overwrite', 'delete_files', 'delete_dirs', 'rename', 'create_dirs', 'chtimes'] },
-      filesystem: { provider: 0 }, public_keys: [], filters: { denied_protocols: ['FTP', 'DAV', 'HTTP'], allow_api_key_auth: false } };
+      permissions,
+      filesystem: { provider: 0 }, public_keys: [], filters: { denied_protocols: ['FTP', 'DAV', 'HTTP'], allow_api_key_auth: false,
+        ...(protectedPaths.length ? {file_patterns:[{path:'/',denied_patterns:['.eserv-shared-files.json'],deny_policy:1}]} : {}) } };
     await api(config, current ? `${url}?disconnect=1` : '/users', current ? 'PUT' : 'POST', account);
     const state = await serverSftpStatus(serverId);
     if (!state.enabled) throw fail('SFTP activation could not be confirmed');

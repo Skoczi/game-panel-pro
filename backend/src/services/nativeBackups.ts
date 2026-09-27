@@ -1,3 +1,4 @@
+import { verifySharedBackup } from './sharedFiles.js';
 import { archiveWithProgress } from './archiveProgress.js';
 import type { ReportProgress } from './operationProgress.js';
 import { withStorageReserve } from './storageReserve.js';
@@ -70,6 +71,7 @@ export async function createNativeBackup(server: GameServerRow & { docker_contai
         const fdl = await fs.lstat(path.join(serverRoot, 'data', 'fastdownload')).catch((e: any) => { if (e.code === 'ENOENT') return null; throw e; });
         if (fdl) { if (!fdl.isDirectory()) throw new Error('FastDownload must be a real directory'); keys.push('fastdownload'); }
         const archiveRoot = path.join(serverRoot, 'data');
+        await verifySharedBackup(template.mounts, path.join(archiveRoot, 'serverfiles'));
         for (const key of keys) {
             if (!(await fs.lstat(path.join(archiveRoot, key)).catch(() => null))?.isDirectory()) throw Object.assign(new Error('Invalid native data mount: expected data/serverfiles; migrate legacy layouts explicitly'), { statusCode: 409 });
         }

@@ -1,3 +1,4 @@
+import * as sharedFiles from '../src/services/sharedFiles.js';
 import { withStorageReserve } from '../src/services/storageReserve.js';
 import { validateNativeArchive } from '../src/services/nativeArchive.js';
 import { test } from 'node:test';
@@ -22,7 +23,7 @@ test('Native restore validates before replacing files, preserves logs and recove
  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'gp-restore-'));
  const data = path.join(root, 'data'); const backups = path.join(data, 'backups');
  let status = 'exited'; let releases = 0; let failSwap = false;
- const module = loadWithMocks('../src/services/nativeRestore.ts', {
+ const module = loadWithMocks('../src/services/nativeRestore.ts', { './sharedFiles.js': sharedFiles,
   'node:fs': { ...filesystem, promises: { ...fs, rename: async (from: string, to: string) => { if (failSwap && from.includes('.restore-') && to === path.join(data, 'serverfiles')) { failSwap = false; throw new Error('swap failed'); } await fs.rename(from, to); } } },
   'node:path': path, 'node:crypto': { randomUUID }, 'node:zlib': { createGunzip }, 'node:stream/promises': { pipeline }, 'tar-stream': tar,
   './nativeBackups.js': { nativeBackupDirectory: async () => backups, nativeServerTemplate: () => ({ mounts: [{ key: 'data' }] }) },

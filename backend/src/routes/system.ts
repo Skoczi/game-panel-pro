@@ -5,6 +5,7 @@ import { alertStore } from '../services/alerts.js';
 import { configuredBindAddresses } from '../utils/bindAddresses.js';
 import { configuredPortPolicy } from '../utils/portPolicy.js';
 import { globalSettings } from '../services/globalSettings.js';
+import { sharedFilesRoutes } from './sharedFiles.js';
 import { Router } from 'express';
 import { rootOnly, type AuthenticatedRequest } from '../middleware/auth.js';
 import { checkPanelUpdate, getPanelUpdateStatus, startPanelUpdate } from '../services/panelUpdates.js';
@@ -14,6 +15,7 @@ import { nowIso } from '../utils/time.js';
 import { isAgent } from '../agent/identity.js';
 
 const router = Router();
+router.use('/shared-files', sharedFilesRoutes);
 
 router.get('/host-network', rootOnly, async (_req, res) => {
   res.setHeader('Cache-Control', 'no-store'); res.json(await hostNetworkSnapshot());

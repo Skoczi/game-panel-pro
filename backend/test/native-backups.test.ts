@@ -1,3 +1,4 @@
+import * as sharedFiles from '../src/services/sharedFiles.js';
 import { withStorageReserve } from '../src/services/storageReserve.js';
 import { validateNativeArchive } from '../src/services/nativeArchive.js';
 import { test } from 'node:test';
@@ -14,7 +15,7 @@ import { rejectPrivateFileRoots } from '../src/middleware/privateFileRoots.js';
 test('native backups include game files and FastDownload uploads without following symlinks, online and offline', async () => {
     const root = await fs.mkdtemp(path.join(os.tmpdir(), 'gp-native-backup-test-'));
     let status = 'running'; let released = 0;
-    const module = loadWithMocks('../src/services/nativeBackups.ts', {
+    const module = loadWithMocks('../src/services/nativeBackups.ts', { './sharedFiles.js': sharedFiles,
         './archiveProgress.js': {}, './nativeProtection.js': { recordNativeBackup: async () => ({}) },
         './nativeBackupPolicy.js': { readNativeBackupPolicy: async () => ({ automaticRetention: false, externalCopy: false }) },
         './finishNativeBackup.js': { finishNativeBackup: async () => '' },
@@ -70,7 +71,7 @@ test('file API cannot bypass backup permissions using a private root', () => {
 test('failed native backup removes partial output and releases its operation lock for retry', async () => {
     const root = await fs.mkdtemp(path.join(os.tmpdir(), 'gp-native-backup-failure-'));
     let released = 0; let fail = true;
-    const module = loadWithMocks('../src/services/nativeBackups.ts', {
+    const module = loadWithMocks('../src/services/nativeBackups.ts', { './sharedFiles.js': sharedFiles,
         './archiveProgress.js': {}, './nativeProtection.js': { recordNativeBackup: async () => ({}) },
         './nativeBackupPolicy.js': { readNativeBackupPolicy: async () => ({ automaticRetention: false, externalCopy: false }) },
         './finishNativeBackup.js': { finishNativeBackup: async () => '' },
@@ -103,7 +104,7 @@ test('failed native backup removes partial output and releases its operation loc
 test('native backups reject symlinked archive directories and mount roots', async () => {
     const root = await fs.mkdtemp(path.join(os.tmpdir(), 'gp-native-backup-links-'));
     let released = 0;
-    const module = loadWithMocks('../src/services/nativeBackups.ts', {
+    const module = loadWithMocks('../src/services/nativeBackups.ts', { './sharedFiles.js': sharedFiles,
         './archiveProgress.js': {}, './nativeProtection.js': { recordNativeBackup: async () => ({}) },
         './nativeBackupPolicy.js': { readNativeBackupPolicy: async () => ({ automaticRetention: false, externalCopy: false }) },
         './finishNativeBackup.js': { finishNativeBackup: async () => '' },

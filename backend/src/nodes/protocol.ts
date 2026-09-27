@@ -123,6 +123,7 @@ export function runtimePath(path: string): boolean {
     if (/[\u0000-\u001f\\]|\/\.|\/\//.test(pathname)) return false;
     return (
         /^\/api\/servers(?:\/|$)/.test(pathname) ||
+        /^\/api\/system\/shared-files(?:\/[a-zA-Z0-9_-]+){0,3}$/.test(pathname) ||
         /^\/api\/operations\/[a-zA-Z0-9_-]{16,128}$/.test(pathname) ||
         /^\/api\/download\/[a-zA-Z0-9_-]+$/.test(pathname) ||
         [

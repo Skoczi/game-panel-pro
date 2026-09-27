@@ -1,3 +1,4 @@
+import { preflightSharedMounts } from './sharedFiles.js';
 import { inspectNativeImage } from './nativeImages.js';
 import { promises as fs, createReadStream, createWriteStream } from 'node:fs';
 import path from 'node:path';
@@ -29,8 +30,8 @@ export async function cloneSource(id: number, runtimeKey: string) {
   const server = await serverRepository.findById(id);
   if (!server || server.runtime_uuid !== runtimeKey || !server.docker_container_id) throw Object.assign(new Error('Source server identity changed'), { statusCode: 409 });
   const template = nativeServerTemplate(server);
-  if (!template || template.mounts.length !== 1 || template.mounts[0].key !== 'data' || template.mounts[0].containerPath !== '/data') throw Object.assign(new Error('Cloning requires a Native server using the single /data mount'), { statusCode: 400 });
-  if (parseStoredMounts(server).length !== 1 || parseStoredMounts(server)[0].key !== 'data' || parseStoredMounts(server)[0].containerPath !== '/data') throw new Error('Source mounts differ from the supported template');
+  if (!template || template.mounts.filter(m => !m.shared).length !== 1 || template.mounts[0].key !== 'data' || template.mounts[0].containerPath !== '/data') throw Object.assign(new Error('Cloning requires a Native server using the single /data mount'), { statusCode: 400 });
+  if (parseStoredMounts(server).filter(m => !m.shared).length !== 1 || parseStoredMounts(server)[0].key !== 'data' || parseStoredMounts(server)[0].containerPath !== '/data') throw new Error('Source mounts differ from the supported template');
   const metadata = JSON.parse(server.provider_metadata_json || '{}');
   const runtime = JSON.parse(server.runtime_config_json || '{}');
   if (runtime.nativeInterrupted || runtime.nativeOperation) throw Object.assign(new Error('Complete source maintenance recovery before cloning'), { statusCode: 409 });
@@ -56,9 +57,10 @@ export function clonePorts(source: GameServerRow, input: unknown) {
 // Reserve a new identity only after validating the destination's image and ports.
 export async function prepareCloneTarget(server: GameServerRow, input: any) {
   const template = nativeServerTemplate(server);
-  if (!template || template.mounts.length !== 1 || template.mounts[0].key !== 'data' || template.mounts[0].containerPath !== '/data') throw new Error('Only Native single-data-mount servers can be transferred');
+  if (!template || template.mounts.filter(m => !m.shared).length !== 1 || template.mounts[0].key !== 'data' || template.mounts[0].containerPath !== '/data') throw new Error('Only Native single-data-mount servers can be transferred');
   if (typeof input?.name !== 'string' || input.name.trim().length < 3 || input.name.trim().length > 50 || /[\0\r\n]/.test(input.name)) throw new Error('Clone name must contain 3–50 characters');
   const name = input.name.trim(), ports = clonePorts(server, input.ports), resources = parseStoredResourceLimits(server);
+  await preflightSharedMounts(template.mounts);
   await assertCpuBinding(resources);
   if (!/^sha256:[a-f0-9]{64}$/.test(server.docker_image_digest || '')) throw new Error('A pinned runtime image is required');
   const image = await inspectNativeImage(server.docker_image_digest!, 'Clone runtime');

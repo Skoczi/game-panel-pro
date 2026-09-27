@@ -1,4 +1,6 @@
 import { revokeServerSftp } from './serverSftp.js';
+import { recordSharedDependencies } from './sharedFiles.js';
+import path from 'node:path';
 import { installProgressRepository, actionsRepository, installInteractionRepository } from '../database/index.js';
 import * as dockerUtils from '../utils/docker.js';
 import { applyLinuxGsmConfigPatches } from '../providers/linuxgsm/adapters/linuxGsmConfig.js';
@@ -137,6 +139,7 @@ export async function installServerAsync(
             gid: spec.runtimeIdentity.gid,
         });
         if (native) await runNativeSteps({ serverId, image: String(spec.runtimeConfig.nativeInstallerImage || image), template: native, phase: 'install', env: nativeEnvironment(native, spec.env, spec.ports), mounts: resolvedMounts });
+        if (native) await recordSharedDependencies(native.mounts, path.join(storage.dataDir, 'serverfiles'));
         await assertServerExistsDuringInstall(serverId);
 
         await installProgressRepository.update(serverId, 50, 'creating_container');

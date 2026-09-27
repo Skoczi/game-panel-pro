@@ -1,3 +1,4 @@
+import * as sharedFiles from '../src/services/sharedFiles.js';
 import { withStorageReserve } from '../src/services/storageReserve.js';
 import { validateNativeArchive } from '../src/services/nativeArchive.js';
 import { test } from 'node:test';
@@ -15,7 +16,7 @@ test('scheduler executes the real Native backup for stopped and running servers'
  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'gp-schedule-'));
  let status = 'exited'; const outcomes: string[] = []; let failBackup = false; const commands: string[] = [];
  const server = { id: 1, docker_container_id: 'game', provider_metadata_json: '{}' };
- const native = loadWithMocks('../src/services/nativeBackups.ts', {
+ const native = loadWithMocks('../src/services/nativeBackups.ts', { './sharedFiles.js': sharedFiles,
   './archiveProgress.js': {}, './nativeProtection.js': { recordNativeBackup: async () => ({}) },
         './nativeBackupPolicy.js': { readNativeBackupPolicy: async () => ({ automaticRetention: false, externalCopy: false }) },
         './finishNativeBackup.js': { finishNativeBackup: async () => '' },

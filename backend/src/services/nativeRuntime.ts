@@ -34,7 +34,7 @@ export async function runNativeSteps(params: {
             WorkingDir: t.lifecycle!.workdir,
             Labels: { ...runtimeLabels(), 'gamepanel.managed': 'true', 'gamepanel.oneshot': 'true', 'gamepanel.nativeOperation': phase, 'gamepanel.serverId': String(serverId) },
             HostConfig: {
-                Binds: params.mounts.map(m => `${m.hostPath}:${m.containerPath}`),
+                Binds: params.mounts.map(m => `${m.hostPath}:${m.containerPath}${m.readOnly ? ":ro" : ""}`),
                 RestartPolicy: { Name: 'no' },
                 CapDrop: ['ALL'], SecurityOpt: ['no-new-privileges:true'],
                 Memory: 2 * 1024 ** 3, PidsLimit: 256, NanoCpus: 2e9,

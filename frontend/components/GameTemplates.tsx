@@ -1,4 +1,5 @@
 import { normalizeRehldsStartup } from '../../backend/src/templates/rehldsStartup';
+import { TemplateSharedMount } from './TemplateSharedMount';
 import { TemplateIconEditor } from './TemplateIconEditor';
 import { TemplateGameConfigEditor } from './TemplateGameConfigEditor';
 import { TemplateMonitoringEditor } from './TemplateMonitoringEditor';
@@ -741,7 +742,6 @@ export function GameTemplates() {
             )}
             {tab === 'storage' && (
               <>
-                <p className="text-sm text-slate-500">Server directories only; host paths and Docker sockets are blocked.</p>
                 {draft.mounts.map((m, i) => (
                   <div key={i} className="grid gap-4 md:grid-cols-3">
                     <Field
@@ -770,6 +770,7 @@ export function GameTemplates() {
                     >
                       Remove directory
                     </button>
+                    {m.shared && <div className="rounded-xl border border-cyan-500/20 bg-cyan-500/5 p-3 text-sm md:col-span-3"><span className="font-medium text-cyan-500">Shared · Read only</span><p className="mt-1 break-all">{m.shared.package} / {m.shared.path}</p><code className="mt-1 block break-all text-xs text-slate-500">SHA256 {m.shared.sha256}</code></div>}
                   </div>
                 ))}
                 <button
@@ -785,6 +786,7 @@ export function GameTemplates() {
                 >
                   Add directory
                 </button>
+                {draft.schemaVersion === 2 && <TemplateSharedMount mounts={draft.mounts} onChange={mounts=>change({mounts})} />}
               </>
             )}
             {tab === 'versions' && (
@@ -1091,7 +1093,7 @@ export function TemplateInstall({ row, onClose, fixedNodeId, initialNodeId, onIn
         nativeRuntimeProtocol?: number;
         templateScriptsProtocol?: number;
         nativeSettingsProtocol?: number;
-        capabilities?: {templateLinkedPorts?:number;fastDownload?:number;gameMonitoring?:number;templateIcons?:number;gameConfigEditor?:number};
+        capabilities?: {sharedFiles?:number;templateLinkedPorts?:number;fastDownload?:number;gameMonitoring?:number;templateIcons?:number;gameConfigEditor?:number};
       }>(`${base}/api/health`);
       if (health.templatesProtocol !== 1)
         throw new Error(
@@ -1105,6 +1107,7 @@ export function TemplateInstall({ row, onClose, fixedNodeId, initialNodeId, onIn
       if(row.document.icon && health.capabilities?.templateIcons !== 1) throw new Error('Update this node to support template game icons. No installation was sent.');
       if(row.document.monitoring && health.capabilities?.gameMonitoring !== 1) throw new Error('Update this node to support game monitoring templates.');
       if(row.document.fastDownload?.enabled && health.capabilities?.fastDownload !== 1) throw new Error('Update this node to support FastDownload templates.');
+      if(row.document.mounts.some(m => m.shared) && health.capabilities?.sharedFiles !== 1) throw new Error('Update this node to support shared packages.');
       if(row.document.ports.some(p => p.sameAs) && health.capabilities?.templateLinkedPorts !== 1) throw new Error('Update this node to support shared Game/RCON ports.');
       const lifecycle = row.document.lifecycle;
       if (row.document.configFiles !== undefined && health.nativeSettingsProtocol !== 1)
