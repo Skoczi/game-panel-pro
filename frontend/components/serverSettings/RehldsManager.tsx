@@ -191,8 +191,8 @@ export function RehldsManager({
           ))}
       </nav>
       {job && <section className="gp-workflow-card" aria-label="Addon installation progress">
-        <div className="gp-addon-progress-heading"><strong>Addon installation</strong><span>{job.status}</span></div>
-        <p role="status">{job.error || job.progress?.message || (job.status === 'running' ? 'Preparing installation...' : job.result?.stdout || job.status)}</p>
+        <div className="gp-addon-progress-heading"><strong>Addon installation</strong>{job.status !== 'completed' && <span>{job.status}</span>}</div>
+        <p role="status">{job.error || (job.status === 'completed' ? 'Installation completed.' : job.progress?.message) || (job.status === 'running' ? 'Preparing installation...' : job.result?.stdout || job.status)}</p>
         {job.status === 'running' && <div className="gp-addon-progress-meter"><progress aria-label="Current installation stage" max={100} value={job.progress?.percent ?? undefined} /><span>{job.progress?.percent == null ? 'In progress' : `${job.progress.percent}%`}</span></div>}
         {progressError && <p role="alert">{progressError}</p>}
       </section>}
@@ -325,18 +325,14 @@ export function RehldsManager({
       )}
       {section === 'addons' && (
         <>
-          <p className="text-sm">
-            Choose modules, stop the game, then review the installation. A verified backup is
-            created before files change. Existing configuration is preserved. The game remains
-            stopped.
-          </p>
           {preview && (
             <>
               <div className="grid gap-2 md:grid-cols-2">
                 {preview.catalogue.map((module: any) => (
-                  <label key={module.id} className="gp-workflow-card flex items-center gap-3">
+                  <label key={module.id} className="gp-workflow-card gp-addon-card">
                     <input
                       type="checkbox"
+                      aria-label={`${module.name} ${module.version}`}
                       disabled={busy || job?.status === 'running'}
                       checked={modules.includes(module.id)}
                       onChange={(e) => {
@@ -348,34 +344,26 @@ export function RehldsManager({
                         setReview(false);
                       }}
                     />
-                    {module.name} {module.version}
+                    <span className="gp-addon-details">
+                      <strong>{module.name}</strong>
+                      {preview.installed[module.id] !== module.version && <span>{preview.installed[module.id] ? 'Available ' : 'v'}{module.version}</span>}
+                      <span className={preview.installed[module.id] ? 'gp-addon-installed' : 'gp-addon-unrecorded'}>
+                        {preview.installed[module.id] ? `Installed ${preview.installed[module.id]}` : 'Not recorded'}
+                      </span>
+                    </span>
+                    <span className="gp-addon-selection">{modules.includes(module.id) ? (preview.installed[module.id] ? 'Reinstall' : 'Install') : ''}</span>
                   </label>
                 ))}
               </div>
-              <p className="text-sm">
-                Recorded installed versions:{' '}
-                {Object.entries(preview.installed)
-                  .map(([id, version]) => `${id} ${version}`)
-                  .join(', ') || 'No panel installation recorded'}
-                .
-              </p>
-              <p className="text-sm">
-                Including dependencies: {preview.modules.map((m: any) => m.name).join(', ')}.
-              </p>
-              {modules.includes('reunion') && (
-                <p className="text-sm">
-                  Reunion changes player authentication. Its generated identity salt is preserved on
-                  subsequent updates.
-                </p>
-              )}
               {!preview.stopped && (
                 <p className="text-amber-700">Stop the game from its console before installing.</p>
               )}
+              <div className="gp-workflow-actions">
               <AppButton
                 disabled={busy || job?.status === 'running'}
                 onClick={() => setRevision((v) => v + 1)}
               >
-                Refresh server state
+                Refresh
               </AppButton>
               {review && (
                 <div className="rounded border p-3">
@@ -384,9 +372,8 @@ export function RehldsManager({
                       <li key={change}>{change}</li>
                     ))}
                   </ul>
-                  <p className="mt-2 text-sm">
-                    Requires file write, backup create and backup restore permissions.
-                  </p>
+                  <p className="text-sm">{preview.modules.map((m: any) => m.name).join(', ')}</p>
+                  {modules.includes('reunion') && <p className="text-sm">Reunion changes player authentication.</p>}
                 </div>
               )}
               {canWrite && (
@@ -424,6 +411,7 @@ export function RehldsManager({
                   {review ? 'Create backup and install' : 'Review installation'}
                 </AppButton>
               )}
+              </div>
               <details>
                 <summary>Sources and checksums</summary>
                 {preview.sources.map((source: any) => (
