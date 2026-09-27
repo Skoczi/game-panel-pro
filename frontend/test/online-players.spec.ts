@@ -68,6 +68,18 @@ test('count remains visible without roster permission; stale/stopped data never 
     await expect(page.getByRole('button',{name:/Online players for/})).toHaveCount(0);
   }
 });
+for (const width of [320, 390]) test(`mobile list keeps name above game status at ${width}px`, async ({page}) => {
+  await page.setViewportSize({width,height:844});
+  await setup(page); await page.goto('/test/fleet.fixture.html');
+  await page.getByRole('button',{name:'List view',exact:true}).click();
+  await expect(page.getByRole('button',{name:'Online players for Dust II: 2 / 32'})).toBeVisible();
+  const cells=page.locator('.fleet-node-table tbody tr').first().locator('td');
+  const name=await cells.nth(0).boundingBox();
+  const status=await cells.nth(2).boundingBox();
+  expect(name!.y+name!.height).toBeLessThanOrEqual(status!.y);
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+});
+
 test('revocation clears displayed names before any further node query', async ({page}) => {
   const fixture=await setup(page); await page.goto('/test/fleet.fixture.html');
   await page.getByRole('button',{name:'Online players for Dust II: 2 / 32'}).click();

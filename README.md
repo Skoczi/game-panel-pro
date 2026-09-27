@@ -22,6 +22,14 @@ Built and maintained by **Skoczi**. Deploy it on your hardware, choose your runt
 
 [Light theme](docs/screenshots/fleet-light.png) · [Card view](docs/screenshots/fleet-cards.png) · [Mobile](docs/screenshots/fleet-mobile.png)
 
+| Console & live status | Configuration forms |
+| :--- | :--- |
+| [![Console with game logs and resource usage](docs/screenshots/console-dark.png)](docs/screenshots/console-dark.png) | [![Game configuration with structured fields](docs/screenshots/configuration-form.png)](docs/screenshots/configuration-form.png) |
+| **Runtime nodes** | **Additional IPs & virtual MACs** |
+| [![Online runtime nodes](docs/screenshots/nodes.png)](docs/screenshots/nodes.png) | [![Additional IP address form](docs/screenshots/additional-ip.png)](docs/screenshots/additional-ip.png) |
+
+[Player roster](docs/screenshots/online-players.png) · [Network allocations](docs/screenshots/network-allocations.png) · [Full screenshot gallery](docs/SCREENSHOTS.md)
+
 | Operate | Configure | Automate |
 | :--- | :--- | :--- |
 | Multi-node fleet with global server IDs | File editor, history and context actions | Scoped API v1 with an OpenAPI contract |
