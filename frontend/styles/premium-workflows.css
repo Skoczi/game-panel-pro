@@ -499,3 +499,7 @@ html .gp-server-page .gp-server-stats .gp-server-stat small {
 
 .gp-addon-buttons { display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
 .gp-addon-review { flex-basis:100%; }
+
+.gp-addon-toolbar { display:flex; align-items:center; gap:12px; }
+.gp-addon-toolbar > nav { flex:1; min-width:0; }
+.gp-addon-toolbar .gp-addon-refresh { flex-shrink:0; display:inline-flex; align-items:center; justify-content:center; width:40px; height:40px; padding:0; }

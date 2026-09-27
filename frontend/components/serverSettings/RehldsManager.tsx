@@ -1,3 +1,4 @@
+import { RefreshCw } from 'lucide-react';
 import { ConfirmationModal } from '../ConfirmationModal';
 import { AdminEditor } from './AdminEditor';
 import { PluginEditor } from './PluginEditor';
@@ -163,6 +164,7 @@ export function RehldsManager({
   };
   return (
     <section className="gp-workflow space-y-4" aria-label="ReHLDS tools">
+      <div className="gp-addon-toolbar">
       <nav className="gp-workflow-nav" aria-label="ReHLDS sections">
         {Object.entries(sections)
           .filter(([key]) =>
@@ -191,6 +193,8 @@ export function RehldsManager({
             </AppButton>
           ))}
       </nav>
+      {section === 'addons' && <AppButton tone="ghost" className="gp-addon-refresh" title="Refresh addons" aria-label="Refresh addons" disabled={loading || busy || job?.status === 'running'} onClick={() => setRevision(v => v + 1)}><RefreshCw size={16} aria-hidden="true" className={loading ? 'animate-spin' : ''} /></AppButton>}
+      </div>
       {job && <section className="gp-workflow-card" aria-label="Addon installation progress">
         <div className="gp-addon-progress-heading"><strong>Addon operation</strong>{job.status !== 'completed' && <span>{job.status}</span>}</div>
         <p role="status">{job.error || (job.status === 'completed' ? (job.result?.stdout?.startsWith('Addon removed:') ? 'Addon removed.' : 'Installation completed.') : job.progress?.message) || (job.status === 'running' ? 'Preparing installation...' : job.result?.stdout || job.status)}</p>
@@ -335,7 +339,7 @@ export function RehldsManager({
                       <strong>{module.name}</strong>
                       {preview.installed[module.id] !== module.version && <span>{preview.installed[module.id] ? 'Available ' : 'v'}{module.version}</span>}
                       <span className={preview.installed[module.id] ? 'gp-addon-installed' : 'gp-addon-unrecorded'}>
-                        {preview.installed[module.id] ? `Installed ${preview.installed[module.id]}` : 'Not recorded'}
+                        {preview.installed[module.id] ? `Installed ${preview.installed[module.id]}` : 'Not installed'}
                       </span>
                     </span>
                     {canWrite && <div className="gp-addon-buttons">
@@ -349,13 +353,7 @@ export function RehldsManager({
               {!preview.stopped && (
                 <p className="text-amber-700">Stop the game before changing addons.</p>
               )}
-              <div className="gp-workflow-actions">
-              <AppButton
-                disabled={busy || job?.status === 'running'}
-                onClick={() => setRevision((v) => v + 1)}
-              >
-                Refresh
-              </AppButton>
+              {modules.length > 0 && <div className="gp-workflow-actions">
               {review && modules.length > 0 && (
                 <div className="gp-workflow-card gp-addon-review" role="region" aria-label="Review addon operation">
                   <h3>{addonAction === 'uninstall' ? 'Uninstall' : 'Install'} {preview.modules.map((m: any) => m.name).join(', ')}</h3>
@@ -407,7 +405,7 @@ export function RehldsManager({
                 </AppButton>
               )}
               {modules.length > 0 && <AppButton disabled={busy || job?.status === 'running'} onClick={() => { setModules([]); setReview(false); setAddonAction('install'); }}>Cancel</AppButton>}
-              </div>
+              </div>}
               <details>
                 <summary>Sources and checksums</summary>
                 {preview.sources.map((source: any) => (
