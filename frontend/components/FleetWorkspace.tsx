@@ -17,6 +17,7 @@ import {
   SortableContext,
   useSortable,
   rectSortingStrategy,
+  verticalListSortingStrategy,
   sortableKeyboardCoordinates,
   arrayMove,
 } from '@dnd-kit/sortable';
@@ -313,12 +314,12 @@ export function FleetWorkspace({
           .map(([key, label]) => [label, filtered.filter((s) => game(s).key === key)] as const)
           .filter(([, items]) => items.length);
   const reorder = ({ active, over }: DragEndEvent) => {
-    if (!over || active.id === over.id || layout.sort !== 'custom') return;
+    if (!over || active.id === over.id) return;
     const from = filtered.find((s) => s.id === active.id),
       to = filtered.find((s) => s.id === over.id);
     if (!from || !to || (layout.group === 'type' && game(from).key !== game(to).key)) return;
     const ids = ordered.map((s) => s.id);
-    changeLayout({ ...layout, order: arrayMove(ids, ids.indexOf(from.id), ids.indexOf(to.id)) });
+    changeLayout({ ...layout, sort: 'custom', direction: 'asc', order: arrayMove(ids, ids.indexOf(from.id), ids.indexOf(to.id)) });
   };
   if (installOpen && administrator) return <Suspense fallback={<p role="status">Loading games…</p>}>
     <FleetInstaller initialNodeId={scope === 'all' ? undefined : scope} onClose={() => { setInstallOpen(false); void load(); }} />
@@ -464,6 +465,23 @@ export function FleetWorkspace({
           {error}
         </p>
       )}
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragEnd={reorder}
+            accessibility={{
+              announcements: {
+                onDragStart: ({ active }) =>
+                  `Picked up ${servers.find((s) => s.id === active.id)?.name || 'server'}.`,
+                onDragOver: ({ over }) =>
+                  over
+                    ? `Over server ${servers.find((s) => s.id === over.id)?.name || ''}.`
+                    : 'Outside a reorder target.',
+                onDragEnd: () => 'Reordering finished.',
+                onDragCancel: () => 'Reordering cancelled.',
+              },
+            }}
+          >
       {loading ? (
         <p role="status" className="gp-fleet-empty">
           Loading your servers…
@@ -502,15 +520,15 @@ export function FleetWorkspace({
                       <th>Management</th>
                     </tr>
                   </thead>
+                  <SortableContext items={items.map((s) => s.id)} strategy={verticalListSortingStrategy}>
                   <tbody>
                     {items.map((server) => (
-                      <tr key={server.id}>
-                        <td>
+                      <SortableRow key={server.id} server={server} nameContent={
                           <div className="gp-list-server-name">
                             <GameIcon game={game(server).label} icon={runtimes[server.id]?.server.gameIcon} />
                             {serverName(server)}
                           </div>
-                        </td>
+                        }>
                         <td>{connection(server)}</td>
                         <td>
                           <ServerListStatus
@@ -529,9 +547,10 @@ export function FleetWorkspace({
                         <td>{metrics(server, true)}</td>
                         <td>{powerButtons(server, true)}</td>
                         <td>{management(server)}</td>
-                      </tr>
+                      </SortableRow>
                     ))}
                   </tbody>
+                  </SortableContext>
                 </table>
               </div>
             </section>
@@ -539,23 +558,6 @@ export function FleetWorkspace({
         </div>
       ) : (
         <div className="fleet-node-cards">
-          <DndContext
-            sensors={sensors}
-            collisionDetection={closestCenter}
-            onDragEnd={reorder}
-            accessibility={{
-              announcements: {
-                onDragStart: ({ active }) =>
-                  `Picked up ${servers.find((s) => s.id === active.id)?.name || 'server'}.`,
-                onDragOver: ({ over }) =>
-                  over
-                    ? `Over server ${servers.find((s) => s.id === over.id)?.name || ''}.`
-                    : 'Outside a reorder target.',
-                onDragEnd: () => 'Reordering finished.',
-                onDragCancel: () => 'Reordering cancelled.',
-              },
-            }}
-          >
             {groups.map(([label, items]) => (
               <section
                 key={layout.group === 'none' ? 'all' : game(items[0]).key}
@@ -574,7 +576,7 @@ export function FleetWorkspace({
                       <SortableCard
                         key={server.id}
                         server={server}
-                        disabled={layout.sort !== 'custom'}
+                        disabled={false}
                       >
                         <div className="fleet-node-card-heading">
                           <div>
@@ -617,9 +619,9 @@ export function FleetWorkspace({
                 </SortableContext>
               </section>
             ))}
-          </DndContext>
         </div>
       )}
+      </DndContext>
       {metricSelection && (
         <FleetMetricsModal
           key={metricSelection.server.id}
@@ -665,6 +667,29 @@ export function FleetWorkspace({
         />
       )}
     </section>
+  );
+}
+
+function SortableRow({ server, nameContent, children }: {
+  server: FleetServer;
+  nameContent: ReactNode;
+  children: ReactNode;
+}) {
+  const { attributes, listeners, setNodeRef, setActivatorNodeRef, transform, transition, isDragging } = useSortable({ id: server.id });
+  return (
+    <tr ref={setNodeRef} className={isDragging ? 'is-dragging' : undefined}
+      style={{ transform: CSS.Transform.toString(transform), transition, position: 'relative', zIndex: isDragging ? 1 : undefined }}>
+      <td>
+        <div className="fleet-row-name">
+          <button ref={setActivatorNodeRef} className="fleet-row-drag" {...attributes} {...listeners}
+            aria-label={`Reorder ${server.name}`} title="Drag or use Space and arrow keys">
+            <GripVertical size={18} />
+          </button>
+          {nameContent}
+        </div>
+      </td>
+      {children}
+    </tr>
   );
 }
 

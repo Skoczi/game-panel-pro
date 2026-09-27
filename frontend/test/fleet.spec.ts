@@ -478,7 +478,7 @@ test('view filters, grouping and sort persist per account and can be reset', asy
   await expect(page.getByRole('heading', { name: 'Community Arena', exact: true })).toHaveCount(0);
   await expect(page.getByRole('heading', { name: 'Survival World', exact: true })).toBeVisible();
   await select(page, 'Sort servers', 'Name A–Z');
-  await expect(page.getByRole('button', { name: 'Reorder Survival World' })).toBeDisabled();
+  await expect(page.getByRole('button', { name: 'Reorder Survival World' })).toBeEnabled();
   await page.reload();
   await openFilters(page);
   await expect(page.getByRole('combobox', { name: 'Filter by game type' })).toContainText(
@@ -548,11 +548,10 @@ test('damaged preferences and unavailable stored filters remain recoverable', as
   await expect(page.getByRole('article')).toHaveCount(2);
 });
 
-test('touch handle reorders cards on mobile without a desktop pointer', async ({ page }) => {
+for (const view of ['cards', 'table']) test(`touch handle reorders ${view} on mobile without a desktop pointer`, async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 1000 });
   await page.goto('/test/fleet.fixture.html');
-  await select(page, 'Sort servers', 'My order');
-  await page.getByRole('button', { name: /^Filters/ }).click();
+  if (view === 'table') await page.getByRole('button', { name: 'List view' }).click();
   const handles = page.getByRole('button', { name: /^Reorder / });
   await expect(handles).toHaveCount(2);
   await handles.first().scrollIntoViewIfNeeded();
@@ -567,9 +566,10 @@ test('touch handle reorders cards on mobile without a desktop pointer', async ({
       type: 'touchMove',
       touchPoints: [{ x, y: y + ((to.y - from.y) * i) / 12 }],
     });
-  await expect(page.locator('.gp-fleet-card.is-dragging')).toHaveCount(1);
+  await expect(page.locator(view === 'table' ? 'tr.is-dragging' : '.gp-fleet-card.is-dragging')).toHaveCount(1);
   await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
-  await expect(page.locator('.gp-fleet-card h3')).toHaveText(['Survival World', 'Community Arena']);
+  await expect(page.locator(view === 'table' ? '.fleet-node-table tbody .gp-list-server-name' : '.gp-fleet-card h3')).toHaveText(['Survival World', 'Community Arena']);
+  if (view === 'table') await page.screenshot({ path: '/tmp/fleet-list-drag-mobile.png', fullPage: true });
   await cdp.detach();
 });
 
@@ -813,4 +813,31 @@ test('long server names stay inside the list column and leave actions readable',
   await expect(page.getByRole('button', { name: 'Console', exact: true })).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   if (process.env.PLAYWRIGHT_SCREENSHOTS === '1') await page.screenshot({ path: 'test-results/fleet-long-name.png', fullPage: true });
+});
+
+ test('list drag switches address sorting to saved custom order and supports keyboard', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await page.goto('/test/fleet.fixture.html');
+  await page.getByRole('button', { name: 'List view' }).click();
+  const names = page.locator('.fleet-node-table tbody .gp-list-server-name');
+  await expect(names).toHaveText(['Community Arena', 'Survival World']);
+  const from = (await page.getByRole('button', { name: 'Reorder Community Arena' }).boundingBox())!;
+  const to = (await page.getByRole('button', { name: 'Reorder Survival World' }).boundingBox())!;
+  await page.mouse.move(from.x + from.width / 2, from.y + from.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(to.x + to.width / 2, to.y + to.height / 2, { steps: 15 });
+  await page.mouse.up();
+  await expect(names).toHaveText(['Survival World', 'Community Arena']);
+  await page.reload();
+  await expect(names).toHaveText(['Survival World', 'Community Arena']);
+  await openFilters(page);
+  await expect(page.getByRole('combobox', { name: 'Sort servers', exact: true })).toContainText('My order');
+  await page.getByRole('button', { name: 'Reorder Survival World' }).focus();
+  await page.keyboard.press('Space');
+  await expect(page.locator('tr.is-dragging')).toHaveCount(1);
+  await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+  await page.keyboard.press('ArrowDown');
+  await expect(page.locator('[role="status"]').filter({ hasText: 'Over server Community Arena.' })).toHaveCount(1);
+  await page.keyboard.press('Space');
+  await expect(names).toHaveText(['Community Arena', 'Survival World']);
 });
