@@ -145,10 +145,12 @@ export function BackupTab({
     void refresh(); const timer = setInterval(refresh, 3000);
     return () => { active = false; clearInterval(timer); };
   }, [serverId, native, compatibilityCheck]);
+  // Other maintenance jobs still block conflicting actions, but do not belong in backup history.
+  const backupJobs = jobs.filter(job => ['backup', 'restore', 'import'].includes(job.kind));
   const nativeReady = !native || (compatibility?.capabilities?.backupJobs === 1 && compatibility?.capabilities?.nativeRestoreRecovery === 1 && compatibility.layoutReady);
   const operationReason = !nativeReady ? 'Check runtime compatibility before changing backups.'
     : native && (!jobsKnown || Boolean(jobsError)) ? 'Wait for a confirmed operation status before starting another action.'
-    : backupNowLoading || backupRestoreLoading !== null || jobs.some(job => job.status === 'running') ? 'Another backup operation is running.' : '';
+    : backupNowLoading || backupRestoreLoading !== null || jobs.some(job => job.status === 'running') ? 'Another server operation is running.' : '';
   const createReason = !canCreateBackups ? 'You do not have permission to create backups.' : operationReason;
   const restoreReason = !canRestoreBackups ? 'You do not have permission to restore backups.' : operationReason
     || (native && !['stopped', 'exited', 'created', 'dead'].includes(serverStatus || '') ? 'Stop the server before restoring a Native backup.' : '');
@@ -424,9 +426,9 @@ export function BackupTab({
             </div>
           </div>
         )}
-        {native && jobs.length > 0 && <div className={`rounded-xl border ${borderColor} p-4`}>
-          <OperationList label="Backup operations" secondaryClass={textSecondary} operations={jobs.slice(0, 5).map(job => ({
-            ...job, name: job.kind === 'clone' ? 'Clone' : job.kind === 'addon' ? 'Install ReHLDS addons' : job.kind === 'restore' ? 'Restore' : job.kind === 'import' ? 'Import external backup' : 'Backup',
+        {native && backupJobs.length > 0 && <div className={`rounded-xl border ${borderColor} p-4`}>
+          <OperationList label="Backup operations" secondaryClass={textSecondary} operations={backupJobs.slice(0, 5).map(job => ({
+            ...job, name: job.kind === 'restore' ? 'Restore' : job.kind === 'import' ? 'Import external backup' : 'Backup',
           }))} />
         </div>}
         {native && compatibility?.capabilities?.nativeBackupPolicy === 1 && <NativeBackupPolicyCard key={`policy-${serverId}`} serverId={serverId} canEdit={canEditBackupSettings && canDeleteBackups} canImport={canCreateBackups && canDownloadBackups} busy={Boolean(operationReason)} localNames={backups.map(b => b.name)} onImported={() => { void loadBackups(); }} />}
