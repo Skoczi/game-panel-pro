@@ -1,3 +1,4 @@
+import { allocateServerIdentity } from '../../services/serverIdentity.js';
 import { bus } from '../../realtime/bus.js';
 import type {
   ContainerStatus,
@@ -57,16 +58,18 @@ export class GameServerRepository extends BaseRepository {
   async create(input: CreateGameServerInput): Promise<number> {
     const db = await this.ensureDb();
     const timestamp = nowIso();
+    const identity = await allocateServerIdentity(db);
 
     const result = await db.run(
       `INSERT INTO game_servers
-       (name, provider, catalog_id,
+       (id, runtime_uuid, name, provider, catalog_id,
         docker_image, docker_image_digest, status, desired_state,
         container_status, health_status,
         ports_json, healthcheck_json, resource_limits_json, mounts_json, env_json,
         runtime_config_json, provider_metadata_json, last_error, created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
+        identity.id, identity.runtimeKey,
         input.name,
         input.provider,
         input.catalogId,

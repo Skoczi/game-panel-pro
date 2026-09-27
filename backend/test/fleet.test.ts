@@ -96,7 +96,7 @@ test('global server numbers are stable, unique across nodes and never recycled',
     const item = { id: 1, runtimeKey: instance, name: 'Arena', provider: 'native', status: 'running' };
     await Promise.all([store.observe('node-a', [item]), store.observe('node-b', [item])]);
     const rows = await store.list();
-    assert.deepEqual(rows.map(r => r.server_number).sort(), [1, 2]);
+    assert.deepEqual(rows.map(r => r.server_number).sort(), [101, 102]);
     const original = rows[0];
     assert.equal((await store.getByNumber(original.server_number!))!.id, original.id);
     assert.notEqual((await store.getByNumber(rows[1].server_number!))!.id, original.id);
@@ -111,7 +111,7 @@ test('global server numbers are stable, unique across nodes and never recycled',
     await db.run('DELETE FROM fleet_servers');
     assert.equal(await store.getByNumber(original.server_number!), undefined);
     await store.observe('node-c', [item]);
-    assert.equal((await store.list())[0].server_number, 3);
+    assert.equal((await store.list())[0].server_number, 103);
     native.close();
 });
 
@@ -339,4 +339,28 @@ test('WebSocket snapshots, events and metrics exclude other servers and redact e
     Object.assign(ws, { isRoot: true, runtimeScope: 1, accountValidatedAt: Date.now() });
     sendSafe(ws, { type: 'servers:updated', server: { id: 2, env: {} } });
     assert.equal(sent.length, 2, 'selected root workspace must not receive another server');
+});
+
+
+test('central reservations are shared, idempotent, survive failures and bind runtime inventory', async () => {
+    const { native, db } = database();
+    const store = new FleetStore(db);
+    await store.initialize();
+    const nodes = ['aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb'];
+    const requests = Array.from({ length: 32 }, (_, i) => ({ node: nodes[i % 2], key: i.toString(16).padStart(32, '0') }));
+    const allocations = await Promise.all(requests.map(r => store.reserve(r.node, r.key)));
+    assert.deepEqual(allocations.map(a => a.id).sort((a,b) => a-b), Array.from({ length: 32 }, (_, i) => 101+i));
+    const duplicates = await Promise.all(Array.from({ length: 8 }, () => store.reserve(requests[0].node, requests[0].key)));
+    assert.ok(duplicates.every(a => a.id === allocations[0].id));
+    const item = { id: allocations[0].id, runtimeKey: requests[0].key, name: 'Arena', provider: 'native', status: 'stopped' };
+    await store.observe(nodes[0], [item]);
+    assert.equal((await store.list())[0].server_number, item.id);
+    await assert.rejects(store.observe(nodes[0], [{ ...item, id: 999 }]));
+    assert.equal((await store.list())[0].runtime_id, item.id);
+    await store.observe(nodes[0], []);
+    const restarted = new FleetStore(db); await restarted.initialize();
+    assert.equal((await restarted.reserve('local', 'f'.repeat(32))).id, 133);
+    assert.equal((await restarted.reserve(requests[0].node, requests[0].key)).id, 101);
+    await assert.rejects(store.reserve('bad', 'bad'));
+    native.close();
 });

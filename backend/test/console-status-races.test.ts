@@ -9,6 +9,7 @@ test('concurrent status completions publish only one event using an atomic datab
     const events: any[] = [];
     const adapter = { run: async (sql: string, values: any[]) => db.prepare(sql).run(...values) };
     const module = loadWithMocks('../src/database/repositories/gameServerRepository.ts', {
+        '../../services/serverIdentity.js': {},
         '../../realtime/bus.js': { bus: { emit: (...args: any[]) => events.push(args) } },
         '../../utils/time.js': { nowIso: () => '2026-09-21T13:00:00.000Z' },
         './base.js': { BaseRepository: class { async ensureDb() { return adapter; } } },

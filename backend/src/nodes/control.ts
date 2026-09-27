@@ -14,7 +14,7 @@ import { loginSessions } from '../services/loginSessions.js';
 import { NodeStore, NodeRemovalError } from './store.js';
 import { NODE_ID, RequestVerifier, runtimePath, signNodeRequest, secret } from './protocol.js';
 import { nodeTls, proxyRuntime } from './transport.js';
-import { serverDelegation, verifyNodeEmpty } from '../fleet/control.js';
+import { fleet, serverDelegation, verifyNodeEmpty } from '../fleet/control.js';
 import { delegatedPath, type Delegation } from './delegation.js';
 import { NodeAllocations, AllocationError } from './allocations.js';
 import { allocationRuntime } from './allocationRuntime.js';
@@ -193,6 +193,18 @@ export function mountNodeControl(app: express.Application) {
         } catch {
             res.status(401).json({ error: 'Enrollment rejected' });
         }
+    });
+    router.post('/:id/server-identities/:runtimeKey', async (req, res) => {
+        try {
+            const node = await store.get(req.params.id);
+            if (!node?.enabled || !node.key_encrypted) throw new Error();
+            const claim = verifier.verify(String(req.headers['x-gamepanel-node-auth'] || ''),
+                store.key(node), node.id, 'POST', req.originalUrl);
+            if (claim.delegation) throw new Error();
+        } catch { res.status(401).json({ error: 'Node authentication required' }); return; }
+        try {
+            res.json(await fleet().reserve(req.params.id, req.params.runtimeKey));
+        } catch { res.status(503).json({ error: 'Central server identity unavailable' }); }
     });
     router.post('/:id/heartbeat', async (req, res) => {
         try {
