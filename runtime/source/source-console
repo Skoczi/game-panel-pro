@@ -1,0 +1,51 @@
+#!/usr/bin/env python3
+"""Give Source a terminal while keeping Docker's stdin/log stream protocol."""
+import errno
+import os
+import pty
+import select
+import signal
+import sys
+
+pid, terminal = pty.fork()
+if pid == 0:
+    os.execvp(sys.argv[1], sys.argv[1:])
+
+def forward(signum, _frame):
+    try:
+        os.killpg(pid, signum)
+    except ProcessLookupError:
+        pass
+
+for signum in (signal.SIGTERM, signal.SIGINT, signal.SIGHUP):
+    signal.signal(signum, forward)
+
+def write_all(fd, data):
+    remaining = memoryview(data)
+    while remaining:
+        remaining = remaining[os.write(fd, remaining):]
+
+inputs = [terminal, sys.stdin.fileno()]
+try:
+    while True:
+        ready, _, _ = select.select(inputs, [], [])
+        if terminal in ready:
+            try:
+                data = os.read(terminal, 65536)
+            except OSError as error:
+                if error.errno != errno.EIO:
+                    raise
+                break
+            if not data:
+                break
+            write_all(sys.stdout.fileno(), data)
+        if sys.stdin.fileno() in ready:
+            data = os.read(sys.stdin.fileno(), 4096)
+            if data:
+                write_all(terminal, data)
+            else:
+                inputs.remove(sys.stdin.fileno())
+finally:
+    os.close(terminal)
+_, status = os.waitpid(pid, 0)
+sys.exit(os.waitstatus_to_exitcode(status))

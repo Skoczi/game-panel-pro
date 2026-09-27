@@ -44,7 +44,7 @@ for (const width of [390, 1440])
     await page.getByRole('checkbox', { name: /Ban/ }).check();
     await page.getByRole('button', { name: 'Update administrator in draft' }).click();
     await page.getByRole('button', { name: 'Review changes', exact: true }).click();
-    await page.getByRole('button', { name: 'Save with snapshot' }).click();
+    await page.getByRole('button', { name: 'Save changes', exact: true }).click();
     await expect(page.getByRole('alert')).toContainText('Version conflict');
     expect(submitted).toEqual({
       content: '; keep\n"STEAM_0:1:123" "" "bcd" "ce" ; owner\n"legacy" "secret" "b" "a"\n',

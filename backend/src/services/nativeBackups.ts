@@ -46,7 +46,11 @@ export function normalizeBackupName(value: unknown): string {
 const busy = new Set<number>();
 export async function createNativeBackup(server: GameServerRow & { docker_container_id: string }, operationHeld = false, requestedName?: string, report?: ReportProgress) {
     const backupName = normalizeBackupName(requestedName);
-    if (!nativeServerTemplate(server)) throw new Error('Not a Native server');
+    const template = nativeServerTemplate(server);
+    if (!template) throw new Error('Not a Native server');
+    // Steam's CS2 depot exceeds 70 GB. Its full recovery copy must not inherit
+    // the ten-minute limit intended for the much smaller GoldSrc archives.
+    const archiveTimeout = ['csgo','cs2'].includes(template.runtime?.catalogId) ? 7_200_000 : 600_000;
     if (busy.has(server.id)) throw Object.assign(new Error('A backup is already running'), { statusCode: 409 });
     busy.add(server.id);
     let release: (() => void) | undefined;
@@ -73,7 +77,7 @@ export async function createNativeBackup(server: GameServerRow & { docker_contai
         temporary = path.join(directory, `${filename}.partial`);
         // argv only; exclude logs, installers and backups by archiving only serverfiles.
         try {
-            await withStorageReserve<unknown>(directory, signal => report ? archiveWithProgress(archiveRoot, keys, temporary!, signal, report) : promisify(execFile)('tar', ['-czf', temporary!, '-C', archiveRoot, '--', ...keys], { signal, timeout: 600_000, maxBuffer: 1024 * 1024, env: { ...process.env, COPYFILE_DISABLE: '1' } }));
+            await withStorageReserve<unknown>(directory, signal => report ? archiveWithProgress(archiveRoot, keys, temporary!, signal, report, archiveTimeout) : promisify(execFile)('tar', ['-czf', temporary!, '-C', archiveRoot, '--', ...keys], { signal, timeout: archiveTimeout, maxBuffer: 1024 * 1024, env: { ...process.env, COPYFILE_DISABLE: '1' } }));
         } catch (error: any) {
             if (!live || error.code !== 1 || !String(error.stderr).includes('file changed as we read it')) throw error;
             await promisify(execFile)('tar', ['-tzf', temporary], { timeout: 600_000, maxBuffer: 16 * 1024 * 1024 });

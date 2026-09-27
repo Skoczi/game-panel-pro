@@ -990,8 +990,8 @@ export function TemplateInstall({ row, onClose, fixedNodeId, initialNodeId, onIn
   const [portValidation, setPortValidation] = useState({ signature: '', valid: false });
   const [variables, setVariables] = useState<Record<string, string>>({});
   const [name, setName] = useState(row.document.name);
-  const [memory, setMemory] = useState('1024');
-  const [cpu, setCpu] = useState('1');
+  const [memory, setMemory] = useState(row.document.runtime.catalogId === 'cs2' ? '8192' : row.document.runtime.catalogId === 'csgo' ? '4096' : '1024');
+  const [cpu, setCpu] = useState(['cs2','csgo'].includes(row.document.runtime.catalogId) ? '2' : '1');
   const [cpuSet, setCpuSet] = useState<number[]>([]);
   useEffect(() => { setCpuSet([]); }, [nodeId]);
   const [busy, setBusy] = useState(false);

@@ -9,6 +9,7 @@ export const runtimeCapabilities = Object.freeze({
     alertRelay: 1,
     operationalHealth: 1,
     rehldsContent: 1,
+    sourceAddons: 1,
         maintenanceWorkflow: 1,
         nativeClone: 1,
         nativeTransfer: 1,

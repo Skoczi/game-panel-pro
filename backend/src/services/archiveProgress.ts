@@ -16,12 +16,12 @@ export async function countArchiveEntries(root: string, keys: string[]): Promise
   }
   return total;
 }
-export async function archiveWithProgress(root: string, keys: string[], output: string, signal: AbortSignal, report: ReportProgress) {
+export async function archiveWithProgress(root: string, keys: string[], output: string, signal: AbortSignal, report: ReportProgress, timeoutMs = 600_000) {
   await report({ stage: 'backup-scan', message: 'Backup: counting entries', percent: null });
   const total = await countArchiveEntries(root, keys);
   await report({ stage: 'backup', message: 'Backup: archiving entries', percent: 0 });
   const child = spawn('tar', ['-czvf', output, '-C', root, '--', ...keys], {
-    signal, timeout: 600_000, env: { ...process.env, COPYFILE_DISABLE: '1' }, stdio: ['ignore', 'pipe', 'pipe'],
+    signal, timeout: timeoutMs, env: { ...process.env, COPYFILE_DISABLE: '1' }, stdio: ['ignore', 'pipe', 'pipe'],
   });
   let stderr = '';
   child.stderr.on('data', chunk => { stderr = (stderr + chunk.toString()).slice(-65536); });

@@ -1,4 +1,6 @@
 import { RehldsManager } from './RehldsManager';
+import { SourceAddonManager } from './SourceAddonManager';
+import { sourceProfile } from '../../../backend/src/templates/sourceProfile';
 import { useEffect, useMemo, useState } from 'react';
 import { apiClient } from '../../utils/api';
 import { FileText, FolderOpen, ArrowUpRight, RefreshCw } from 'lucide-react';
@@ -13,17 +15,21 @@ export function NativeGameConfig({
   serverId,
   metadata,
   onOpen,
+  onOpenDirectory,
   canRead = true,
   canWrite = false,
+  canManageFrameworks = false,
   onDirtyChange,
 }: {
   canRead?: boolean;
   canWrite?: boolean;
+  canManageFrameworks?: boolean;
   isRoot?: boolean;
   onDirtyChange?: (dirty: boolean) => void;
   serverId?: number | null;
   metadata?: string | null;
   onOpen: (path: string, root: string) => void;
+  onOpenDirectory?: (path: string, root: string) => void;
 }) {
   const [files, setFiles] = useState<string[]>([]);
   const [error, setError] = useState('');
@@ -48,6 +54,8 @@ export function NativeGameConfig({
       : undefined;
   }, [template]);
   const [section, setSection] = useState('settings');
+  const source = sourceProfile(template);
+  const goldsrc = !source && Boolean(definition && /\/cstrike\//i.test(definition.path));
   const [configDirty, setConfigDirty] = useState(false);
   const [filesDirty, setFilesDirty] = useState(false);
   const [addonsDirty, setAddonsDirty] = useState(false);
@@ -204,7 +212,7 @@ export function NativeGameConfig({
             >
               Configuration files <span>{configFiles.length}</span>
             </button>
-            {/\/cstrike\//i.test(definition.path) && (
+            {(goldsrc || source) && (
               <button
                 type="button"
                 aria-pressed={section === 'rehlds'}
@@ -228,7 +236,8 @@ export function NativeGameConfig({
           </div>
         </>
       )}
-      {definition && /\/cstrike\//i.test(definition.path) && serverId && (
+      {source && section === 'rehlds' && serverId && <SourceAddonManager key={serverId} serverId={serverId} canWrite={canWrite && canManageFrameworks} onOpen={onOpen} onOpenDirectory={onOpenDirectory} />}
+      {goldsrc && serverId && (
         <div hidden={section !== 'rehlds'}>
           <RehldsManager
             group="addons"
@@ -240,7 +249,7 @@ export function NativeGameConfig({
         </div>
       )}
       <div hidden={Boolean(definition) && section !== 'files'}>
-        {definition && /\/cstrike\//i.test(definition.path) && serverId ? (
+        {goldsrc && serverId ? (
           <RehldsManager
             group="configuration"
             serverId={serverId}

@@ -914,7 +914,15 @@ export function ServerSettingsModal({
           />
         }
         gameConfigContent={
-          isNative ? <NativeGameConfig isRoot={Boolean(currentUser?.isRoot)} serverId={serverId} metadata={serverProviderMetadataJson} canRead={canUseFileManager} canWrite={canWriteFiles} onDirtyChange={setGameConfigDirty}
+          isNative ? <NativeGameConfig isRoot={Boolean(currentUser?.isRoot)} serverId={serverId} metadata={serverProviderMetadataJson} canRead={canUseFileManager} canWrite={canWriteFiles} canManageFrameworks={canCreateBackups && canRestoreBackups} onDirtyChange={setGameConfigDirty}
+            onOpenDirectory={(path, root) => {
+              const go = () => {
+              hasUserSelectedTabRef.current = true; setPendingFilePath(null); editorSession.select(null);
+              setSelectedFile(null); setSelectedItems([]); setFileError(null); setFilesError(null);
+              openDirectory(root, path); setActiveTab('filemanager');
+              };
+              if (gameConfigDirty) requestConfirm('Discard configuration changes?', 'Your unsaved Game Config changes will be lost.', async () => { setGameConfigDirty(false); go(); }); else go();
+            }}
             onOpen={(path, root) => { const go = () => { hasUserSelectedTabRef.current = true; setCurrentRoot(root); handleOpenFileManagerAtPath(path); }; if (gameConfigDirty) requestConfirm('Discard configuration changes?', 'Your unsaved Game Config changes will be lost.', async () => { setGameConfigDirty(false); go(); }); else go(); }} /> : <GameConfigTab
             serverGame={serverGame}
             serverProvider={serverProvider}

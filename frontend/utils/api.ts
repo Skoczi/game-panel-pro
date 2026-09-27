@@ -966,6 +966,15 @@ class ApiClient {
   async previewRehldsAddons(serverId: number, modules: string[], action: 'install' | 'uninstall' = 'install') {
     return (await this.client.get(`/api/servers/${serverId}/rehlds/addons`, { params: { modules: modules.length ? modules.join(',') : undefined, action } })).data;
   }
+  async sourceAddonPreview(serverId: number, module?: string, action: 'install' | 'uninstall' = 'install') {
+    return (await this.client.get(`/api/servers/${serverId}/source-addons`, { params: { module, action } })).data;
+  }
+  async changeSourceAddon(serverId: number, module: string, fingerprint: string, action: 'install' | 'uninstall') {
+    return (await this.client.post(`/api/servers/${serverId}/source-addons`, { module, fingerprint, action })).data;
+  }
+  async sourceAddonJobs(serverId: number): Promise<{ jobs: BackupJob[] }> {
+    return (await this.client.get(`/api/servers/${serverId}/source-addons/jobs`)).data;
+  }
   async installRehldsAddons(serverId: number, modules: string[], fingerprint: string, action: 'install' | 'uninstall' = 'install') {
     return (await this.client.post(`/api/servers/${serverId}/rehlds/addons`, { modules, fingerprint, action })).data;
   }
