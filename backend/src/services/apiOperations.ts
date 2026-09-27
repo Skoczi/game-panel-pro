@@ -39,6 +39,7 @@ export class ApiOperationStore {
     async uncertain(id: string) {
         await this.db.run("UPDATE api_operations SET state='uncertain' WHERE id=? AND state='admitted'", id);
     }
+    list(tokenId: string) { return this.db.all<ApiOperation[]>('SELECT * FROM api_operations WHERE token_id=? ORDER BY created_at DESC,id', tokenId); }
     async get(id: string) {
         return this.db.get<ApiOperation>('SELECT * FROM api_operations WHERE id=?', id);
     }

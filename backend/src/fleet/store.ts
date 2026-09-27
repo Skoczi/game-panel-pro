@@ -84,7 +84,7 @@ export class FleetStore {
         if (!result) throw new Error('Central server identity unavailable');
         return { id: result.number, runtimeKey };
     }
-    async observe(node: string, inventory: InventoryItem[], requireEnabledNode = false) {
+    async observe(node: string, inventory: InventoryItem[], requireEnabledNode = false, completeSnapshot = true) {
         // Validate the complete snapshot before changing any state; a failed/partial read never marks servers missing.
         if (
             !Array.isArray(inventory) ||
@@ -135,7 +135,7 @@ export class FleetStore {
                 ...(requireEnabledNode ? [node] : []),
             );
         const ids = new Set(inventory.map((s) => s.runtimeKey));
-        for (const row of await this.list())
+        if (completeSnapshot) for (const row of await this.list())
             if (row.node_id === node && !ids.has(row.runtime_key))
                 await this.db.run('UPDATE fleet_servers SET missing=1 WHERE id=?', row.id);
     }

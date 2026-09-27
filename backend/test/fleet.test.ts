@@ -43,6 +43,7 @@ test('short context aliases use the same scoped grants and unavailable checks as
         get(path: string, handler: any) { routes.set(path, handler); },
     };
     const control = loadWithMocks('../src/fleet/control.ts', {
+        '../services/apiServerDto.js': {}, '../utils/apiSerialization.js': {}, '../services/gameMonitoring.js': {},
         express: { Router: () => router, json: () => () => {} },
         'node:http': {}, 'node:https': {},
         '../database/init.js': { getDatabase: async () => db },

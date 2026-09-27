@@ -7,15 +7,15 @@ import { signNodeRequest } from '../nodes/protocol.js';
 
 /** Fixed internal endpoints only; never accepts a caller-controlled URL or follows redirects. */
 export async function readApiRuntime(row: FleetRow, actorId: number,
-    suffix: 'start' | 'stop' | 'restart' | 'resources' | 'backups' | 'backups/create-native' | `backups/jobs/${string}`,
+    suffix: 'detail' | 'start' | 'stop' | 'restart' | 'resources' | 'backups' | 'backups/create-native' | `backups/jobs/${string}`,
     permissions: string[], maxBytes = 16384, mutation?: { name?: string; key: string }) {
-    if (!/^(start|stop|restart|resources|backups|backups\/create-native|backups\/jobs\/[0-9a-f-]{36})$/.test(suffix)) throw new Error('Invalid runtime endpoint');
+    if (!/^(detail|start|stop|restart|resources|backups|backups\/create-native|backups\/jobs\/[0-9a-f-]{36})$/.test(suffix)) throw new Error('Invalid runtime endpoint');
     if (Boolean(mutation) !== (['backups/create-native', 'start', 'stop', 'restart'].includes(suffix))) throw new Error('Invalid runtime method');
     const method = mutation ? 'POST' : 'GET';
     const body = mutation ? JSON.stringify({ name: mutation.name }) : undefined;
     const node = await nodes().get(row.node_id);
     if (!node?.enabled || !node.key_encrypted) throw new Error('Node unavailable');
-    const route = `/api/servers/${row.runtime_id}/${suffix}`;
+    const route = `/api/servers/${row.runtime_id}${suffix === 'detail' ? '' : '/' + suffix}`;
     const url = new URL(route, node.origin);
     if (url.origin !== node.origin) throw new Error('Node origin mismatch');
     return new Promise<unknown>((resolve, reject) => {

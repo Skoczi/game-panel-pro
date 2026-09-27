@@ -122,6 +122,7 @@ export function runtimePath(path: string): boolean {
     }
     if (/[\u0000-\u001f\\]|\/\.|\/\//.test(pathname)) return false;
     return (
+        /^\/api\/runtime-provisioning\/(plan|install|allocations|[0-9a-f-]{36})$/.test(pathname) ||
         /^\/api\/servers(?:\/|$)/.test(pathname) ||
         /^\/api\/system\/shared-files(?:\/[a-zA-Z0-9_-]+){0,3}$/.test(pathname) ||
         /^\/api\/operations\/[a-zA-Z0-9_-]{16,128}$/.test(pathname) ||

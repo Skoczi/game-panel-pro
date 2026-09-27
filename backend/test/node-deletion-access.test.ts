@@ -124,6 +124,7 @@ test('deletion inventory verification is signed, read-only and rejects unavailab
     server.listen(0, '127.0.0.1'); await once(server, 'listening');
     const node = { id: nodeId, enabled: 0, key_encrypted: 'encrypted', origin: `http://127.0.0.1:${(server.address() as any).port}` };
     const { verifyNodeEmpty } = loadWithMocks('../src/fleet/control.ts', {
+        '../services/apiServerDto.js': {}, '../utils/apiSerialization.js': {}, '../services/gameMonitoring.js': {},
         '../services/alerts.js': { alertStore: async () => ({ view: async () => ({ enabled: false }), save: async () => ({ enabled: false }) }) },
         '../services/alertStore.js': { validateAlertBatch: () => [] },
         express, 'node:http': http, 'node:https': https,

@@ -1,3 +1,4 @@
+import { gameAdminEntries, editGameAdmin } from './gameAdminEntries.js';
 import { ensureIsFile } from '../utils/fsBrowser.js';
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
@@ -66,4 +67,21 @@ export async function saveRehldsContent(serverId: number, key: string, body: any
   try { await commitFileHistory(ctx.history, snapshot!); }
   catch { warning = 'Saved; recovery snapshot exists but its commit marker could not be updated.'; }
   return { version, content, snapshotId: snapshot!.id, warning };
+}
+
+export async function readGameAdmins(serverId: number) {
+  const value = await readRehldsContent(serverId, 'admins');
+  return { ...gameAdminEntries(value.content), version: value.version, provider: 'amxx' };
+}
+export async function writeGameAdmin(serverId: number, body: any, actor: string) {
+  const ctx = await context(serverId, 'admins');
+  const previous = await fs.readFile(ctx.target.absPath, 'utf8');
+  const content = editGameAdmin(previous, body.steamId, body.flags);
+  let snapshot: Awaited<ReturnType<typeof prepareFileHistory>> | undefined;
+  const version = await atomicFileWrite(ctx.target.absPath, content, typeof body.version === 'string' ? body.version : '', async before => {
+    snapshot = await prepareFileHistory(ctx.history, { root: ctx.target.root, path: ctx.target.apiPath }, actor, before, content);
+  });
+  let warning: string | undefined;
+  try { await commitFileHistory(ctx.history, snapshot!); } catch { warning = 'Saved; recovery snapshot requires reconciliation'; }
+  return { ...gameAdminEntries(content), version, provider: 'amxx', snapshotId: snapshot!.id, ...(warning ? { warning } : {}) };
 }

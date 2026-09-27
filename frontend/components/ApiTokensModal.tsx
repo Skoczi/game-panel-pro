@@ -24,13 +24,18 @@ export function ApiTokensModal({ onClose }: { onClose: () => void }) {
   const [secret, setSecret] = useState(''), [revoke, setRevoke] = useState<Token | null>(null);
   const [copied, setCopied] = useState(false), [loaded, setLoaded] = useState(false);
   const [needsRefresh, setNeedsRefresh] = useState(false);
+  const [options, setOptions] = useState<{ administrator: boolean; nodes: { id: string; name: string }[]; templates: { id: string; name: string; version: number }[] }>({ administrator: false, nodes: [], templates: [] });
+  const [provision, setProvision] = useState(false), [users, setUsers] = useState(false), [members, setMembers] = useState(false), [admins, setAdmins] = useState(false);
+  const [nodeIds, setNodeIds] = useState<string[]>([]), [templateIds, setTemplateIds] = useState<string[]>([]);
+  const [maxServers, setMaxServers] = useState(5), [maxCpu, setMaxCpu] = useState(2), [maxMemoryMb, setMaxMemoryMb] = useState(2048);
   const [power, setPower] = useState(false);
   const [readResources, setReadResources] = useState(false);
   const [readBackups, setReadBackups] = useState(false), [createBackups, setCreateBackups] = useState(false);
   const refresh = async () => {
     setLoading(true); setError('');
     try {
-      const [list, fleet] = await Promise.all([request<{ tokens: Token[] }>('/api/api-tokens'), request<{ servers: Server[] }>('/api/fleet')]);
+      const [list, fleet, choices] = await Promise.all([request<{ tokens: Token[] }>('/api/api-tokens'), request<{ servers: Server[] }>('/api/fleet'), request<typeof options>('/api/api-tokens/options')]);
+      setOptions(choices);
       setTokens(list.tokens); setServers(fleet.servers); setLoaded(true); setNeedsRefresh(false);
     } catch (cause) { setError(cause instanceof Error ? cause.message : 'Could not load API tokens.'); }
     finally { setLoading(false); }
@@ -42,7 +47,8 @@ export function ApiTokensModal({ onClose }: { onClose: () => void }) {
     try {
       const result = await request<{ token: Token; secret: string }>('/api/api-tokens', 'POST', {
         name, serverIds: selected, scopes: ['servers.read', ...(readResources ? ['resources.read'] : []),
-          ...(readBackups ? ['backups.read'] : []), ...(createBackups ? ['backups.create'] : []), ...(power ? ['servers.power'] : []), ...(createBackups || power ? ['operations.read'] : [])], expiresAt: Date.now() + days * 86400000,
+          ...(readBackups ? ['backups.read'] : []), ...(createBackups ? ['backups.create'] : []), ...(power ? ['servers.power'] : []), ...(createBackups || power || provision ? ['operations.read'] : []), ...(provision ? ['servers.create', 'templates.read', 'nodes.read'] : []), ...(users ? ['users.read', 'users.create'] : []), ...(members ? ['members.read', 'members.write'] : []), ...(admins ? ['game-admins.read', 'game-admins.write'] : [])],
+        ...(provision ? { provisioning: { nodeIds, templateIds, maxServers, maxCpu, maxMemoryMb } } : {}), expiresAt: Date.now() + days * 86400000,
       });
       setSecret(result.secret); setTokens(previous => [result.token, ...previous]); setName(''); setSelected([]);
     } catch (cause) {
@@ -83,6 +89,24 @@ export function ApiTokensModal({ onClose }: { onClose: () => void }) {
             <AppToggle checked={readResources} disabled={busy} onChange={setReadResources} ariaLabel="Read resource measurements" label="Read resource measurements" />
             <AppToggle checked={readBackups} disabled={busy} onChange={setReadBackups} ariaLabel="Read backup lists" label="Read backup lists" />
             <AppToggle checked={createBackups} disabled={busy} onChange={setCreateBackups} ariaLabel="Create Native backups and read their status" label="Create Native backups and read their status" />
+            <AppToggle checked={admins} disabled={busy} onChange={setAdmins} ariaLabel="Manage AMXX game admins" label="Manage AMXX game admins" />
+            {options.administrator && <section className="space-y-3 rounded-xl border border-gray-700 p-4">
+              <h3 className="font-medium">Administration</h3>
+              <AppToggle checked={users} disabled={busy} onChange={setUsers} ariaLabel="Create panel users" label="Create panel users" />
+              <AppToggle checked={members} disabled={busy} onChange={setMembers} ariaLabel="Manage server access" label="Manage server access" />
+              <AppToggle checked={provision} disabled={busy} onChange={setProvision} ariaLabel="Install servers" label="Install servers" />
+              {provision && <div className="space-y-4">
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <fieldset disabled={busy}><legend className="mb-2">Nodes</legend>{options.nodes.map(n => <label key={n.id} className="flex items-center gap-2 py-1"><input type="checkbox" checked={nodeIds.includes(n.id)} onChange={e => setNodeIds(v => e.target.checked ? [...v, n.id] : v.filter(id => id !== n.id))} />{n.name}</label>)}</fieldset>
+                  <fieldset disabled={busy}><legend className="mb-2">Published templates</legend>{options.templates.filter((t, i, all) => all.findIndex(x => x.id === t.id) === i).map(t => <label key={t.id} className="flex items-center gap-2 py-1"><input type="checkbox" checked={templateIds.includes(t.id)} onChange={e => setTemplateIds(v => e.target.checked ? [...v, t.id] : v.filter(id => id !== t.id))} />{t.name}</label>)}</fieldset>
+                </div>
+                <div className="grid gap-3 sm:grid-cols-3">
+                  <label>Creation budget<AppInput type="number" min={1} max={100} value={maxServers} disabled={busy} onChange={e => setMaxServers(Number(e.target.value))} /></label>
+                  <label>Max vCPU / server<AppInput type="number" min={0.1} step={0.1} max={128} value={maxCpu} disabled={busy} onChange={e => setMaxCpu(Number(e.target.value))} /></label>
+                  <label>Max MiB / server<AppInput type="number" min={128} max={1048576} value={maxMemoryMb} disabled={busy} onChange={e => setMaxMemoryMb(Number(e.target.value))} /></label>
+                </div>
+              </div>}
+            </section>}
             <fieldset disabled={busy || loading} className="space-y-2"><legend className="mb-2">Allowed servers · read inventory</legend>
               <div className="max-h-40 overflow-y-auto space-y-2">{servers.map(server => <label key={server.id} className="flex items-center gap-2 break-all">
                 <input type="checkbox" checked={selected.includes(server.id)} onChange={event => setSelected(previous => event.target.checked ? [...previous, server.id] : previous.filter(value => value !== server.id))} />
@@ -90,7 +114,7 @@ export function ApiTokensModal({ onClose }: { onClose: () => void }) {
               </label>)}</div>
               {loaded && !servers.length && <p>No accessible servers.</p>}
             </fieldset>
-            <AppButton type="submit" disabled={busy || loading || needsRefresh || !loaded || !name.trim() || !selected.length || !Number.isInteger(days) || days < 1 || days > 365}>{busy ? 'Creating…' : 'Create token'}</AppButton>
+            <AppButton type="submit" disabled={busy || loading || needsRefresh || !loaded || !name.trim() || (!selected.length && !provision && !users) || (provision && (!nodeIds.length || !templateIds.length || !Number.isInteger(maxServers) || maxServers < 1 || maxServers > 100 || maxCpu < 0.1 || maxCpu > 128 || !Number.isInteger(maxMemoryMb) || maxMemoryMb < 128 || maxMemoryMb > 1048576)) || !Number.isInteger(days) || days < 1 || days > 365}>{busy ? 'Creating…' : 'Create token'}</AppButton>
           </form>}
           <section aria-label="Your API tokens" className="space-y-3 border-t border-gray-200 dark:border-gray-700 pt-4">
             <div className="flex justify-between items-center"><h3 className="font-medium">Your tokens</h3><AppButton tone="secondary" disabled={loading || busy} onClick={() => void refresh()}>Refresh</AppButton></div>

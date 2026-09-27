@@ -167,6 +167,13 @@ export async function installServerAsync(
         }
 
         await serverRepository.updateDockerInfo(serverId, containerInfo.id, containerInfo.name);
+        // Native installers prepare files separately; API-created services remain stopped.
+        if (native && (await serverRepository.findById(serverId))?.desired_state === 'stopped') {
+            await serverRepository.update(serverId, { status: 'stopped', container_status: 'created', health_status: 'none' });
+            await installProgressRepository.update(serverId, 100, 'completed');
+            await actionsRepository.create(serverId, 'success', 'Server installed and ready to start', username || '');
+            return;
+        }
         await installProgressRepository.update(serverId, 75, 'starting_container');
         try {
             await dockerUtils.startContainer(containerInfo.id);

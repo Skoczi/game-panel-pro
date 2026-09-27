@@ -1,3 +1,4 @@
+import { gameAdminRoutes } from './gameAdmins.js';
 import { serverCloneRoutes, cloneImportRoutes } from './serverClone.js';
 import { rehldsRoutes } from './rehlds.js';
 import { sourceAddonRoutes } from './sourceAddons.js';
@@ -53,6 +54,7 @@ router.use('/:id', (req, res, next) => {
     } catch (error) { res.status(409).json({ error: (error as Error).message }); }
 });
 // /api/servers/:id/file
+router.use('/:id/game-admins', gameAdminRoutes);
 router.use('/:id/game-config', nativeGameConfigRoutes);
 router.use('/:id/rehlds', rehldsRoutes);
 router.use('/:id/source-addons', sourceAddonRoutes);

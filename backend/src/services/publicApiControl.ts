@@ -1,9 +1,14 @@
+import { TemplateStore } from '../templates/store.js';
+import { nodes } from '../nodes/control.js';
+import { registerPublicManagement } from '../routes/publicApiManagement.js';
+import { ApiProvisionStore } from './apiProvisioning.js';
+import { apiServerDetail } from './publicApiDetails.js';
 import { isPanelAdministrator } from '../utils/accountRole.js';
 import { signedWebhooks } from './signedWebhooks.js';
 import { apiPower } from './publicApiPower.js';
 import { getDatabase } from '../database/init.js';
 import { userRepository } from '../database/index.js';
-import { fleet, fleetPermissions } from '../fleet/control.js';
+import { fleet, fleetPermissions, fleetSummary, fleetAvailability } from '../fleet/control.js';
 import { ApiTokenStore } from './apiTokens.js';
 import { apiTokenManagement } from '../routes/apiTokenManagement.js';
 import { publicApi } from '../routes/publicApi.js';
@@ -13,6 +18,7 @@ import { ApiOperationStore } from './apiOperations.js';
 import { normalizeBackupName } from './nativeBackups.js';
 import { startApiBackup, readApiBackupJob } from './publicApiBackupOperations.js';
 
+let provisions: ApiProvisionStore;
 let tokens: ApiTokenStore;
 let operations: ApiOperationStore;
 export async function initializePublicApi() {
@@ -20,8 +26,14 @@ export async function initializePublicApi() {
     await tokens.initialize();
     operations = new ApiOperationStore(await getDatabase());
     await operations.initialize();
+    provisions = new ApiProvisionStore(await getDatabase());
+    await provisions.initialize();
 }
 export const apiTokenRoutes = apiTokenManagement({
+    options: async () => ({
+        nodes: [{ id: 'local', name: 'Local' }, ...(await nodes().list()).filter(n => n.enabled).map(n => ({ id: n.id, name: n.name }))],
+        templates: (await new TemplateStore(await getDatabase()).list()).filter(t => t.status === 'published' && t.document.lifecycle).map(t => ({ id: t.id, name: t.document.name, version: t.version })),
+    }),
     store: () => tokens,
     permissions: async (id, user) => {
         const row = await fleet().get(id);
@@ -29,6 +41,7 @@ export const apiTokenRoutes = apiTokenManagement({
     },
 });
 export const publicApiRoutes = publicApi({
+    extension: router => registerPublicManagement(router, { tokens: () => tokens, provisions: () => provisions, operations: () => operations }),
     store: () => tokens,
     owner: async id => {
         const user = await userRepository.findById(id);
@@ -36,6 +49,9 @@ export const publicApiRoutes = publicApi({
     },
     servers: () => fleet().list(),
     permissions: fleetPermissions,
+    summary: fleetSummary,
+    availability: fleetAvailability,
+    detail: apiServerDetail,
     resources: apiResources,
     backups: apiBackups,
     power: apiPower,

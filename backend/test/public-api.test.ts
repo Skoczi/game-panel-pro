@@ -37,7 +37,13 @@ test('public API paginates scoped inventory, rechecks account and membership, an
         assert.equal(response.headers.get('cache-control'), 'no-store');
         assert.equal(page.requestId, response.headers.get('x-request-id'));
         assert.equal(page.data.length, 1); assert.equal(page.nextCursor, ids[0]);
-        assert.deepEqual(Object.keys(page.data[0]).sort(), ['id', 'name', 'number', 'observedAt', 'provider', 'status']);
+        assert.deepEqual(Object.keys(page.data[0]).sort(), ['available', 'capabilities', 'id', 'links', 'name', 'node', 'number', 'observedAt', 'provider', 'stale', 'status']);
+        assert.equal(page.data[0].status, 'unknown');
+        assert.equal(page.data[0].stale, true);
+        assert.equal((await get('/servers/1?after=garbage&limit=invalid')).status, 200);
+        assert.equal((await get('/servers?sort=address')).status, 200);
+        assert.equal((await get('/servers?sort=invalid')).status, 400);
+        assert.equal((await (await get('/servers?status=running')).json()).data.length, 0);
         assert.equal(page.data[0].observedAt, '1970-01-01T00:16:40.000Z');
         const next = await (await get('/servers?limit=1&after='+page.nextCursor)).json();
         assert.equal(next.data[0].id, ids[1]); assert.equal(next.nextCursor, null);

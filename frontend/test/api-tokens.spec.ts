@@ -82,3 +82,33 @@ test('backup token scopes are explicit and a permission rejection keeps the form
   await expect(page.getByRole('button', { name: 'Create token' })).toBeEnabled();
   expect(posts).toBe(1);
 });
+
+
+test('provisioning token requires explicit nodes, templates and budget without an existing server', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  let payload: any;
+  await page.route('**/api/**', async route => {
+    const req = route.request(), path = new URL(req.url()).pathname;
+    if (!path.startsWith('/api/')) return route.continue();
+    if (path === '/api/api-tokens/options') return route.fulfill({ json: { administrator: true, nodes: [{ id: 'local', name: 'WAW2' }], templates: [{ id: 'cs16', version: 1, name: 'Counter-Strike 1.6' }] } });
+    if (path === '/api/fleet') return route.fulfill({ json: { servers: [] } });
+    if (req.method() === 'POST') { payload = req.postDataJSON(); return route.fulfill({ status: 201, json: { token: { id: 'new', ...payload, revokedAt: null }, secret: 'gpp_fixture_provision' } }); }
+    return route.fulfill({ json: { tokens: [] } });
+  });
+  await page.goto('/test/api-tokens.fixture.html');
+  await page.getByLabel('Token name').fill('Provisioning');
+  await page.getByRole('switch', { name: 'Install servers', exact: true }).check();
+  await expect(page.getByRole('button', { name: 'Create token' })).toBeDisabled();
+  await page.getByRole('checkbox', { name: 'WAW2' }).check();
+  await page.getByRole('checkbox', { name: 'Counter-Strike 1.6' }).check();
+  await page.getByLabel('Creation budget').fill('3');
+  await page.getByRole('switch', { name: 'Manage server access' }).check();
+  await page.getByRole('switch', { name: 'Create panel users' }).check();
+  if (process.env.PLAYWRIGHT_SCREENSHOTS === '1') await page.screenshot({ path: 'test-results/api-provisioning-mobile.png', fullPage: true });
+  await page.getByRole('button', { name: 'Create token' }).click();
+  await expect(page.getByLabel('New API token', { exact: true })).toHaveValue('gpp_fixture_provision');
+  expect(payload.provisioning).toEqual({ nodeIds: ['local'], templateIds: ['cs16'], maxServers: 3, maxCpu: 2, maxMemoryMb: 2048 });
+  expect(payload.serverIds).toEqual([]);
+  expect(payload.scopes).toEqual(expect.arrayContaining(['servers.create','operations.read','members.write','users.create']));
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+});

@@ -3,7 +3,7 @@
   "info": {
     "title": "Game Panel PRO API",
     "version": "2.0.59",
-    "description": "Game Panel PRO integration API. Scoped expiring tokens inherit current owner permissions. Native backup creation uses durable admission and never automatically re-dispatches an uncertain request."
+    "description": "Scoped API. UUIDs remain canonical; server paths also accept global numbers. Current owner privileges are rechecked per request. Native provisioning creates stopped services with central IDs, published templates and per-token budgets. Unknown outcomes are reconciled without automatic re-dispatch. See API-V1-GUIDE.md."
   },
   "security": [
     {
@@ -32,6 +32,51 @@
             "schema": {
               "type": "string",
               "format": "uuid"
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "schema": {
+              "enum": [
+                "id",
+                "number",
+                "name",
+                "address"
+              ],
+              "default": "id"
+            }
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "maxLength": 128
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "maxLength": 128
+            }
+          },
+          {
+            "name": "game",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "maxLength": 128
+            }
+          },
+          {
+            "name": "node",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "maxLength": 128
             }
           }
         ],
@@ -87,7 +132,89 @@
           "500": {
             "$ref": "#/components/responses/Error"
           }
-        }
+        },
+        "description": "Cached fleet metadata, no per-row node requests. Default UUID ordering retained; address uses numeric IP and port ordering. Reuse filters with after; restart on invalid_cursor. stale=true forces status=unknown."
+      },
+      "post": {
+        "operationId": "installServer",
+        "summary": "Install a stopped Native server",
+        "description": "Administrator plus provisioning policy. Durable admission. Same request/key returns same operation; changed payload gives 409. Budget includes uncertain/failed admissions. Token gains access to its created server. Location points to progress. 409 data.status=uncertain means poll, never submit a new key. Installation keys are separate from backup/power.",
+        "x-scopes": [
+          "servers.create"
+        ],
+        "responses": {
+          "202": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/ProvisionAdmission"
+                    },
+                    "requestId": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "description": "Conflict error, or unconfirmed dispatch with data: ProvisionAdmission (status=uncertain) and Location.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProvisionRequest"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_-]{16,128}$"
+            }
+          }
+        ]
       }
     },
     "/api/v1/servers/{id}": {
@@ -101,7 +228,7 @@
             "required": true,
             "schema": {
               "type": "string",
-              "format": "uuid"
+              "description": "Fleet UUID or global server number, e.g. 101"
             }
           }
         ],
@@ -147,7 +274,8 @@
           "500": {
             "$ref": "#/components/responses/Error"
           }
-        }
+        },
+        "description": "Live runtime detail when reachable, cached inventory with available=false otherwise. No environment, commands, host paths or credentials. Resource sample requires resources.read. Unsupported or missing values are null."
       }
     },
     "/api/v1/servers/{id}/resources": {
@@ -162,7 +290,7 @@
             "required": true,
             "schema": {
               "type": "string",
-              "format": "uuid"
+              "description": "Fleet UUID or global server number, e.g. 101"
             }
           }
         ],
@@ -294,7 +422,7 @@
             "required": true,
             "schema": {
               "type": "string",
-              "format": "uuid"
+              "description": "Fleet UUID or global server number, e.g. 101"
             }
           },
           {
@@ -384,7 +512,7 @@
             "required": true,
             "schema": {
               "type": "string",
-              "format": "uuid"
+              "description": "Fleet UUID or global server number, e.g. 101"
             }
           },
           {
@@ -593,7 +721,7 @@
             "required": true,
             "schema": {
               "type": "string",
-              "format": "uuid"
+              "description": "Fleet UUID or global server number, e.g. 101"
             }
           },
           {
@@ -657,6 +785,1054 @@
           }
         }
       }
+    },
+    "/api/v1/templates": {
+      "get": {
+        "operationId": "listPublishedTemplates",
+        "summary": "Published Native templates",
+        "description": "Administrator only. Filtered by token policy. Version, name, game, architectures, public port definitions and variables. Scripts, images, mounts and secret defaults are omitted.",
+        "x-scopes": [
+          "templates.read"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object"
+                      }
+                    },
+                    "requestId": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/v1/nodes": {
+      "get": {
+        "operationId": "listProvisionNodes",
+        "summary": "Enabled node choices",
+        "description": "Administrator only. Filtered by token policy. No host origins or credentials.",
+        "x-scopes": [
+          "nodes.read"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "location": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          }
+                        }
+                      }
+                    },
+                    "requestId": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/v1/nodes/{id}/allocations": {
+      "get": {
+        "operationId": "listNodeAllocations",
+        "summary": "Configured game IP and port pools",
+        "description": "Configured pools, not reservations. Administrator only. Plan and install check available ports.",
+        "x-scopes": [
+          "nodes.read"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "properties": {
+                          "ip": {
+                            "type": "string"
+                          },
+                          "tcp": {
+                            "type": "string"
+                          },
+                          "udp": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    },
+                    "requestId": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/servers/plan": {
+      "post": {
+        "operationId": "planServerInstallation",
+        "summary": "Validate stopped Native installation",
+        "description": "Administrator plus provisioning policy. Checks published version, variables, CPU/RAM, ports, local images and shared mounts. Does not reserve ports or create a server.",
+        "x-scopes": [
+          "servers.create"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/ProvisionPlan"
+                    },
+                    "requestId": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProvisionRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/operations": {
+      "get": {
+        "operationId": "listApiOperations",
+        "summary": "List token operations",
+        "description": "Newest admissions first. Fields: id, kind, status (admission state), serverId, createdAt, links.self. Follow self for live progress. Install operations require the originating token and current administrator role.",
+        "x-scopes": [
+          "operations.read"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object"
+                      }
+                    },
+                    "requestId": {
+                      "type": "string"
+                    },
+                    "nextCursor": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        },
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            }
+          },
+          {
+            "name": "after",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/users": {
+      "get": {
+        "operationId": "listPanelUsers",
+        "summary": "List panel accounts",
+        "description": "Administrator only. No passwords, sessions or credentials.",
+        "x-scopes": [
+          "users.read"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/PublicUser"
+                      }
+                    },
+                    "requestId": {
+                      "type": "string"
+                    },
+                    "nextCursor": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        },
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            }
+          },
+          {
+            "name": "after",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0
+            }
+          }
+        ]
+      },
+      "post": {
+        "operationId": "createPanelUser",
+        "summary": "Create standard account",
+        "description": "Administrator only. Always role=user. Unique username; duplicates give 409. Reconcile uncertain results using username. No operator elevation, deletion or password reset.",
+        "x-scopes": [
+          "users.create"
+        ],
+        "responses": {
+          "201": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/PublicUser"
+                    },
+                    "requestId": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "username": {
+                    "type": "string",
+                    "pattern": "^[A-Za-z0-9_.-]{1,12}$"
+                  },
+                  "password": {
+                    "type": "string",
+                    "minLength": 8,
+                    "maxLength": 128,
+                    "writeOnly": true
+                  }
+                },
+                "required": [
+                  "username",
+                  "password"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/servers/{id}/members": {
+      "get": {
+        "operationId": "listServerMembers",
+        "summary": "Read membership and presets",
+        "description": "Current administrator authority and server scope required.",
+        "x-scopes": [
+          "members.read"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "properties": {
+                        "members": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/Member"
+                          }
+                        },
+                        "presets": {
+                          "type": "object"
+                        }
+                      }
+                    },
+                    "requestId": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/servers/{id}/members/{userId}": {
+      "put": {
+        "operationId": "grantServerAccess",
+        "summary": "Change server access",
+        "description": "Administrator only, target standard user only. PUT replaces membership with selected preset. Presets exclude terminal, CPU, IP, ports and startup environment. Repeated requests are safe.",
+        "x-scopes": [
+          "members.write"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "properties": {
+                        "userId": {
+                          "type": "integer"
+                        },
+                        "permissions": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    },
+                    "requestId": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "preset": {
+                    "enum": [
+                      "viewer",
+                      "console-operator",
+                      "server-admin"
+                    ]
+                  }
+                },
+                "required": [
+                  "preset"
+                ]
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ]
+      },
+      "delete": {
+        "operationId": "revokeServerAccess",
+        "summary": "Change server access",
+        "description": "Administrator only, target standard user only. PUT replaces membership with selected preset. Presets exclude terminal, CPU, IP, ports and startup environment. Repeated requests are safe.",
+        "x-scopes": [
+          "members.write"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "properties": {
+                        "userId": {
+                          "type": "integer"
+                        },
+                        "permissions": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    },
+                    "requestId": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/servers/{id}/game-admins": {
+      "get": {
+        "operationId": "listGameAdmins",
+        "summary": "Read AMXX Steam ID admins",
+        "description": "Also requires fs.read. CS1.6/ReHLDS with AMXX installed. ETag identifies version. Custom/password entries are counted as unmanaged, never exposed.",
+        "x-scopes": [
+          "game-admins.read"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/GameAdmins"
+                    },
+                    "requestId": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/servers/{id}/game-admins/{steamId}": {
+      "put": {
+        "operationId": "upsertGameAdmin",
+        "summary": "Change Steam ID admin",
+        "description": "Also fs.read/fs.write. Quoted ETag required in If-Match. Atomic versioned write with recovery snapshot. Preserves comments/custom entries, rejects ambiguous authentication. Missing version 428; conflict 409. No console reload is issued.",
+        "x-scopes": [
+          "game-admins.write"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/GameAdmins"
+                    },
+                    "requestId": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          },
+          "428": {
+            "$ref": "#/components/responses/Error"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "flags": {
+                    "type": "string",
+                    "pattern": "^[a-y]{1,25}$"
+                  }
+                },
+                "required": [
+                  "flags"
+                ]
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "steamId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^STEAM_[0-5]:[01]:[0-9]{1,12}$"
+            }
+          },
+          {
+            "name": "If-Match",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      },
+      "delete": {
+        "operationId": "removeGameAdmin",
+        "summary": "Change Steam ID admin",
+        "description": "Also fs.read/fs.write. Quoted ETag required in If-Match. Atomic versioned write with recovery snapshot. Preserves comments/custom entries, rejects ambiguous authentication. Missing version 428; conflict 409. No console reload is issued.",
+        "x-scopes": [
+          "game-admins.write"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/GameAdmins"
+                    },
+                    "requestId": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          },
+          "428": {
+            "$ref": "#/components/responses/Error"
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "steamId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^STEAM_[0-5]:[01]:[0-9]{1,12}$"
+            }
+          },
+          {
+            "name": "If-Match",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
     }
   },
   "components": {
@@ -677,7 +1853,12 @@
           "name",
           "provider",
           "status",
-          "observedAt"
+          "observedAt",
+          "available",
+          "stale",
+          "node",
+          "capabilities",
+          "links"
         ],
         "properties": {
           "id": {
@@ -699,6 +1880,177 @@
           "observedAt": {
             "type": "string",
             "format": "date-time"
+          },
+          "catalogId": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "available": {
+            "type": "boolean"
+          },
+          "stale": {
+            "type": "boolean"
+          },
+          "node": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              },
+              "location": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "id",
+              "name",
+              "location"
+            ]
+          },
+          "runtimeStatus": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "ports": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Port"
+            }
+          },
+          "template": {
+            "anyOf": [
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "id": {
+                    "type": "string"
+                  },
+                  "version": {
+                    "type": "integer"
+                  },
+                  "name": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  }
+                }
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "limits": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "cpu": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "memoryMb": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              }
+            }
+          },
+          "desiredState": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "uptimeSeconds": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "installation": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RuntimeInstallation"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "game": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/GameObservation"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "capabilities": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "power": {
+                "type": "boolean"
+              },
+              "backupsRead": {
+                "type": "boolean"
+              },
+              "backupsCreate": {
+                "type": "boolean"
+              },
+              "membersRead": {
+                "type": "boolean"
+              },
+              "membersWrite": {
+                "type": "boolean"
+              },
+              "gameAdminsRead": {
+                "type": "boolean"
+              },
+              "gameAdminsWrite": {
+                "type": "boolean"
+              }
+            }
+          },
+          "links": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "self": {
+                "type": "string"
+              },
+              "panel": {
+                "type": "string"
+              },
+              "resources": {
+                "type": "string"
+              }
+            }
+          },
+          "resourceUsage": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "description": "Detail only, with resources.read. Cached CPU/RAM/disk sample; null when unavailable."
           }
         }
       },
@@ -753,7 +2105,10 @@
             "format": "uuid"
           },
           "serverId": {
-            "type": "string",
+            "type": [
+              "string",
+              "null"
+            ],
             "format": "uuid"
           },
           "status": {
@@ -785,6 +2140,422 @@
               "null"
             ],
             "format": "date-time"
+          },
+          "kind": {
+            "type": "string"
+          },
+          "stage": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "percent": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "number": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "links": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "server": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            }
+          }
+        }
+      },
+      "Port": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "protocol": {
+            "enum": [
+              "tcp",
+              "udp"
+            ]
+          },
+          "ip": {
+            "type": "string"
+          },
+          "port": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 65535
+          },
+          "label": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "protocol",
+          "ip",
+          "port",
+          "label"
+        ]
+      },
+      "RuntimeInstallation": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "status": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "percent": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "updatedAt": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "completedAt": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "GameObservation": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "supported": {
+            "type": "boolean"
+          },
+          "state": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "checkedAt": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "staleAfterSeconds": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "latencyMs": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "map": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "players": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "maxPlayers": {
+            "type": [
+              "number",
+              "null"
+            ]
+          }
+        }
+      },
+      "ProvisionRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "nodeId": {
+            "type": "string"
+          },
+          "templateId": {
+            "type": "string"
+          },
+          "templateVersion": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "name": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 50
+          },
+          "bindings": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "key": {
+                  "type": "string"
+                },
+                "hostIp": {
+                  "type": "string",
+                  "format": "ipv4"
+                },
+                "host": {
+                  "oneOf": [
+                    {
+                      "type": "integer",
+                      "minimum": 1025,
+                      "maximum": 65535
+                    },
+                    {
+                      "const": "auto"
+                    }
+                  ]
+                }
+              },
+              "required": [
+                "key",
+                "hostIp",
+                "host"
+              ]
+            }
+          },
+          "variables": {
+            "type": "object",
+            "additionalProperties": {
+              "type": [
+                "string",
+                "number",
+                "boolean"
+              ]
+            }
+          },
+          "resourceLimits": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "cpu": {
+                "type": "number",
+                "minimum": 0.1
+              },
+              "memoryMb": {
+                "type": "integer",
+                "minimum": 128
+              }
+            },
+            "required": [
+              "cpu",
+              "memoryMb"
+            ]
+          }
+        },
+        "required": [
+          "nodeId",
+          "templateId",
+          "templateVersion",
+          "name",
+          "bindings",
+          "resourceLimits"
+        ]
+      },
+      "ProvisionAdmission": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "kind": {
+            "const": "server.install"
+          },
+          "status": {
+            "enum": [
+              "dispatching",
+              "accepted",
+              "uncertain"
+            ]
+          },
+          "serverId": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "startAfterInstall": {
+            "const": false
+          }
+        }
+      },
+      "ProvisionPlan": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "bindings": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "key": {
+                  "type": "string"
+                },
+                "hostIp": {
+                  "type": "string",
+                  "format": "ipv4"
+                },
+                "host": {
+                  "oneOf": [
+                    {
+                      "type": "integer",
+                      "minimum": 1025,
+                      "maximum": 65535
+                    },
+                    {
+                      "const": "auto"
+                    }
+                  ]
+                }
+              },
+              "required": [
+                "key",
+                "hostIp",
+                "host"
+              ]
+            }
+          },
+          "limits": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "cpu": {
+                "type": "number",
+                "minimum": 0.1
+              },
+              "memoryMb": {
+                "type": "integer",
+                "minimum": 128
+              }
+            },
+            "required": [
+              "cpu",
+              "memoryMb"
+            ]
+          },
+          "startAfterInstall": {
+            "const": false
+          },
+          "template": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "version": {
+                "type": "integer"
+              },
+              "hash": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      },
+      "PublicUser": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "username": {
+            "type": "string"
+          },
+          "role": {
+            "enum": [
+              "user",
+              "operator",
+              "super-admin"
+            ]
+          },
+          "enabled": {
+            "type": "boolean"
+          }
+        }
+      },
+      "Member": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "userId": {
+            "type": "integer"
+          },
+          "username": {
+            "type": "string"
+          },
+          "permissions": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "GameAdmins": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "provider": {
+            "const": "amxx"
+          },
+          "entries": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "steamId": {
+                  "type": "string"
+                },
+                "flags": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "unmanaged": {
+            "type": "integer"
+          },
+          "version": {
+            "type": "string"
+          },
+          "snapshotId": {
+            "type": "string"
+          },
+          "warning": {
+            "type": "string"
           }
         }
       }

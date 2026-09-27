@@ -1,3 +1,4 @@
+import { apiProvisionRuntimeRoutes } from './routes/apiProvisionRuntime.js';
 import { signedWebhookRoutes } from './routes/signedWebhooks.js';
 import { startSignedWebhookWorker } from './services/signedWebhooks.js';
 import { fleetCloneRoutes } from './routes/fleetClone.js';
@@ -187,6 +188,7 @@ app.use(
   serverRoutes,
 );
 // /api/catalog
+app.use('/api/runtime-provisioning', authMiddleware, apiProvisionRuntimeRoutes);
 app.use('/api/catalog', authMiddleware, catalogRoutes);
 if (!isAgent()) app.use('/api/game-templates', authMiddleware, templateRoutes);
 // /api/system

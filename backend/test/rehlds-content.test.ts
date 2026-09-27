@@ -7,6 +7,7 @@ import { loadWithMocks } from './loadWithMocks.js';
 import { addonPath, selectedModules, REHLDS_MODULES } from '../src/services/rehldsPackages.js';
 
 const content = loadWithMocks('../src/services/rehldsContent.ts', {
+  './gameAdminEntries.js': {},
   'node:fs': { promises: fs }, 'node:path': path, '../utils/fsBrowser.js': {}, './nativeGameConfig.js': {}, './servers.js': {}, './fileExplorer.js': {}, './atomicFile.js': {}, './fileHistory.js': {}, '../utils/storage.js': {},
 }, { Buffer });
 test('ReHLDS configuration rejects command injection, missing maps and unsupported admin authentication', () => {
