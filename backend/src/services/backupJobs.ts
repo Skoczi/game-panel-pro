@@ -107,7 +107,7 @@ export async function startBackupJob(
       };
       const result = await run(report);
       if (!result.ok) throw new Error(result.stderr || 'Backup operation failed');
-      if (kind === 'addon') await report({ stage: 'completed', message: 'Installation completed. Server remains stopped.', percent: 100 });
+      if (kind === 'addon') await report({ stage: 'completed', message: result.stdout?.startsWith('Addon removed:') ? 'Addon removal completed. Server remains stopped.' : 'Installation completed. Server remains stopped.', percent: 100 });
       await save(serverId, {
         ...job,
         status: 'completed',

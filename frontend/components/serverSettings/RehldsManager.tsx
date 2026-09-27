@@ -49,7 +49,8 @@ export function RehldsManager({
     [busy, setBusy] = useState(false),
     [review, setReview] = useState(false),
     [revision, setRevision] = useState(0);
-  const [modules, setModules] = useState(['metamod', 'amxx']),
+  const [addonAction, setAddonAction] = useState<'install' | 'uninstall'>('install');
+  const [modules, setModules] = useState<string[]>([]),
     [preview, setPreview] = useState<any>(null),
     [job, setJob] = useState<BackupJob | null>(null);
   const dirty = Boolean(snapshot && draft !== snapshot.content);
@@ -69,7 +70,7 @@ export function RehldsManager({
     }
     const request =
       section === 'addons'
-        ? apiClient.previewRehldsAddons(serverId, modules)
+        ? apiClient.previewRehldsAddons(serverId, modules, addonAction)
         : apiClient.getRehldsContent(serverId, section);
     request
       .then((result) => {
@@ -79,7 +80,7 @@ export function RehldsManager({
         )
           throw new Error('Invalid configuration response');
         if (active) {
-          if (section === 'addons') setPreview(result);
+          if (section === 'addons') { setPreview(result); setReview(modules.length > 0); }
           else {
             setSnapshot(result);
             setDraft(result.content);
@@ -99,7 +100,7 @@ export function RehldsManager({
     return () => {
       active = false;
     };
-  }, [serverId, section, modules, revision]);
+  }, [serverId, section, modules, revision, addonAction]);
   const [progressError, setProgressError] = useState('');
   useEffect(() => {
     if (!canWrite || (section !== 'addons' && job?.status !== 'running')) return;
@@ -121,7 +122,7 @@ export function RehldsManager({
     return () => { active = false; clearInterval(timer); };
   }, [serverId, section, canWrite, job?.status]);
   useEffect(() => {
-    if (job?.status === 'completed') setRevision(value => value + 1);
+    if (job?.status === 'completed') { setModules([]); setRevision(value => value + 1); }
   }, [job?.id, job?.status]);
   const save = async () => {
     if (!snapshot || section === 'files') return;
@@ -191,8 +192,8 @@ export function RehldsManager({
           ))}
       </nav>
       {job && <section className="gp-workflow-card" aria-label="Addon installation progress">
-        <div className="gp-addon-progress-heading"><strong>Addon installation</strong>{job.status !== 'completed' && <span>{job.status}</span>}</div>
-        <p role="status">{job.error || (job.status === 'completed' ? 'Installation completed.' : job.progress?.message) || (job.status === 'running' ? 'Preparing installation...' : job.result?.stdout || job.status)}</p>
+        <div className="gp-addon-progress-heading"><strong>Addon operation</strong>{job.status !== 'completed' && <span>{job.status}</span>}</div>
+        <p role="status">{job.error || (job.status === 'completed' ? (job.result?.stdout?.startsWith('Addon removed:') ? 'Addon removed.' : 'Installation completed.') : job.progress?.message) || (job.status === 'running' ? 'Preparing installation...' : job.result?.stdout || job.status)}</p>
         {job.status === 'running' && <div className="gp-addon-progress-meter"><progress aria-label="Current installation stage" max={100} value={job.progress?.percent ?? undefined} /><span>{job.progress?.percent == null ? 'In progress' : `${job.progress.percent}%`}</span></div>}
         {progressError && <p role="alert">{progressError}</p>}
       </section>}
@@ -329,21 +330,7 @@ export function RehldsManager({
             <>
               <div className="grid gap-2 md:grid-cols-2">
                 {preview.catalogue.map((module: any) => (
-                  <label key={module.id} className="gp-workflow-card gp-addon-card">
-                    <input
-                      type="checkbox"
-                      aria-label={`${module.name} ${module.version}`}
-                      disabled={busy || job?.status === 'running'}
-                      checked={modules.includes(module.id)}
-                      onChange={(e) => {
-                        setModules((values) =>
-                          e.target.checked
-                            ? [...values, module.id]
-                            : values.filter((v) => v !== module.id)
-                        );
-                        setReview(false);
-                      }}
-                    />
+                  <section key={module.id} className="gp-workflow-card gp-addon-card" aria-label={module.name}>
                     <span className="gp-addon-details">
                       <strong>{module.name}</strong>
                       {preview.installed[module.id] !== module.version && <span>{preview.installed[module.id] ? 'Available ' : 'v'}{module.version}</span>}
@@ -351,12 +338,16 @@ export function RehldsManager({
                         {preview.installed[module.id] ? `Installed ${preview.installed[module.id]}` : 'Not recorded'}
                       </span>
                     </span>
-                    <span className="gp-addon-selection">{modules.includes(module.id) ? (preview.installed[module.id] ? 'Reinstall' : 'Install') : ''}</span>
-                  </label>
+                    {canWrite && <div className="gp-addon-buttons">
+                      <AppButton disabled={loading || busy || job?.status === 'running'} onClick={() => { setLoading(true); setAddonAction('install'); setModules([module.id]); }}>{preview.installed[module.id] ? 'Reinstall' : 'Install'}</AppButton>
+                      {preview.installed[module.id] && ['metamod', 'amxx', 'reapi', 'reunion'].includes(module.id) && <AppButton disabled={loading || busy || job?.status === 'running'} onClick={() => { setLoading(true); setAddonAction('uninstall'); setModules([module.id]); }}>Uninstall</AppButton>}
+                      {preview.installed[module.id] && ['rehlds', 'regamedll'].includes(module.id) && <span className="gp-workflow-muted">Rollback via Backups</span>}
+                    </div>}
+                  </section>
                 ))}
               </div>
               {!preview.stopped && (
-                <p className="text-amber-700">Stop the game from its console before installing.</p>
+                <p className="text-amber-700">Stop the game before changing addons.</p>
               )}
               <div className="gp-workflow-actions">
               <AppButton
@@ -365,18 +356,20 @@ export function RehldsManager({
               >
                 Refresh
               </AppButton>
-              {review && (
-                <div className="rounded border p-3">
+              {review && modules.length > 0 && (
+                <div className="gp-workflow-card gp-addon-review" role="region" aria-label="Review addon operation">
+                  <h3>{addonAction === 'uninstall' ? 'Uninstall' : 'Install'} {preview.modules.map((m: any) => m.name).join(', ')}</h3>
+                  {preview.blocked && <p role="alert">{preview.blocked}</p>}
                   <ul>
                     {preview.changes.map((change: string) => (
                       <li key={change}>{change}</li>
                     ))}
                   </ul>
                   <p className="text-sm">{preview.modules.map((m: any) => m.name).join(', ')}</p>
-                  {modules.includes('reunion') && <p className="text-sm">Reunion changes player authentication.</p>}
+                  {addonAction === 'install' && modules.includes('reunion') && <p className="text-sm">Reunion changes player authentication.</p>}
                 </div>
               )}
-              {canWrite && (
+              {canWrite && modules.length > 0 && review && (
                 <AppButton
                   tone="primary"
                   disabled={
@@ -384,6 +377,7 @@ export function RehldsManager({
                     busy ||
                     !modules.length ||
                     !preview.stopped ||
+                    Boolean(preview.blocked) ||
                     job?.status === 'running'
                   }
                   onClick={async () => {
@@ -397,7 +391,8 @@ export function RehldsManager({
                       const result = await apiClient.installRehldsAddons(
                         serverId,
                         modules,
-                        preview.fingerprint
+                        preview.fingerprint,
+                        addonAction
                       );
                       setJob(result.job);
                       setReview(false);
@@ -408,9 +403,10 @@ export function RehldsManager({
                     }
                   }}
                 >
-                  {review ? 'Create backup and install' : 'Review installation'}
+                  {addonAction === 'uninstall' ? 'Back up and uninstall' : 'Back up and install'}
                 </AppButton>
               )}
+              {modules.length > 0 && <AppButton disabled={busy || job?.status === 'running'} onClick={() => { setModules([]); setReview(false); setAddonAction('install'); }}>Cancel</AppButton>}
               </div>
               <details>
                 <summary>Sources and checksums</summary>

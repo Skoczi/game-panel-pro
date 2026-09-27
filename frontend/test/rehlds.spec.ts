@@ -38,19 +38,19 @@ test('running game cannot install addons and readonly configuration cannot save'
   await expect(page.getByRole('button', { name: 'Review changes', exact: true })).toHaveCount(0);
   await page.goto('/test/rehlds.fixture.html');
   await page.getByRole('button', { name: 'Install addons', exact: true }).click();
-  await expect(page.getByRole('button', { name: 'Review installation' })).toBeDisabled();
-  await expect(page.getByText('Stop the game from its console before installing.')).toBeVisible();
+  await page.getByRole('region', { name: 'metamod', exact: true }).getByRole('button', { name: 'Install', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'Back up and install' })).toBeDisabled();
+  await expect(page.getByText('Stop the game before changing addons.')).toBeVisible();
 });
 for (const width of [390, 1280]) test(`addon catalogue and empty selection recover at ${width}px`, async ({ page }) => {
   await page.setViewportSize({ width, height: 844 }); await mock(page, false, true);
   await page.goto('/test/rehlds.fixture.html');
   await page.getByRole('button', { name: 'Install addons', exact: true }).click();
-  await page.getByRole('checkbox', { name: 'metamod test' }).uncheck();
-  await page.getByRole('checkbox', { name: 'amxx test' }).uncheck();
-  await expect(page.getByRole('button', { name: 'Review installation' })).toBeDisabled();
-  await page.getByRole('checkbox', { name: 'reapi test' }).check();
-  await expect(page.getByRole('button', { name: 'Review installation' })).toBeEnabled();
-  await page.getByRole('button', { name: 'Review installation' }).click();
-  await expect(page.getByRole('button', { name: 'Create backup and install' })).toBeVisible();
+  await expect(page.getByRole('checkbox')).toHaveCount(0);
+  await expect(page.getByRole('region', { name: 'Review addon operation' })).toHaveCount(0);
+  await page.getByRole('region', { name: 'reapi', exact: true }).getByRole('button', { name: 'Install', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'Back up and install' })).toBeEnabled();
+  await page.getByRole('button', { name: 'Cancel', exact: true }).click();
+  await expect(page.getByRole('region', { name: 'Review addon operation' })).toHaveCount(0);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
 });

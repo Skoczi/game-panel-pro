@@ -963,11 +963,11 @@ class ApiClient {
   async saveRehldsContent(serverId: number, section: string, payload: { content?: string; version: string; restore?: string }) {
     return (await this.client.put(`/api/servers/${serverId}/rehlds/${section}`, payload)).data;
   }
-  async previewRehldsAddons(serverId: number, modules: string[]) {
-    return (await this.client.get(`/api/servers/${serverId}/rehlds/addons`, { params: { modules: modules.join(',') } })).data;
+  async previewRehldsAddons(serverId: number, modules: string[], action: 'install' | 'uninstall' = 'install') {
+    return (await this.client.get(`/api/servers/${serverId}/rehlds/addons`, { params: { modules: modules.length ? modules.join(',') : undefined, action } })).data;
   }
-  async installRehldsAddons(serverId: number, modules: string[], fingerprint: string) {
-    return (await this.client.post(`/api/servers/${serverId}/rehlds/addons`, { modules, fingerprint })).data;
+  async installRehldsAddons(serverId: number, modules: string[], fingerprint: string, action: 'install' | 'uninstall' = 'install') {
+    return (await this.client.post(`/api/servers/${serverId}/rehlds/addons`, { modules, fingerprint, action })).data;
   }
   async getNativeGameConfig(serverId: number) {
     const response = await this.client.get(`/api/servers/${serverId}/game-config`);

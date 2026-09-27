@@ -490,9 +490,12 @@ html .gp-server-page .gp-server-stats .gp-server-stat small {
 .gp-addon-progress-meter progress { flex:1; min-width:0; height:8px; accent-color:var(--ux-accent); }
 .gp-addon-progress-meter span { font-size:12px; font-variant-numeric:tabular-nums; }
 
-.gp-addon-card { display:grid; grid-template-columns:20px minmax(0,1fr); gap:12px; align-items:center; }
+.gp-addon-card { display:grid; grid-template-columns:minmax(0,1fr); gap:12px; align-items:center; }
 .gp-addon-details { display:grid; gap:5px; min-width:0; }
 .gp-addon-details > span { font-size:12px; color:var(--ux-muted); }
 .gp-addon-details .gp-addon-installed { color:var(--ux-accent); font-weight:600; }
 .gp-addon-selection { grid-column:2; font-size:11px; color:var(--ux-muted); }
 .gp-addon-card:has(input:checked) { border-color:var(--ux-accent); }
+
+.gp-addon-buttons { display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
+.gp-addon-review { flex-basis:100%; }

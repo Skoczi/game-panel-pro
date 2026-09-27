@@ -11,7 +11,7 @@ import { restoreNativeBackup } from './nativeRestore.js';
 import { REHLDS_MODULES, packageSources, selectedModules, downloadAddonFiles, addonPath } from './rehldsPackages.js';
 import { syncDirectory } from './nativeRestoreJournal.js';
 
-async function safeFile(root: string, relative: string, create = false) {
+export async function safeFile(root: string, relative: string, create = false) {
   addonPath(relative);
   const owner = await fs.lstat(root); if (!owner.isDirectory()) throw new Error('Invalid game root');
   let current = root;
@@ -27,7 +27,7 @@ async function safeFile(root: string, relative: string, create = false) {
   if (stat && !stat.isFile()) throw new Error('Addon destination must be a regular file');
   return { filename, stat, owner };
 }
-async function textFile(root: string, filename: string) {
+export async function textFile(root: string, filename: string) {
   const target = await safeFile(root, filename);
   if (!target?.stat) return null;
   if (target.stat.size > 128 * 1024) throw new Error('Addon configuration too large');
