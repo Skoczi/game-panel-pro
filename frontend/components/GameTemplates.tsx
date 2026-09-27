@@ -990,7 +990,7 @@ export function TemplateInstall({ row, onClose, fixedNodeId, initialNodeId, onIn
   const [portValidation, setPortValidation] = useState({ signature: '', valid: false });
   const [variables, setVariables] = useState<Record<string, string>>({});
   const [name, setName] = useState(row.document.name);
-  const [memory, setMemory] = useState(row.document.runtime.catalogId === 'cs2' ? '8192' : row.document.runtime.catalogId === 'csgo' ? '4096' : '1024');
+  const [memory, setMemory] = useState(row.document.runtime.catalogId === 'cs2' ? '8192' : row.document.runtime.catalogId === 'csgo' ? '4096' : row.document.runtime.catalogId === 'hltv' ? '256' : '1024');
   const [cpu, setCpu] = useState(['cs2','csgo'].includes(row.document.runtime.catalogId) ? '2' : '1');
   const [cpuSet, setCpuSet] = useState<number[]>([]);
   useEffect(() => { setCpuSet([]); }, [nodeId]);
@@ -1091,7 +1091,7 @@ export function TemplateInstall({ row, onClose, fixedNodeId, initialNodeId, onIn
         nativeRuntimeProtocol?: number;
         templateScriptsProtocol?: number;
         nativeSettingsProtocol?: number;
-        capabilities?: {fastDownload?:number;gameMonitoring?:number;templateIcons?:number;gameConfigEditor?:number};
+        capabilities?: {templateLinkedPorts?:number;fastDownload?:number;gameMonitoring?:number;templateIcons?:number;gameConfigEditor?:number};
       }>(`${base}/api/health`);
       if (health.templatesProtocol !== 1)
         throw new Error(
@@ -1105,6 +1105,7 @@ export function TemplateInstall({ row, onClose, fixedNodeId, initialNodeId, onIn
       if(row.document.icon && health.capabilities?.templateIcons !== 1) throw new Error('Update this node to support template game icons. No installation was sent.');
       if(row.document.monitoring && health.capabilities?.gameMonitoring !== 1) throw new Error('Update this node to support game monitoring templates.');
       if(row.document.fastDownload?.enabled && health.capabilities?.fastDownload !== 1) throw new Error('Update this node to support FastDownload templates.');
+      if(row.document.ports.some(p => p.sameAs) && health.capabilities?.templateLinkedPorts !== 1) throw new Error('Update this node to support shared Game/RCON ports.');
       const lifecycle = row.document.lifecycle;
       if (row.document.configFiles !== undefined && health.nativeSettingsProtocol !== 1)
         throw new Error('This node needs the native settings update before using template configuration links. No installation was sent.');

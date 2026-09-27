@@ -1,0 +1,35 @@
+#!/bin/bash
+set -euo pipefail
+phase="$1"
+root=/data/serverfiles
+if [[ "$phase" == install ]]; then
+  [[ ! -e "$root/hltv" ]] || { echo 'Existing HLTV installation detected'; exit 2; }
+  [[ "$TARGET_SERVER" =~ ^([0-9]{1,3}\.){3}[0-9]{1,3}:[0-9]{1,5}$ ]] || { echo 'Enter the game server IPv4 address and port'; exit 2; }
+  address="${TARGET_SERVER%:*}"; port="${TARGET_SERVER##*:}"
+  IFS=. read -r a b c d <<< "$address"
+  for octet in "$a" "$b" "$c" "$d"; do ((10#$octet <= 255)) || { echo 'Invalid game server IPv4 address'; exit 2; }; done
+  ((10#$port >= 1 && 10#$port <= 65535)) || { echo 'Invalid game server port'; exit 2; }
+  [[ "$RECORD_DEMOS" == true || "$RECORD_DEMOS" == false ]] || { echo 'Recording must be true or false'; exit 2; }
+fi
+saved=""
+restore_config() { if [[ -n "$saved" ]]; then cp "$saved" "$root/hltv.cfg"; rm -f "$saved"; fi; }
+if [[ "$phase" == update && -f "$root/hltv.cfg" ]]; then
+  [[ ! -L "$root/hltv.cfg" ]] || exit 2
+  saved=$(mktemp); cp "$root/hltv.cfg" "$saved"; trap restore_config EXIT
+fi
+mkdir -p "$root/steamapps" /data/.steam/sdk32
+cd /opt/steamcmd
+complete=0
+for attempt in 1 2 3; do
+  args=(+force_install_dir "$root" +login anonymous +app_set_config 90 mod cstrike +app_update 90 -beta steam_legacy)
+  [[ "$phase" != install ]] || args+=(validate)
+  if ./steamcmd.sh "${args[@]}" +quit && [[ -s "$root/hltv" && -s "$root/core.so" && -s "$root/proxy.so" ]]; then complete=1; break; fi
+done
+(( complete == 1 )) || { echo 'HLTV download incomplete'; exit 1; }
+install -m 644 linux32/steamclient.so /data/.steam/sdk32/steamclient.so
+mkdir -p "$root/cstrike/demos"
+if [[ "$phase" == install ]]; then
+  printf '%s\n' 'hostname "HLTV"' 'name "HLTV"' 'maxclients 128' 'delay 30' 'autoretry 1' 'serverpassword ""' 'spectatorpassword ""' 'adminpassword ""' "connect $TARGET_SERVER" > "$root/hltv.cfg"
+  [[ "$RECORD_DEMOS" != true ]] || printf '%s\n' 'record demos/hltv' >> "$root/hltv.cfg"
+fi
+echo 'HLTV files ready.'

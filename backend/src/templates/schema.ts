@@ -72,12 +72,16 @@ export function validateTemplate(input: unknown): GameTemplate {
         identity = { user, uid: i.uid, gid: i.gid };
     }
     const ports = list(v.ports, 16).map(raw => {
-        const p = object(raw, ['key', 'label', 'protocol', 'container', 'suggested', 'env', 'linuxgsmKey']);
-        const result = { key: identifier(p.key), label: text(p.label, 80), protocol: choice(p.protocol, ['tcp', 'udp']), container: port(p.container), suggested: port(p.suggested), env: identifier(p.env, true), linuxgsmKey: identifier(p.linuxgsmKey, true) };
+        const p = object(raw, ['key', 'label', 'protocol', 'container', 'suggested', 'env', 'linuxgsmKey', 'sameAs']);
+        const result = { key: identifier(p.key), label: text(p.label, 80), protocol: choice(p.protocol, ['tcp', 'udp']), container: port(p.container), suggested: port(p.suggested), env: identifier(p.env, true), linuxgsmKey: identifier(p.linuxgsmKey, true), ...(p.sameAs !== undefined ? { sameAs: identifier(p.sameAs) } : {}) };
         if (result.linuxgsmKey && provider !== 'linuxgsm') throw new TemplateError('LinuxGSM port keys require the LinuxGSM provider');
         return result;
     });
     unique(ports.map(p => p.key)); unique(ports.map(p => `${p.protocol}:${p.container}`));
+    for (const p of ports.filter(p => p.sameAs)) {
+        const target = ports.find(other => other.key === p.sameAs);
+        if (!target || target.sameAs || target.key === p.key || target.protocol === p.protocol || target.container !== p.container) throw new TemplateError('Linked ports must share a container port across TCP and UDP');
+    }
     unique(ports.filter(p => p.env).map(p => p.env)); unique(ports.filter(p => p.linuxgsmKey).map(p => p.linuxgsmKey));
     const variables = list(v.variables, 48).map(raw => {
         const p = object(raw, ['key', 'label', 'type', 'required', 'secret', 'default']);

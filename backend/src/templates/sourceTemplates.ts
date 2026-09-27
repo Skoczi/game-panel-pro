@@ -47,7 +47,7 @@ export const SOURCE_TEMPLATES: Array<{ id: string; document: GameTemplate }> = (
       ports: [
         {
           key: "game",
-          label: "Game / Query",
+          label: "Game / Query / RCON",
           protocol: "udp",
           container: 27015,
           suggested: 27015,
@@ -57,10 +57,20 @@ export const SOURCE_TEMPLATES: Array<{ id: string; document: GameTemplate }> = (
         {
           key: "rcon",
           label: "RCON",
+          sameAs: "game",
           protocol: "tcp",
           container: 27015,
           suggested: 27015,
           env: "",
+          linuxgsmKey: "",
+        },
+        {
+          key: "tv",
+          label: game === "cs2" ? "CSTV" : game === "csgo" ? "GOTV" : "SourceTV",
+          protocol: "udp",
+          container: 27020,
+          suggested: 27020,
+          env: "TV_PORT",
           linuxgsmKey: "",
         },
       ],

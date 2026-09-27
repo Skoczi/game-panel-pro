@@ -7,7 +7,7 @@ export type GameTemplate = {
         architectures: Array<'x64' | 'arm64'>;
         identity?: { user: string; uid: number; gid: number };
     };
-    ports: Array<{ key: string; label: string; protocol: 'tcp' | 'udp'; container: number; suggested: number; env: string; linuxgsmKey: string }>;
+    ports: Array<{ key: string; label: string; protocol: 'tcp' | 'udp'; container: number; suggested: number; env: string; linuxgsmKey: string; sameAs?: string }>;
     variables: Array<{ key: string; label: string; type: 'string' | 'integer' | 'boolean'; required: boolean; secret: boolean; default: string }>;
     mounts: Array<{ key: string; containerPath: string }>;
     monitoring?: { protocol: 'a2s'; queryPort: string };

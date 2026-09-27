@@ -16,6 +16,34 @@ import {
 import { SOURCE_ADDON_SOURCES } from "../src/services/sourceAddonSources.js";
 import { loadWithMocks } from "./loadWithMocks.js";
 import { addonPath } from "../src/services/rehldsPackages.js";
+import { HLTV_TEMPLATE } from '../src/templates/hltv.js';
+import { materializeTemplate } from '../src/templates/tickets.js';
+
+test('Source ports share Game/RCON while TV and HLTV retain independent bindings', () => {
+  for (const { document } of SOURCE_TEMPLATES) {
+    const template = validateTemplate(document);
+    assert.equal(template.ports.find(p => p.key === 'rcon')?.sameAs, 'game');
+    const snapshot = { id: 'source', version: 2, hash: templateHash(template), document: template };
+    const bindings = template.ports.map(p => ({ key: p.key, hostIp: '192.0.2.10', host: p.key === 'tv' ? 28020 : 28015 }));
+    const result = materializeTemplate(snapshot, { bindings }, 'x64');
+    assert.equal(result.ports.tcp[0].host, result.ports.udp[0].host);
+    assert.equal(result.env.TV_PORT, '27020');
+    assert.throws(() => materializeTemplate(snapshot, { bindings: bindings.map(b => b.key === 'rcon' ? { ...b, host: 28016 } : b) }, 'x64'), /same public/);
+    for (const sameAs of ['missing', 'rcon', 'tv']) {
+      const invalid = structuredClone(template); invalid.ports.find(p => p.key === 'rcon')!.sameAs = sameAs;
+      assert.throws(() => validateTemplate(invalid), /Linked ports/);
+    }
+  }
+  const hltv = validateTemplate(HLTV_TEMPLATE);
+  assert.equal(sourceProfile(hltv), null);
+  assert.equal(hltv.ports.length, 1);
+  assert.equal(hltv.ports[0].protocol, 'udp');
+  assert.equal(hltv.gameConfig && hltv.gameConfig.path, '/serverfiles/hltv.cfg');
+  const snapshot = { id: 'hltv', version: 1, hash: templateHash(hltv), document: hltv };
+  const bindings = [{ key: 'tv', hostIp: '192.0.2.10', host: 28020 }];
+  assert.throws(() => materializeTemplate(snapshot, { bindings }, 'x64'));
+  assert.equal(materializeTemplate(snapshot, { bindings, variables: { TARGET_SERVER: '192.0.2.10:27015' } }, 'x64').env.TARGET_SERVER, '192.0.2.10:27015');
+});
 
 test("Source templates keep games, monitoring ports and runtime families separate", () => {
   for (const { document } of SOURCE_TEMPLATES) {

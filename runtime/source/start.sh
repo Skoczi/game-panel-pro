@@ -9,11 +9,11 @@ token=(); [[ -z "${GSLT:-}" ]] || token=(+sv_setsteamaccount "$GSLT")
 export LD_LIBRARY_PATH=/data/serverfiles:/data/serverfiles/bin:/data/serverfiles/bin/linux64:/data/serverfiles/game/bin/linuxsteamrt64
 if [[ "$game" == cs2 ]]; then
   /usr/local/lib/gamepanel/source-loaders /data/serverfiles
-  exec /usr/local/lib/gamepanel/source-console ./game/bin/linuxsteamrt64/cs2 -dedicated -console -usercon -ip 0.0.0.0 -port "$SERVER_PORT" -maxplayers "$MAX_PLAYERS" +game_type "$GAME_TYPE" +game_mode "$GAME_MODE" +map "$MAP" +exec server.cfg "${token[@]}" "$@"
+  exec /usr/local/lib/gamepanel/source-console ./game/bin/linuxsteamrt64/cs2 -dedicated -console -usercon -ip 0.0.0.0 -port "$SERVER_PORT" -maxplayers "$MAX_PLAYERS" +game_type "$GAME_TYPE" +game_mode "$GAME_MODE" +tv_port "${TV_PORT:-27020}" +map "$MAP" +exec server.cfg "${token[@]}" "$@"
 fi
 folder=cstrike; [[ "$game" != csgo ]] || folder=csgo
 # The legacy 32-bit CS:GO depot ships libgcc older than its system libstdc++.
 # Keep Valve's copy for recovery and let the runtime supply the compatible ABI.
 if [[ "$game" == csgo && -f bin/libgcc_s.so.1 ]]; then mv -f bin/libgcc_s.so.1 bin/libgcc_s.so.1.valve; fi
 extra=(); [[ "$game" != csgo ]] || extra=(-tickrate "$TICKRATE" -maxplayers_override "$MAX_PLAYERS" +game_type "$GAME_TYPE" +game_mode "$GAME_MODE" +mapgroup "$MAP_GROUP")
-exec /usr/local/lib/gamepanel/source-console /bin/bash ./srcds_run -game "$folder" -console -usercon -ip 0.0.0.0 -port "$SERVER_PORT" -strictportbind -norestart -maxplayers "$MAX_PLAYERS" "${extra[@]}" +map "$MAP" +servercfgfile server.cfg "${token[@]}" "$@"
+exec /usr/local/lib/gamepanel/source-console /bin/bash ./srcds_run -game "$folder" -console -usercon -ip 0.0.0.0 -port "$SERVER_PORT" -strictportbind -norestart -maxplayers "$MAX_PLAYERS" "${extra[@]}" +tv_port "${TV_PORT:-27020}" +map "$MAP" +servercfgfile server.cfg "${token[@]}" "$@"

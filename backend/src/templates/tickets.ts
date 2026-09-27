@@ -31,6 +31,10 @@ export function materializeTemplate(s: TemplateSnapshot, input: Record<string, a
         const matches = bindings.filter((b: any) => b?.key === p.key);
         if (matches.length !== 1) throw new TemplateError('Each template port needs exactly one binding');
         const b = matches[0];
+        if (p.sameAs) {
+            const target = bindings.find((other: any) => other?.key === p.sameAs);
+            if (!target || b.host !== target.host || b.hostIp !== target.hostIp) throw new TemplateError('Linked ports must use the same public IP and port');
+        }
         if (!Number.isInteger(b.host) || b.host < 1025 || b.host > 65535 || typeof b.hostIp !== 'string' || isIP(b.hostIp) !== 4 || b.hostIp === '0.0.0.0') throw new TemplateError('Select an explicit IPv4 address and a valid host port');
         ports[p.protocol].push({ host: b.host, container: p.container, hostIp: b.hostIp, label: p.label });
         if (p.env) env[p.env] = String(p.container);

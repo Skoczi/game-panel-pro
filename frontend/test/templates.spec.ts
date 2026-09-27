@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { SOURCE_TEMPLATES } from '../../backend/src/templates/sourceTemplates';
 const definition = {
   schemaVersion: 1,
   name: 'Counter-Strike 1.6',
@@ -463,4 +464,63 @@ test('icon templates reject older agents before installation', async ({ page }) 
   await page.getByRole('button', { name: 'Create server', exact: true }).click();
   await expect(page.getByRole('alert')).toContainText('Update this node to support template game icons');
   expect(sends).toBe(0);
+});
+
+test('Source shows one shared Game/RCON selector and an independent TV port', async ({ page }) => {
+  await mock(page, 'published');
+  const document = SOURCE_TEMPLATES.find((t) => t.id === 'builtin-css-native')!.document;
+  await page.route('**/api/game-templates', (r) =>
+    r.fulfill({ json: { templates: [{ ...row, status: 'published', document }] } })
+  );
+  await page.route('**/allocations', (r) =>
+    r.fulfill({
+      json: {
+        network: {
+          allocations: [
+            { ip: '192.0.2.10', alias: 'Game IP', udp: '27015-27030', tcp: '27015-27030' },
+          ],
+        },
+      },
+    })
+  );
+  await page.route('**/api/servers/available-ports?*', (r) =>
+    r.fulfill({
+      json: {
+        ports: r.request().url().includes('protocol=tcp') ? [27020, 27021] : [27015, 27020, 27021],
+      },
+    })
+  );
+  await page.route('**/api/health', (r) => r.fulfill({ json: { templatesProtocol: 1, nativeRuntimeProtocol: 1, nativeSettingsProtocol: 1, templateScriptsProtocol: 1, capabilities: { gameConfigEditor: 1, templateIcons: 1, gameMonitoring: 1, fastDownload: 1, templateLinkedPorts: 1 } } }));
+  await page.route('**/prepare', (r) => r.fulfill({ json: { ticket: 'ticket' } }));
+  let body: any;
+  await page.route('**/api/servers/install', (r) => {
+    body = r.request().postDataJSON();
+    return r.fulfill({ status: 201, json: { server: { id: 109 } } });
+  });
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/test/templates.fixture.html');
+  await page.getByRole('button', { name: 'Install server' }).click();
+  await expect(page.getByRole('combobox', { name: /Public port/ })).toHaveCount(2);
+  await expect(page.getByRole('heading', { name: 'RCON', exact: true })).toHaveCount(0);
+  await page
+    .getByRole('combobox', { name: 'Public IP · Game / Query / RCON', exact: true })
+    .click();
+  await page.getByRole('option', { name: /Game IP/ }).click();
+  await expect(page.getByText('192.0.2.10:27020', { exact: true })).toBeVisible();
+  await page
+    .getByRole('combobox', { name: 'Public port · Game / Query / RCON', exact: true })
+    .click();
+  await expect(page.getByRole('option', { name: '27015', exact: true })).toHaveCount(0);
+  await page.getByRole('option', { name: '27020', exact: true }).click();
+  await page.getByRole('combobox', { name: 'Public IP · SourceTV', exact: true }).click();
+  await page.getByRole('option', { name: /Game IP/ }).click();
+  await expect(page.getByText('192.0.2.10:27015', { exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Create server', exact: true }).click();
+  await expect
+    .poll(() => body?.bindings)
+    .toEqual([
+      { key: 'game', hostIp: '192.0.2.10', host: 27020 },
+      { key: 'rcon', hostIp: '192.0.2.10', host: 27020 },
+      { key: 'tv', hostIp: '192.0.2.10', host: 'auto' },
+    ]);
 });

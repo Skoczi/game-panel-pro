@@ -1,6 +1,6 @@
 # Native Counter-Strike runtimes
 
-Three published recipes use SteamCMD, fixed non-root UID/GID 1000, persistent
+Four published recipes use SteamCMD, fixed non-root UID/GID 1000, persistent
 `/data`, and interactive game consoles. They install stopped. Steam tokens are
 secret instance variables, never template defaults.
 
@@ -9,12 +9,34 @@ secret instance variables, never template defaults.
 | Counter-Strike: Source | 232330 | serverfiles/cstrike | source-v1 |
 | CS:GO Legacy | 740 | serverfiles/csgo | source-v1 |
 | Counter-Strike 2 | 730 | serverfiles/game/csgo | source2-v1 |
+| CS 1.6 HLTV | 90 (steam_legacy) | serverfiles | source-v1 |
 
 Source 1 launches the depot's 32-bit srcds_linux through srcds_run. The CS:GO
 libgcc compatibility fix follows LinuxGSM. The console wrapper supplies a PTY
 without changing Docker's log framing. CS2 uses pinned Steam Runtime 3.
 Mode override files keep server.cfg effective after Valve's mode presets.
 Updates preserve existing configuration; they do not invoke SteamCMD `validate`.
+
+## Ports and broadcasts
+
+Source, CS:GO and CS2 expose one Game / Query / RCON choice. The TCP binding
+uses `sameAs: game`: the allocator chooses an IP and port free in both TCP and
+UDP pools, under the same allocation lock. TV has an independent UDP binding
+(container 27020); startup supplies `tv_port` before loading the first map.
+Allocating this port does not automatically enable a broadcast.
+
+CS 1.6 HLTV is a separate relay, with its own UDP port and lifecycle. Its install
+form requires the target game IPv4:port and offers automatic demo recording.
+Game Config edits the broadcast name, target, slots, delay and access passwords;
+the full `serverfiles/hltv.cfg` remains editable. Demos are stored in
+`serverfiles/cstrike/demos`; use `record demos/name` / `stoprecording` in the
+HLTV console for manual recording. Updating preserves `hltv.cfg` even if Steam
+replaces its packaged copy. Existing game servers are not modified or restarted.
+
+The HLTV runtime was tested against an isolated Valve CS 1.6 server: connection,
+console status, nonempty demo creation, clean shutdown, and config-preserving
+Steam update passed. Source startup argument checks cover all three games;
+allocation tests cover asymmetric TCP/UDP occupancy and explicit TV reservations.
 
 ## Framework management
 

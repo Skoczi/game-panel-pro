@@ -33,19 +33,29 @@ export function chooseTemplateBindings(template: GameTemplate, input: unknown, n
         return { key: p.key, hostIp: matches[0].hostIp, host: matches[0].host } as Binding;
     });
     const claimed = [...occupied];
+    for (const p of template.ports.filter(p => p.sameAs)) {
+        const linked = selected.find(b => b.key === p.key)!;
+        const target = selected.find(b => b.key === p.sameAs);
+        if (!target || linked.host !== target.host || linked.hostIp !== target.hostIp) throw new TemplateError('Linked ports must use the same public IP and port');
+    }
     // Manual selections first: automatic assignment must not steal another field's explicit port.
     for (const automatic of [false, true]) for (let i = 0; i < selected.length; i++) {
         const b = selected[i];
+        if (template.ports[i].sameAs) continue;
         if ((b.host === 'auto') !== automatic) continue;
-        const protocol = template.ports[i].protocol;
-        if (typeof b.host === 'number' && !availablePublicPorts(network, [], b.hostIp, protocol).includes(b.host)) {
+        const group = template.ports.filter(p => p.key === b.key || p.sameAs === b.key);
+        const protocols = group.map(p => p.protocol);
+        for (const protocol of protocols) if (typeof b.host === 'number' && !availablePublicPorts(network, [], b.hostIp, protocol).includes(b.host)) {
             throw new TemplateError(`Port ${b.host}/${protocol} is outside the allocated pool for ${b.hostIp}`);
         }
-        const free = availablePublicPorts(network, claimed, b.hostIp, protocol);
+        const pools = protocols.map(protocol => new Set(availablePublicPorts(network, claimed, b.hostIp, protocol)));
+        const free = [...pools[0]].filter(port => pools.every(pool => pool.has(port)));
         const host = b.host === 'auto' ? free[0] : b.host;
-        if (!host || !free.includes(host)) throw new TemplateError(`No available ${protocol.toUpperCase()} allocation for ${b.hostIp}${b.host === 'auto' ? '' : `:${b.host}`}. Refresh available ports.`, 409);
-        b.host = host;
-        claimed.push({ protocol, hostIp: b.hostIp, hostPort: host });
+        if (!host || !free.includes(host)) throw new TemplateError(`No available ${protocols.join('/').toUpperCase()} allocation for ${b.hostIp}${b.host === 'auto' ? '' : `:${b.host}`}. Refresh available ports.`, 409);
+        for (const p of group) {
+            selected.find(binding => binding.key === p.key)!.host = host;
+            claimed.push({ protocol: p.protocol, hostIp: b.hostIp, hostPort: host });
+        }
     }
     return selected as Array<Omit<Binding, 'host'> & { host: number }>;
 }

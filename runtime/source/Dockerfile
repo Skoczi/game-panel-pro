@@ -8,7 +8,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends python3 libicu7
 COPY start.sh /usr/local/lib/gamepanel/source-start
 COPY source-loaders /usr/local/lib/gamepanel/source-loaders
 COPY source-console /usr/local/lib/gamepanel/source-console
+COPY hltv-start /usr/local/lib/gamepanel/hltv-start
 RUN chmod 755 /usr/local/lib/gamepanel/source-*
+RUN chmod 755 /usr/local/lib/gamepanel/hltv-start
 USER 1000:1000
 
 FROM ${SOURCE2_BASE} AS source2
@@ -28,5 +30,7 @@ CMD ["/bin/false"]
 FROM ${INSTALLER_BASE} AS installer
 USER root
 COPY install.sh /usr/local/lib/gamepanel/source-install
+COPY hltv-install /usr/local/lib/gamepanel/hltv-install
 RUN chmod 755 /usr/local/lib/gamepanel/source-install
+RUN chmod 755 /usr/local/lib/gamepanel/hltv-install
 USER 1000:1000
