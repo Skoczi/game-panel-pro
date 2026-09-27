@@ -7,8 +7,8 @@ No prior panel installation is needed. This release contains the panel, frontend
 Use a supported Debian or Ubuntu host with root access, Git and a domain pointing to the host. The installer checks the distribution, installs Docker/Compose when necessary and configures Traefik with Let's Encrypt. Ports 80/443 must be available. Game ports are configured separately. Allow space for source builds, game data and rollback copies. Building the frontend uses a 4 GiB Node heap; allow at least 6 GiB available RAM for the build (8 GiB host RAM recommended when games also run). Runtime memory usage is separate from this build requirement.
 
 ```sh
-git clone --branch v2.1.0 --depth 1 https://github.com/Skoczi/game-panel-skoczi.git
-cd game-panel-skoczi
+git clone --branch v2.1.0 --depth 1 https://github.com/Skoczi/game-panel-pro.git
+cd game-panel-pro
 sudo bash deploy/install.sh
 ```
 
@@ -63,7 +63,7 @@ Accounts, password hashes, memberships and existing game records are retained by
 
 Open **Version & changelog**, check GitHub and select **Update to …**. Confirm the target version. The browser may disconnect while backend/frontend restart; do not submit a second update during reconnection. Status survives reload.
 
-The 2.1 updater accepts published stable `2.0.x` and `2.1.x` releases only from `Skoczi/game-panel-skoczi`. Each release must include `game-panel-pro-VERSION.tar.gz` and `SHA256SUMS`. The archive is checked before extraction; traversal paths, links and oversized archives are rejected. No upstream updater image is downloaded.
+The 2.1 updater accepts published stable `2.0.x` and `2.1.x` releases only from `Skoczi/game-panel-pro`. Each release must include `game-panel-pro-VERSION.tar.gz` and `SHA256SUMS`. The archive is checked before extraction; traversal paths, links and oversized archives are rejected. No upstream updater image is downloaded.
 
 This option is enabled by the standalone installer and supported migration. Installations with remote nodes use coordinated manual updates so the panel cannot silently leave agents behind. Custom deployments stay manual unless adapted and tested. There is no unattended scheduled update.
 

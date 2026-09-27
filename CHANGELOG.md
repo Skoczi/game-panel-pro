@@ -1,5 +1,10 @@
 # Game Panel PRO — Changelog
 
+## Unreleased
+
+- Online player counts and searchable rosters in cards and table view for A2S games, with per-server `server.players.read` access and remote-node routing.
+- Repository, installation and update URLs now use `Skoczi/game-panel-pro`.
+
 ## 2.1.0
 
 - Native provisioning API, rich fleet details, accounts, server memberships and AMXX administrator endpoints.
@@ -80,7 +85,7 @@ First published Game Panel PRO release, based on the expanded OVHcloud Game Pane
 - Standard 1.5.0 migration: preflight, preserved accounts/configuration, stopped database snapshot, pinned rollback images and recovery on failed startup.
 - Updates from the panel for supported standalone installations, with explicit confirmation, stable releases from our GitHub and verified source archives. Multi-node/custom installations remain manual.
 - Maintenance barrier for PRO updates: block new writes, pause scheduled work and drain active operations before switching.
-- Bundled 2.0.50 changelog, available offline; version checks use `Skoczi/game-panel-skoczi` only.
+- Bundled 2.0.50 changelog, available offline; version checks use `Skoczi/game-panel-pro` only.
 - Expanded README, API/compatibility documentation, installation guide and reserved screenshot slots.
 
 [Full release notes](docs/history/RELEASE-2.0.50.md) · [Install or migrate](docs/pro/INSTALL.md).

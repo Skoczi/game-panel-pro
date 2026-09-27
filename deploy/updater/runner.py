@@ -10,7 +10,7 @@ import tarfile
 import tempfile
 import urllib.request
 
-REPOSITORY = 'Skoczi/game-panel-skoczi'
+REPOSITORY = 'Skoczi/game-panel-pro'
 MAX_ARCHIVE = 100 * 1024 * 1024
 
 

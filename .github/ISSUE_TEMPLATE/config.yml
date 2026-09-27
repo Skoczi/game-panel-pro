@@ -2,7 +2,7 @@ blank_issues_enabled: true
 
 contact_links:
   - name: Skoczi fork documentation
-    url: https://github.com/Skoczi/game-panel-skoczi/tree/main/docs/skoczi
+    url: https://github.com/Skoczi/game-panel-pro/tree/main/docs/skoczi
     about: Fork installation, additional IPs, differences and limitations. Never post secrets.
 
   - name: 📖 Official Game Panel Guides

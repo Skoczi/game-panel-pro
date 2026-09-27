@@ -32,7 +32,7 @@ test('starting an update rejects previews and duplicate jobs without pulling an 
   '../config.js': { getConfig: () => ({ gamepanelAppRoot: '/opt/gamepanel', composeProjectName: 'gamepanel', dockerSocket: '/var/run/docker.sock' }) },
   '../utils/logger.js': {}, '../utils/time.js': {},
  }, { process: { env: { GAMEPANEL_PRO_UPDATER_IMAGE: 'gamepanel-pro-updater:2.0.50' } }, AbortSignal,
-  fetch: async (url: string) => { assert.match(url, /Skoczi\/game-panel-skoczi/); return { ok: true, json: async () => [{ tag_name: 'v2.1.0' }, { tag_name: 'v2.0.52', prerelease: true }] }; } });
+  fetch: async (url: string) => { assert.match(url, /Skoczi\/game-panel-pro/); return { ok: true, json: async () => [{ tag_name: 'v2.1.0' }, { tag_name: 'v2.0.52', prerelease: true }] }; } });
  await assert.rejects(module.startPanelUpdate({ version: '2.0.52', startedBy: 'admin' }), /Unknown update/);
  await module.startPanelUpdate({ version: '2.1.0', startedBy: 'admin' });
  await assert.rejects(module.startPanelUpdate({ version: '2.1.0', startedBy: 'admin' }), /already running/);

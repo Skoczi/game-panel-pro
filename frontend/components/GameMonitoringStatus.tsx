@@ -4,7 +4,7 @@ import type { GameMonitoringSummary } from '../../backend/src/templates/types';
 import './gameMonitoring.css';
 
 const labels = { disabled: 'Monitoring off', waiting: 'Waiting for first check', starting: 'Game starting', online: 'Game responding', degraded: 'Verifying game response', offline: 'Game not responding', stopped: 'Game stopped', maintenance: 'Planned operation', unavailable: 'Monitoring unavailable', stale: 'No recent game data' };
-export function GameMonitoringStatus({ summary, runtimeStatus, detailed = false }: { summary?: GameMonitoringSummary; runtimeStatus?: string; detailed?: boolean }) {
+export function GameMonitoringStatus({ summary, runtimeStatus, detailed = false, hidePlayers = false }: { summary?: GameMonitoringSummary; runtimeStatus?: string; detailed?: boolean; hidePlayers?: boolean }) {
     const [now, setNow] = useState(Date.now());
     useEffect(() => { const timer = setInterval(() => setNow(Date.now()), 5000); return () => clearInterval(timer); }, []);
     if (!summary?.enabled) return null;
@@ -16,7 +16,7 @@ export function GameMonitoringStatus({ summary, runtimeStatus, detailed = false 
         <span className="gp-game-monitor-state"><Activity size={14} aria-hidden="true" />{labels[state]}</span>
         {info && <div className="gp-game-monitor-info">
             <span><MapPin size={13} aria-hidden="true" /><span>{info.map || 'Unknown map'}</span></span>
-            <span><Users size={13} aria-hidden="true" />{info.players} / {info.maxPlayers}</span>
+            {!hidePlayers && <span><Users size={13} aria-hidden="true" />{info.players} / {info.maxPlayers}</span>}
         </div>}
         {detailed && <>
             {summary.checkedAt && <small>Last check: {new Date(summary.checkedAt).toLocaleTimeString()}{info && summary.latencyMs !== null ? ` · ${summary.latencyMs} ms` : ''}</small>}

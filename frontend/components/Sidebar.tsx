@@ -326,7 +326,7 @@ export function Sidebar({
               </span>
             )}
             <a
-              href="https://github.com/Skoczi/game-panel-skoczi"
+              href="https://github.com/Skoczi/game-panel-pro"
               target="_blank"
               rel="noopener noreferrer"
               className="w-full rounded-sm text-[9px] text-gray-400 transition-colors hover:text-gray-200"
@@ -341,7 +341,7 @@ export function Sidebar({
               Legal
             </button>
             <a
-              href="https://github.com/Skoczi/game-panel-skoczi/issues"
+              href="https://github.com/Skoczi/game-panel-pro/issues"
               target="_blank"
               rel="noopener noreferrer"
               className="rounded-sm px-1 text-[10px] transition-colors text-gray-500 hover:text-gray-300"
@@ -390,12 +390,12 @@ export function Sidebar({
               <LegalSection number="1" title="Game Panel PRO">
                 <p>Maintained by Skoczi. Copyright 2026 Skoczi for modifications and continued development.</p>
                 <p>This software is distributed under the Apache License, Version 2.0, without warranties or conditions of any kind.</p>
-                <a className="text-cyan-500 underline" href="https://github.com/Skoczi/game-panel-skoczi/blob/main/LICENSE-2.0.txt" target="_blank" rel="noopener noreferrer">Read the license</a>
+                <a className="text-cyan-500 underline" href="https://github.com/Skoczi/game-panel-pro/blob/main/LICENSE-2.0.txt" target="_blank" rel="noopener noreferrer">Read the license</a>
               </LegalSection>
               <LegalSection number="2" title="Acknowledgements">
                 <p>Derived from OVHcloud Game Panel 1.5.0. Copyright OVH 2026. This is an independent project, not an official OVHcloud release.</p>
                 <p>Third-party software and game assets remain subject to their respective licenses.</p>
-                <a className="text-cyan-500 underline" href="https://github.com/Skoczi/game-panel-skoczi/blob/main/NOTICE" target="_blank" rel="noopener noreferrer">Third-party notices</a>
+                <a className="text-cyan-500 underline" href="https://github.com/Skoczi/game-panel-pro/blob/main/NOTICE" target="_blank" rel="noopener noreferrer">Third-party notices</a>
               </LegalSection>
               <LegalSection number="3" title="Your deployment">
                 <p>The operator of this installation provides its service terms, privacy information and support contact. The software license does not define those deployment-specific policies.</p>

@@ -2,8 +2,8 @@
 
 <img src="docs/assets/cover.svg" alt="Game Panel PRO — Your servers. Your infrastructure. One workspace." width="100%" />
 
-[![Release](https://img.shields.io/github/v/release/Skoczi/game-panel-skoczi?style=flat-square&color=06b6d4)](https://github.com/Skoczi/game-panel-skoczi/releases)
-[![CI](https://github.com/Skoczi/game-panel-skoczi/actions/workflows/skoczi-ci.yml/badge.svg?branch=main)](https://github.com/Skoczi/game-panel-skoczi/actions/workflows/skoczi-ci.yml)
+[![Release](https://img.shields.io/github/v/release/Skoczi/game-panel-pro?style=flat-square&color=06b6d4)](https://github.com/Skoczi/game-panel-pro/releases)
+[![CI](https://github.com/Skoczi/game-panel-pro/actions/workflows/skoczi-ci.yml/badge.svg?branch=main)](https://github.com/Skoczi/game-panel-pro/actions/workflows/skoczi-ci.yml)
 [![License](https://img.shields.io/badge/license-Apache_2.0-64748b?style=flat-square)](LICENSE-2.0.txt)
 
 [Install](docs/pro/INSTALL.md) · [Documentation](docs/README.md) · [API](docs/pro/API-V1-GUIDE.en.md) · [What's new](docs/pro/RELEASE-2.1.0.md) · [Polski](docs/README.pl.md)
@@ -32,6 +32,8 @@ Built and maintained by **Skoczi**. Deploy it on your hardware, choose your runt
 ## Made for the work between matches
 
 **Find the right server.** Sort by IP and port, filter by node or game, switch between cards and a compact list, or keep a personal drag-and-drop order. Server pages and file locations have shareable URLs and browser history.
+
+**See who is playing.** A2S-compatible games show player counts in cards and table rows. Authorized users can open a live, searchable roster with scores and connection times.
 
 **Get from a log to a fix.** Search console output without losing the live stream. Open the file editor, review history and save configuration. Mobile actions stay within reach through compact toolbars and contextual menus.
 
@@ -71,8 +73,8 @@ Read rich server details, plan and provision a stopped Native server, follow ope
 Use a supported Debian/Ubuntu host with root access, a domain and ports 80/443 available. Allow at least 6 GiB available RAM for the source build; game workloads need additional capacity.
 
 ```bash
-git clone --branch v2.1.0 --depth 1 https://github.com/Skoczi/game-panel-skoczi.git
-cd game-panel-skoczi
+git clone --branch v2.1.0 --depth 1 https://github.com/Skoczi/game-panel-pro.git
+cd game-panel-pro
 sudo bash deploy/install.sh
 ```
 
@@ -91,7 +93,7 @@ The installer builds the panel locally, configures HTTPS and creates the initial
 
 ## Contribute
 
-Report reproducible bugs or propose focused changes through [GitHub Issues](https://github.com/Skoczi/game-panel-skoczi/issues). Read [CONTRIBUTING.md](CONTRIBUTING.md) before submitting a pull request. Keep credentials, runtime databases and private game files out of reports.
+Report reproducible bugs or propose focused changes through [GitHub Issues](https://github.com/Skoczi/game-panel-pro/issues). Read [CONTRIBUTING.md](CONTRIBUTING.md) before submitting a pull request. Keep credentials, runtime databases and private game files out of reports.
 
 ## License
 

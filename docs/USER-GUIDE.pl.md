@@ -10,6 +10,12 @@ Serwer ma zakładki Console, File Editor, Game Config, Backups, Schedules, Setti
 
 ## Konsola i stan gry
 
+### Gracze online
+
+Karty i tabela pokazują ostatni licznik graczy z A2S. Kliknięcie otwiera wyszukiwalną listę nazw, wyników i czasu połączenia. Wymaga uprawnienia **View online player list** (`server.players.read`), dostępnego przy edycji użytkownika i dostępu do serwera. Bez niego użytkownik widzi sam licznik. Nowe profile administratora serwera zawierają to uprawnienie; istniejące przydziały pozostają bez zmian.
+
+Obsługiwane są gry z włączonym monitoringiem A2S, w tym CS 1.6/ReHLDS, Source, CS:GO, CS2 i Classic Offensive. Licznik korzysta z aktualizacji monitoringu, a otwarta lista odświeża się co 10 sekund. Niektóre gry udostępniają liczbę graczy, ale ukrywają ich nazwy. Brak świeżych danych oznacza kreskę, nie zero. Dla zdalnych node należy zaktualizować panel i agentów.
+
 Start, Stop i Restart dotyczą wybranego serwera. Konsola ma historię komend, kopiowanie, czyszczenie, pełny ekran i Search. Filtry wyszukiwania rozwijasz przyciskiem; dolny uchwyt zmienia wysokość konsoli.
 
 Działający kontener nie musi oznaczać odpowiadającej gry. Dane unknown/stale nie są zerowym zużyciem ani potwierdzeniem zatrzymania. Host Status zbiera problemy operacyjne; limity zasobów ustawiasz w Settings serwera.

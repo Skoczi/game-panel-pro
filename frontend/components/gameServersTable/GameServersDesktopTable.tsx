@@ -428,6 +428,7 @@ export function GameServersDesktopTable({
                 <td className="py-4 pr-4 pl-0">
                   <div className="flex justify-start">
                   <ServerListStatus summary={server.monitoring} runtimeStatus={server.status} name={server.name}
+                    players={<OnlinePlayers server={server} canRead={hasServerPermission(currentUser, permissionsByServer, server.id, 'server.players.read')} />}
                     onHistory={() => openHistoryModal(server, canReadLogs)} disabled={!canReadLogs} fallback={<AppButton
                     type="button"
                     onClick={() => openHistoryModal(server, canReadLogs)}
@@ -722,3 +723,4 @@ export function GameServersDesktopTable({
     </div>
   );
 }
+import { OnlinePlayers } from './OnlinePlayers';

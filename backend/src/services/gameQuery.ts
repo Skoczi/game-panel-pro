@@ -1,6 +1,6 @@
 import { createSocket } from 'node:dgram';
 import { isIP } from 'node:net';
-import type { GameQueryInfo } from '../templates/types.js';
+import type { GameQueryInfo, OnlinePlayer } from '../templates/types.js';
 
 // A2S_INFO, including the challenge used by current Steam game servers.
 const request = Buffer.concat([Buffer.from([255, 255, 255, 255, 0x54]), Buffer.from('Source Engine Query\0')]);
@@ -38,14 +38,14 @@ export function parseGameInfo(packet: Buffer): GameQueryInfo {
     throw new Error('Unsupported A2S response type');
 }
 
-export function queryGame(host: string, port: number, timeoutMs = 2500): Promise<{ info: GameQueryInfo; latencyMs: number }> {
+function queryA2S<T>(host: string, port: number, request: Buffer, parse: (packet: Buffer) => T, timeoutMs: number): Promise<{ info: T; latencyMs: number }> {
     if (isIP(host) !== 4 || !Number.isInteger(port) || port < 1 || port > 65535) return Promise.reject(new Error('Invalid game query endpoint'));
     return new Promise((resolve, reject) => {
         const socket = createSocket('udp4');
         const started = Date.now();
         let done = false, challenges = 0, splitId: number | undefined, count = 0, bytes = 0;
         const fragments = new Map<number, Buffer>();
-        const finish = (error?: Error, info?: GameQueryInfo) => {
+        const finish = (error?: Error, info?: T) => {
             if (done) return;
             done = true; clearTimeout(timer);
             try { socket.close(); } catch { /* Not bound yet. */ }
@@ -60,7 +60,7 @@ export function queryGame(host: string, port: number, timeoutMs = 2500): Promise
                 if (data.length < 5) throw new Error('Truncated A2S response');
                 if (data.readInt32LE(0) === -1 && data[4] === 0x41) {
                     if (data.length !== 9 || ++challenges > 2) throw new Error('Invalid A2S challenge');
-                    send(Buffer.concat([request, data.subarray(5)])); return;
+                    send(Buffer.concat([request[4] === 0x55 ? request.subarray(0, 5) : request, data.subarray(5)])); return;
                 }
                 if (data.readInt32LE(0) === -2) {
                     if (data.length < 9) throw new Error('Truncated split A2S response');
@@ -81,10 +81,37 @@ export function queryGame(host: string, port: number, timeoutMs = 2500): Promise
                     if (fragments.size !== count) return;
                     data = Buffer.concat(Array.from({ length: count }, (_, i) => fragments.get(i)!));
                 }
-                finish(undefined, parseGameInfo(data));
+                finish(undefined, parse(data));
             } catch (error) { finish(error as Error); }
         });
         // Connected UDP accepts responses only from this exact endpoint.
         socket.connect(port, host, () => { if (!done) send(request); });
     });
+}
+
+export function queryGame(host: string, port: number, timeoutMs = 2500) {
+    return queryA2S(host, port, request, parseGameInfo, timeoutMs);
+}
+
+export function parseGamePlayers(packet: Buffer): OnlinePlayer[] {
+    if (packet.length < 6 || packet.readInt32LE(0) !== -1 || packet[4] !== 0x44) throw new Error('Invalid A2S player response');
+    let offset = 6;
+    const players: OnlinePlayer[] = [];
+    for (let index = 0; index < packet[5]; index++) {
+        if (offset >= packet.length) throw new Error('Truncated A2S player response');
+        offset++; // Protocol index is not a stable identity.
+        const end = packet.indexOf(0, offset);
+        if (end < 0 || end - offset > 4096 || end + 9 > packet.length) throw new Error('Truncated A2S player response');
+        const name = packet.toString('utf8', offset, end).replace(/[\x00-\x1f\x7f]/g, '').slice(0, 256);
+        const score = packet.readInt32LE(end + 1), seconds = packet.readFloatLE(end + 5);
+        if (!Number.isFinite(seconds) || seconds < 0) throw new Error('Invalid A2S player duration');
+        players.push({ name: name || 'Unnamed player', score, connectedSeconds: Math.floor(seconds) });
+        offset = end + 9;
+    }
+    return players;
+}
+
+export async function queryGamePlayers(host: string, port: number, timeoutMs = 2500) {
+    const request = Buffer.from([255, 255, 255, 255, 0x55, 255, 255, 255, 255]);
+    return (await queryA2S(host, port, request, parseGamePlayers, timeoutMs)).info;
 }

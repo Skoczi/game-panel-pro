@@ -61,3 +61,9 @@ export type GameMonitoringSettings = {
     templateProfile: boolean;
     recovery?: { supported: true; attemptsInWindow: number; nextAttemptAt: string | null; lastResult: string | null };
 };
+export interface OnlinePlayer { name: string; score: number; connectedSeconds: number; }
+export interface GamePlayersSnapshot {
+    state: 'online' | 'stopped' | 'unsupported' | 'unavailable';
+    checkedAt: string;
+    players: OnlinePlayer[] | null;
+}

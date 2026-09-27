@@ -6,6 +6,7 @@ export const GLOBAL_OPTIONS = [
 ];
 
 export const SERVER_CORE_OPTIONS = [
+  { value: 'server.players.read', label: 'View online player list' },
   { value: 'server.power', label: 'Start/Stop/Restart' },
   { value: 'container.logs.read', label: 'Read server logs' },
   { value: 'server.command.send', label: 'Send game console commands' },
@@ -119,6 +120,7 @@ export const ASSIGNABLE_SERVER_PERMISSIONS: string[] = [
 ].map((option) => option.value);
 
 export const SERVER_ADMIN_PERMISSIONS = [
+  'server.players.read',
   'server.power', 'container.logs.read', 'server.command.send', 'fs.read', 'fs.write',
   'backups.read', 'backups.create', 'backups.download', 'backups.restore', 'backups.rename',
   'scheduledtasks.read', 'scheduledtasks.write', 'sftp.manage',

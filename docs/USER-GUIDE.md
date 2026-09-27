@@ -10,6 +10,12 @@ Open a server to work in Console, File Editor, Game Config, Backups, Schedules, 
 
 ## Console and monitoring
 
+### Online players
+
+Cards and table rows show the latest A2S player count. Click it to open a searchable list with names, scores and connection times. Opening the list requires **View online player list** (`server.players.read`); users without that grant can still see the count. Assign it in server access or user permissions. New server-administrator presets include it; existing grants are unchanged.
+
+Supported: games with enabled A2S monitoring, including CS 1.6/ReHLDS, Source, CS:GO, CS2 and Classic Offensive. Counts follow monitoring updates; an open player list refreshes every 10 seconds. Some games hide player names even when they report a count. Unknown/stale data shows a dash, not zero. Update both panel and agents to use the player-list endpoint on remote nodes.
+
 Start, stop and restart act on the selected server. The console supports command history, copy, clear, fullscreen and Search. Search filters are collapsed until needed. The lower handle resizes the console.
 
 Process status and game response are distinct. A running container can host a game that is not responding yet. Unknown or stale measurements are not zero usage and do not confirm a stopped server. Host Status collects operational incidents; resource limits belong in server Settings.

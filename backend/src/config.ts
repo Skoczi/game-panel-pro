@@ -123,7 +123,7 @@ export function getConfig(): AppConfig {
         gamesNetwork: nodeId ? `gp-${nodeId}-games` : envOrDefault('GAMEPANEL_GAMES_NETWORK', 'gamepanel-games'),
         updaterImage: envOrDefault('GAMEPANEL_UPDATER_IMAGE', gamePanelImage('gamepanel-updater')),
         // Skoczi fork: never fall back to upstream for fork updates.
-        repositoryUrl: envOrDefault('GAMEPANEL_REPOSITORY_URL', 'https://github.com/Skoczi/game-panel-skoczi.git'),
+        repositoryUrl: envOrDefault('GAMEPANEL_REPOSITORY_URL', 'https://github.com/Skoczi/game-panel-pro.git'),
         instanceId: process.env.APP_INSTANCE_ID?.trim() || null,
         instanceSecret: process.env.APP_INSTANCE_SECRET?.trim() || null,
         telemetryEnabled: boolEnv('TELEMETRY_ENABLED', false),
