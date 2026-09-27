@@ -1,3 +1,6 @@
+import { revokeServerSftp } from './serverSftp.js';
+import { recordSharedDependencies } from './sharedFiles.js';
+import path from 'node:path';
 import { installProgressRepository, actionsRepository, installInteractionRepository } from '../database/index.js';
 import * as dockerUtils from '../utils/docker.js';
 import { applyLinuxGsmConfigPatches } from '../providers/linuxgsm/adapters/linuxGsmConfig.js';
@@ -136,6 +139,7 @@ export async function installServerAsync(
             gid: spec.runtimeIdentity.gid,
         });
         if (native) await runNativeSteps({ serverId, image: String(spec.runtimeConfig.nativeInstallerImage || image), template: native, phase: 'install', env: nativeEnvironment(native, spec.env, spec.ports), mounts: resolvedMounts });
+        if (native) await recordSharedDependencies(native.mounts, path.join(storage.dataDir, 'serverfiles'));
         await assertServerExistsDuringInstall(serverId);
 
         await installProgressRepository.update(serverId, 50, 'creating_container');
@@ -163,6 +167,13 @@ export async function installServerAsync(
         }
 
         await serverRepository.updateDockerInfo(serverId, containerInfo.id, containerInfo.name);
+        // Native installers prepare files separately; API-created services remain stopped.
+        if (native && (await serverRepository.findById(serverId))?.desired_state === 'stopped') {
+            await serverRepository.update(serverId, { status: 'stopped', container_status: 'created', health_status: 'none' });
+            await installProgressRepository.update(serverId, 100, 'completed');
+            await actionsRepository.create(serverId, 'success', 'Server installed and ready to start', username || '');
+            return;
+        }
         await installProgressRepository.update(serverId, 75, 'starting_container');
         try {
             await dockerUtils.startContainer(containerInfo.id);
@@ -273,6 +284,7 @@ export async function deleteServerBestEffort(serverId: number): Promise<void> {
     }
 
     assertCanDeleteServer(server);
+    await revokeServerSftp(server);
 
     if (server.docker_container_id) {
         if (server.provider === 'ovhcloud') {

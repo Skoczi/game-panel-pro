@@ -8,7 +8,7 @@ test('mobile notification settings mask saved webhook, save categories and queue
     await expect(page.getByRole('button',{name:'Send test'})).toBeDisabled();
     await page.getByLabel('Discord webhook URL').fill('https://discord.com/api/webhooks/123456789012345678/'+'a'.repeat(64));
     await page.getByRole('switch',{name:'Enable Discord notifications'}).click();
-    await page.getByLabel('Backup and restore failures').uncheck();
+    await page.getByLabel('Missing or stale backups and restore failures').uncheck();
     await page.getByRole('button',{name:'Save notifications'}).click();
     await expect(page.getByRole('status')).toHaveText('Notification settings saved.');
     expect(saved.categories).not.toContain('backup');await expect(page.getByLabel('Discord webhook URL')).toHaveValue('');

@@ -1,53 +1,62 @@
-# Deployment and rollback — preparation only
+# Multi-node deployment and recovery
 
-For the published 2.0.50 standalone installer and migration from upstream 1.5.0, use [INSTALL.md](INSTALL.md). The WAW-specific notes below describe a custom deployment and its separate rollout gate.
+[Documentation](../README.md) · [Standalone install/upgrade](INSTALL.md)
 
-No deployment is part of this change. The last confirmed live version is `1.5.0-skoczi.49`, commit `679c161f5637f83da356f3943e23a0ef6e40b15c`. The development identity becomes Game Panel PRO `2.0.49`.
+## Topology
 
-## Existing WAW2 process
+The panel owns accounts, grants, templates and fleet identity. Each runtime node owns Docker containers, game files, allocations and runtime operations. Node management endpoints are separate from game and SFTP endpoints.
 
-The local `eserv-deployment/upgrade49.py` and its builder are the current reference. They validate the WAW2 host and package checksums, compare expected Compose content, build candidate images, pin old and new image identities, stop only the panel services and copy panel data before switching. They retain previous source, Compose, environment, release metadata and SQLite data. Failure after switching restores the prior panel state. They do not update remote agents.
-
-Keep `/srv/eserv/data`, `backend.env`/JWT secret, server data and all Native archives. Do not use the upstream host installer or a generic Compose regeneration. Keep managed automatic updates disabled.
-
-## Agent gate
-
-**WAW1 requires a 2.0.49 agent update before this release can be accepted.** File versions/atomic writes, Native backup/restore, scheduler and resource measurements execute on the runtime node. A panel-only update cannot deliver those functions on an old agent. SSH to WAW1 is not configured; this is a deployment prerequisite, not permission to alter it through another channel.
-
-On an old agent the UI lacks the new measurements. Do not interpret that as zero. Before exposing file editing to users, confirm the runtime returns content ETags and rejects saves without a version; an old agent cannot enforce the new protection.
-
-## Candidate acceptance
-
-1. Build and test a fixed commit. Prepare the coordinated agent/panel package without running it.
-2. Record deployed versions, image digests and schema migration state on both nodes.
-3. Preserve panel/agent SQLite, source, environment and previous image references before switching.
-4. Use a disposable Native server: online and offline backup, archive listing, stop, restore, compare files, start and join with a game client.
-5. Test concurrent editor saves across two sessions and Unicode files at the byte limit.
-6. Verify CPU/RAM limit changes, disk and network measurements, cron timezone and failed-job messages.
-7. Verify other containers remain untouched. Only then consider publishing a stable GitHub release.
-
-`0004_resource_metrics` adds nullable `resources_json` to `server_metrics`. Existing rows remain intact. For rollback use the pre-upgrade database with the old source/images; do not point an old application at a newer migration ledger without review.
-
-## Recovery scope
-
-Panel rollback is not game data rollback. A Native restore retains the old `serverfiles` directory separately; keep matching runtime/template metadata. Legacy `.native-backups` directories are retained and need manual recovery for their old mount-based format. No automatic migration or deletion of those archives occurs.
-
-Do not issue a `v2.0.49` release/tag until acceptance is complete. A draft release may hold these notes; it must not advertise an untested production update.
-
-## Stage A completion checks
-
-The candidate now adds persistent backup jobs and on-start recovery of restore/extraction journals. Before a coordinated rollout, test agent termination at both restore rename boundaries and during a multi-file extraction commit on disposable Linux game data. Confirm that only the affected game is stopped for recovery, that failed recovery blocks writes/start, and that status survives a browser reload. Keep journals, `.backup-jobs`, `.extract-*`, `.native-backups` and `data/backups` when backing up the server directory.
-
-Legacy layouts require explicit reviewed migration. This stage does not change game templates or automatically move an installation into serverfiles. Existing legacy archives are downloadable, not silently converted.
-
-## Local source package
-
-`scripts/prepare-local-release.py` packages a clean, committed candidate and an explicit rollback commit into a new directory outside the repository. It checks frontend/backend versions, rejects private data paths and unsafe archive members, and writes commit identities plus SHA-256 checksums. It neither connects to a host nor publishes a tag.
-
-```sh
-python3 scripts/prepare-local-release.py --candidate HEAD \
-  --rollback 679c161f5637f83da356f3943e23a0ef6e40b15c \
-  --output '../game-panel-pro-2.0.49-candidate'
+```text
+Browser -- HTTPS / WebSocket --> Panel
+                                  |-- local runtime --> Docker + game data
+                                  |-- HTTPS / WSS --> Agent A --> Docker + game data
+                                  `-- HTTPS / WSS --> Agent B --> Docker + game data
 ```
 
-These are **source rollback archives**, not snapshots of running WAW services. Before deployment the existing upgrade process must still capture actual images, environment, databases and recovery journals, and coordinate the panel with WAW1. Verify `SHA256SUMS` before using the package. Do not run historical `upgrade49.py` as an installer for this new candidate.
+## Add a node
+
+1. Use Nodes → Add node to create a node with its HTTPS management origin.
+2. On that machine, use the same reviewed release checkout as the panel:
+
+   ```bash
+   sudo python3 deploy/agent/agent.py install \
+     --root /srv/gamepanel-agent \
+     --panel https://panel.example.com \
+     --node NODE_UUID_FROM_PANEL
+   ```
+
+3. Paste the one-time enrollment token at the hidden prompt. Installation refuses an existing root. Configure a valid HTTPS reverse proxy to the agent's local endpoint.
+4. Forward both `/api` and `/api/…` with WebSocket upgrades. Do not redirect the WebSocket endpoint or cache API responses. Do not log authentication headers.
+5. Confirm both directions of connectivity: the heartbeat reaches the panel, and the panel can read the runtime. Configure game-IP allocations before provisioning.
+6. Use a disposable server to validate console, file writes, uploads/downloads and recovery before assigning production workloads.
+
+The detailed [agent protocol and proxy reference](../skoczi/NODES.md) covers enrollment, transport and rollback. Treat runtime mounts and the Docker socket as privileged infrastructure.
+
+## Coordinated upgrade
+
+Use a fixed source revision and record current image identities. Back up panel and agent databases, environment files, enrollment credentials and recovery journals privately. Preserve the separate game-data backup.
+
+For a standard agent layout, run from the new checkout:
+
+```bash
+sudo python3 deploy/agent/agent.py upgrade --root /srv/gamepanel-agent
+```
+
+Update agents before the panel, then use the [panel upgrade procedure](INSTALL.md#upgrade-to-210). Check version/health, fleet identity, permissions, console and file access. Custom Compose layouts require a reviewed deployment procedure; do not overwrite their configuration with the standalone installer.
+
+## Node-side dependencies
+
+- Additional IPs require the host network service described in [networking](HOST-NETWORK-2026-09-27.md). Persisted host setup must work before the panel starts.
+- Per-server SFTP requires the compatible host service and firewall/network setup in [SFTP](SFTP-2026-09-27.md).
+- Shared packages and runtime images must exist on every intended target. See [shared files](../../runtime/shared/README.md).
+- External backup destinations must be mounted and writable under the reviewed storage policy. A configured path alone does not prove off-host durability.
+
+## Recovery
+
+Panel rollback restores panel state, not game files. Use the snapshot's matching database, image IDs and source. Do not run old code against a newer schema without a verified recovery procedure. Agent rollback uses the snapshot recorded by its deployment tool.
+
+Keep unfinished-operation journals until recovery has resolved them. Do not delete a maintenance marker to bypass a failed update. Game restore and shared-package restoration are separate procedures.
+
+## Acceptance before publication
+
+Run unit/UI checks, Docker-backed deployment and node tests, and a disposable game install. Verify that game containers outside the test scope remain untouched. Record any untested game/client/framework combinations in the release validation file.

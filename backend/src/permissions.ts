@@ -22,6 +22,7 @@ export const PERMISSIONS = {
         terminal: 'container.terminal',
         logsRead: 'container.logs.read',
     },
+    sftp: { manage: 'sftp.manage' },
     fs: {
         read: 'fs.read',
         write: 'fs.write',

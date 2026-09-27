@@ -96,10 +96,7 @@ export function FastDownloadCard({
         </p>
       )}
       {data && !data.supported && (
-        <p>
-          This game template does not enable FastDownload. Configure it in the template’s
-          FastDownload tab.
-        </p>
+        <p>FastDownload is disabled in this template.</p>
       )}
       {data?.supported && !data.available && (
         <p>FastDownload hosting has not been configured on this node.</p>

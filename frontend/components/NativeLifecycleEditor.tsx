@@ -15,7 +15,7 @@ export function NativeArgumentsEditor({ value, onChange, label }: { value: strin
         aria-label={`Remove ${label.toLowerCase()} argument ${index}`} onClick={() => onChange(value.filter((_, i) => i !== index))}>Remove</button>
     </div>)}
     <button type="button" className={button} onClick={() => onChange([...value, ''])}>Add argument</button>
-    <p className="text-sm text-slate-500">Each field is one argument. A script after -c stays in one field, including all its lines. Argument 0 is the executable path.</p>
+    <p className="text-sm text-slate-500">One argument per field. Argument 0: executable. Keep the full -c script in one field.</p>
   </fieldset>;
 }
 
@@ -23,8 +23,8 @@ const button = 'rounded-xl border border-slate-300 px-4 py-2 text-sm dark:border
 export function NativeLifecycleEditor({ draft, change }: { draft: GameTemplate; change: (patch: Partial<GameTemplate>) => void }) {
   const lifecycle = draft.lifecycle;
   if (!lifecycle) return <div className="space-y-4">
-    <p>This template delegates installation and startup to its provider image. Native mode stores both recipes in the panel and executes them on the selected node.</p>
-    <p className="text-sm text-slate-500">Existing servers are not migrated. Choose a reviewed runtime image and define its commands before publishing.</p>
+    <p>Provider image handles installation and startup.</p>
+    <p className="text-sm text-slate-500">Set the runtime image and commands before publishing. Existing servers are unaffected.</p>
     <button className={button} onClick={() => change({
       schemaVersion: 2,
       runtime: { ...draft.runtime, provider: 'external', image: '', catalogId: '', gameServerName: '', identity: { user: '1000', uid: 1000, gid: 1000 } },
@@ -46,7 +46,7 @@ export function NativeLifecycleEditor({ draft, change }: { draft: GameTemplate; 
         change({ lifecycle: next });
       }} />
     </label>
-    <p className="text-sm text-slate-500">Shared installation environment with Bash and download tools, independent of the game image in Runtime. Both images are pinned at installation. Changing this draft does not change existing servers.</p>
+    <p className="text-sm text-slate-500">Bash installer image, separate from the game runtime. Both images are pinned on installation.</p>
     <NativeArgumentsEditor label="Startup arguments" value={lifecycle.startup} onChange={startup => update({ startup })} />
     <p className="text-sm text-slate-500">Use an absolute executable path. Use {'{{VARIABLE}}'} for declared variables or managed port variables. Arguments are passed directly, without a shell. Do not add quoting around values.</p>
     <label className="block text-sm font-medium">Stop command (optional)
@@ -57,7 +57,7 @@ export function NativeLifecycleEditor({ draft, change }: { draft: GameTemplate; 
         change({ lifecycle: next });
       }} />
     </label>
-    <p className="text-sm text-slate-500">Sent to the game console before stopping. The panel waits for the process to exit; the stop signal is a fallback if it does not respond. Leave empty to use the stop signal directly.</p>
+    <p className="text-sm text-slate-500">Console command for graceful shutdown. Leave blank to use the stop signal.</p>
     <div className="grid gap-4 md:grid-cols-3">
       <label className="text-sm">Working directory<input className={field} value={lifecycle.workdir} onChange={e => update({ workdir: e.target.value })} /></label>
       <label className="text-sm">Stop timeout (seconds)<input className={field} type="number" min={1} max={120} value={lifecycle.stopTimeoutSeconds} onChange={e => update({ stopTimeoutSeconds: Number(e.target.value) })} /></label>
@@ -65,7 +65,7 @@ export function NativeLifecycleEditor({ draft, change }: { draft: GameTemplate; 
     </div>
     <section className="space-y-3 border-t border-slate-300 pt-5 dark:border-slate-700">
       <h3 className="font-semibold">Game configuration files</h3>
-      <p className="text-sm text-slate-500">Expose exact configuration files in Server Settings. Paths are relative to the selected data mount, not the host filesystem.</p>
+      <p className="text-sm text-slate-500">File paths are relative to the selected data mount.</p>
       {(draft.configFiles ?? []).map((file, index) => <div key={index} className="grid gap-2 md:grid-cols-4">
         <input aria-label={`Configuration label ${index + 1}`} className={field} value={file.label} placeholder="Label" onChange={e => change({ configFiles: draft.configFiles!.map((f, i) => i === index ? { ...f, label: e.target.value } : f) })} />
         <AppOptionSelect aria-label={`Configuration root ${index + 1}`} className={field} value={file.root} onChange={selectedValue => change({ configFiles: draft.configFiles!.map((f, i) => i === index ? { ...f, root: selectedValue } : f) })}>{draft.mounts.map(m => <option key={m.key} value={m.key}>{m.containerPath}</option>)}</AppOptionSelect>
@@ -91,6 +91,6 @@ export function NativeLifecycleEditor({ draft, change }: { draft: GameTemplate; 
       <button className={button} disabled={lifecycle[phase].length >= 8} onClick={() => update({ [phase]: [...lifecycle[phase], { name: 'New step', argv: ['/usr/local/lib/gamepanel/install'], timeoutSeconds: 1800 }] })}>Add {phase} step</button>
       <button className={`${button} ml-2`} disabled={lifecycle[phase].length >= 8} onClick={() => update({ [phase]: [...lifecycle[phase], { name: phase === 'install' ? 'Install game files' : 'Update game files', script: '#!/bin/bash\n# Add your reviewed recipe here. Runs only on explicit ' + phase + '.\nexit 1\n', timeoutSeconds: 1800 }] })}>Add {phase} script</button>
     </section>)}
-    <p className="text-sm text-amber-600 dark:text-amber-400">Only administrators may publish scripts. They can modify the server’s mounted files and access the network. Use reviewed, pinned downloads; never embed credentials. Pterodactyl scripts need adapting: no root, no chmod 777, and use the declared data directory instead of assuming /mnt/server. Importing a template never runs its script.</p>
+    <p className="text-sm text-amber-600 dark:text-amber-400">Admin-only scripts can change files and access the network. No embedded credentials or root access. Adapt imported scripts to the declared data directory; import alone does not execute them.</p>
   </div>;
 }

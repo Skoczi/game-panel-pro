@@ -1,10 +1,11 @@
+import { backupLabel, backupAge, type BackupVerification } from '../../utils/backupPresentation';
 import { NativeRetentionPanel } from './NativeRetentionPanel';
 import { NativeBackupPolicyCard } from './NativeBackupPolicyCard';
 import { NativeProtectionCard } from './NativeProtectionCard';
 import { AppSectionHeader } from '../../src/ui/layout';
 import { OperationList } from './OperationList';
 import { apiClient, type BackupJob } from '../../utils/api';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { AppButton, AppInput, AppSlider, AppToggle } from '../../src/ui/components';
 import {
   AlertTriangle,
@@ -12,6 +13,7 @@ import {
   Check,
   Download,
   HardDrive,
+  MoreHorizontal,
   Pencil,
   RefreshCw,
   RotateCcw,
@@ -21,6 +23,7 @@ import {
 } from 'lucide-react';
 
 interface BackupItem {
+  verification?: BackupVerification;
   name: string;
   path: string;
   size: number;
@@ -75,12 +78,24 @@ interface BackupTabProps {
   hideManualBackup?: boolean;
 }
 
+function BackupActions({ label, children }: { label: string; children: ReactNode }) {
+  const ref = useRef<HTMLDetailsElement>(null);
+  useEffect(() => {
+    const outside = (event: PointerEvent) => { if (ref.current?.open && !ref.current.contains(event.target as Node)) ref.current.open = false; };
+    document.addEventListener('pointerdown', outside);
+    return () => document.removeEventListener('pointerdown', outside);
+  }, []);
+  return <details ref={ref} className="gp-backup-menu" onKeyDown={event => { if (event.key === 'Escape' && ref.current?.open) { event.stopPropagation(); ref.current.open = false; ref.current.querySelector('summary')?.focus(); } }}>
+    <summary aria-label={label}><MoreHorizontal size={18} /></summary>
+    <div className="gp-backup-menu-items" onClick={event => { if ((event.target as HTMLElement).closest('button:not(:disabled)') && ref.current) ref.current.open = false; }}>{children}</div>
+  </details>;
+}
+
 export function BackupTab({
   serverId,
   serverStatus,
   contentBg,
   borderColor,
-  hoverBg,
   inputBg: _inputBg,
   inputBorder: _inputBorder,
   textPrimary,
@@ -143,10 +158,12 @@ export function BackupTab({
     void refresh(); const timer = setInterval(refresh, 3000);
     return () => { active = false; clearInterval(timer); };
   }, [serverId, native, compatibilityCheck]);
+  // Other maintenance jobs still block conflicting actions, but do not belong in backup history.
+  const backupJobs = jobs.filter(job => ['backup', 'restore', 'import'].includes(job.kind));
   const nativeReady = !native || (compatibility?.capabilities?.backupJobs === 1 && compatibility?.capabilities?.nativeRestoreRecovery === 1 && compatibility.layoutReady);
   const operationReason = !nativeReady ? 'Check runtime compatibility before changing backups.'
     : native && (!jobsKnown || Boolean(jobsError)) ? 'Wait for a confirmed operation status before starting another action.'
-    : backupNowLoading || backupRestoreLoading !== null || jobs.some(job => job.status === 'running') ? 'Another backup operation is running.' : '';
+    : backupNowLoading || backupRestoreLoading !== null || jobs.some(job => job.status === 'running') ? 'Another server operation is running.' : '';
   const createReason = !canCreateBackups ? 'You do not have permission to create backups.' : operationReason;
   const restoreReason = !canRestoreBackups ? 'You do not have permission to restore backups.' : operationReason
     || (native && !['stopped', 'exited', 'created', 'dead'].includes(serverStatus || '') ? 'Stop the server before restoring a Native backup.' : '');
@@ -193,7 +210,7 @@ export function BackupTab({
 
         {native && !nativeReady && <p role="status" className="text-sm text-amber-500">{!compatibility ? (compatibilityError ? 'Runtime compatibility could not be checked. Check the node connection and agent version before creating or restoring backups.' : 'Checking runtime compatibility…') : !compatibility.layoutReady ? 'Native backup actions require the serverfiles layout.' : 'Update this node’s agent to enable persistent backup jobs and safe restore recovery.'}</p>}
         {native && (!nativeReady || Boolean(jobsError)) && <AppButton onClick={() => setCompatibilityCheck(value => value + 1)}>Recheck runtime</AppButton>}
-        {native && compatibility && !compatibility.layoutReady && <p role="alert" className="text-sm text-amber-500">This server uses a legacy data layout. Move to the serverfiles layout with a reviewed migration before creating or restoring Native backups. Existing files have not been moved.</p>}
+        {native && compatibility && !compatibility.layoutReady && <p role="alert" className="text-sm text-amber-500">Native backups require migration to the serverfiles layout.</p>}
         {native && compatibility && compatibility.legacy.length > 0 && <details className={`rounded-xl border ${borderColor} p-4 text-sm space-y-2`} aria-label="Legacy backups">
           <summary className="cursor-pointer font-medium">Legacy archives ({compatibility.legacy.length})</summary><p className={textSecondary}>Download only — this format cannot be restored here.</p>
           {compatibility.legacy.map(item => <div key={item.name} className="flex items-center justify-between gap-2"><span className="truncate">{item.name}</span><AppButton disabled={!canDownloadBackups} onClick={() => { void apiClient.downloadLegacyBackup(serverId,item.name).catch(() => setJobsError('Legacy archive download failed.')); }}>Download</AppButton></div>)}
@@ -316,11 +333,11 @@ export function BackupTab({
               {!backupsLoading && backups.map((backup) => (
                 <div
                   key={backup.path}
-                  className={`border ${borderColor} rounded-lg p-3 md:p-4 flex flex-col sm:flex-row sm:items-center gap-3 sm:justify-between transition-colors ${hoverBg}`}
+                  className={`gp-backup-row border-b ${borderColor} py-4 flex flex-col sm:flex-row sm:items-center gap-3 sm:justify-between`}
                 >
                   <div className="flex items-center gap-3 md:gap-4 min-w-0 flex-1">
-                    <div className="p-2 md:p-3 bg-[#0050D7]/10 rounded flex-shrink-0">
-                      <HardDrive className="w-5 h-5 md:w-6 md:h-6 text-[var(--color-cyan-400)]" />
+                    <div className="gp-backup-icon p-2 rounded flex-shrink-0">
+                      <HardDrive className="w-5 h-5 text-[var(--color-cyan-400)]" />
                     </div>
                     <div className="min-w-0 flex-1">
                       {renamingPath === backup.path ? (
@@ -355,10 +372,12 @@ export function BackupTab({
                       ) : (
                         <div className="flex items-center gap-2 mb-1">
                           <h5 className={`font-medium ${textPrimary} text-sm md:text-base break-words`}>
-                            {backup.name}
+                            {backupLabel(backup.name)}
                           </h5>
                           {canRenameBackups && (
                             <AppButton
+                              tone="ghost"
+                              aria-label={`Rename ${backupLabel(backup.name)}`}
                               onClick={() => startRename(backup)}
                               className="p-1 rounded text-gray-400 hover:text-[var(--color-cyan-400)] hover:bg-[var(--color-cyan-400)]/10 flex-shrink-0"
                             >
@@ -367,21 +386,23 @@ export function BackupTab({
                           )}
                         </div>
                       )}
-                      <div className="flex items-center gap-3 md:gap-4 text-xs text-gray-500 flex-wrap">
+                      <div className="gp-backup-meta flex items-center gap-3 text-xs flex-wrap">
                         <div className="flex items-center gap-1">
                           <Calendar className="w-3 h-3" />
-                          <span className="whitespace-nowrap">
-                            {new Date(backup.modifiedAt).toLocaleString()}
+                          <span title={new Date(backup.modifiedAt).toLocaleString()}>
+                            {backupAge(backup.verification?.createdAt || backup.modifiedAt)}
                           </span>
                         </div>
                         <div className="flex items-center gap-1">
                           <HardDrive className="w-3 h-3" />
                           {formatBytes(backup.size)}
                         </div>
+                        <span className={backup.verification ? 'gp-backup-verified' : ''}>{backup.verification ? 'Verified' : 'Unverified'}</span>
                       </div>
+                      <details className="gp-backup-details"><summary>Details</summary><p className="break-all">{backup.name}</p><p>{new Date(backup.modifiedAt).toLocaleString()} · Local copy</p>{backup.verification && <><p>{backup.verification.mode === 'live' ? 'Captured while running' : 'Captured while stopped'} · Validated {new Date(backup.verification.validatedAt).toLocaleString()}</p>{backup.verification.mode === 'live' && <p>Live copies may need game-specific recovery.</p>}</>}</details>
                     </div>
                   </div>
-                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
+                  <div className="gp-backup-actions flex items-center gap-2">
                     <AppButton
                       tone="neutral"
                       onClick={() => handleDownloadBackup(backup)}
@@ -391,6 +412,7 @@ export function BackupTab({
                       <Download className="w-4 h-4" />
                       {backupDownloadLoading === backup.name ? 'Downloading...' : 'Download'}
                     </AppButton>
+                    <BackupActions label={`Actions for ${backupLabel(backup.name)}`}>
                     {canRestoreBackups && !isLinuxGSMGame && (
                       <AppButton
                         tone="ghost"
@@ -405,22 +427,23 @@ export function BackupTab({
                       </AppButton>
                     )}
                     <AppButton
-                      tone="critical"
+                      tone="ghost"
                       onClick={() => handleDeleteBackup(backup)}
                       disabled={!canDeleteBackups || backupDeleteLoading === backup.name}
-                      className="flex items-center justify-center gap-2 px-4 py-2.5 whitespace-nowrap w-full sm:w-auto"
+                      className="gp-backup-delete flex items-center justify-center gap-2 px-4 py-2.5 whitespace-nowrap w-full sm:w-auto"
                     >
                       <Trash2 className="w-4 h-4" />
                       {backupDeleteLoading === backup.name ? 'Deleting...' : 'Delete'}
                     </AppButton>
+                    </BackupActions>
                   </div>
                 </div>
               ))}
             </div>
           </div>
         )}
-        {native && jobs.length > 0 && <div className={`rounded-xl border ${borderColor} p-4`}>
-          <OperationList label="Backup operations" secondaryClass={textSecondary} operations={jobs.slice(0, 5).map(job => ({
+        {native && backupJobs.length > 0 && <div className={`rounded-xl border ${borderColor} p-4`}>
+          <OperationList label="Backup operations" secondaryClass={textSecondary} operations={backupJobs.slice(0, 5).map(job => ({
             ...job, name: job.kind === 'restore' ? 'Restore' : job.kind === 'import' ? 'Import external backup' : 'Backup',
           }))} />
         </div>}

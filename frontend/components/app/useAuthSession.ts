@@ -1,3 +1,4 @@
+import { fileLocationUrl } from '../../utils/fileLocationUrl';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { apiClient } from '../../utils/api';
 import {
@@ -5,7 +6,7 @@ import {
   ACTIVE_SERVER,
   ADMIN_RUNTIME,
   openServer,
-  openFleet,
+  redirectToFleet,
   selectNode,
   type ServerContext,
 } from '../../utils/nodeContext';
@@ -36,7 +37,7 @@ export function useAuthSession() {
     const user = profile?.user ?? null;
     const shortRoute = shortServerRoute();
     if (location.pathname.startsWith('/s/') && !shortRoute) {
-      openFleet();
+      redirectToFleet();
       return;
     }
     const requestedServer =
@@ -84,15 +85,23 @@ export function useAuthSession() {
           )
             ? location.hash.split('/').pop()
             : undefined;
-          const canonical = shortServerUrl(number, shortRoute?.tab || legacyTab || 'console');
-          history.replaceState(null, '', canonical);
+          const tab = shortRoute?.tab || legacyTab || 'console';
+          const canonical = new URL(shortServerUrl(number, tab), location.origin);
+          if (tab === 'filemanager') {
+            const query = new URLSearchParams(location.search);
+            for (const key of ['root', 'path']) {
+              const value = query.get(key);
+              if (value !== null) canonical.searchParams.set(key, value);
+            }
+          }
+          history.replaceState(null, '', fileLocationUrl(canonical));
         }
       } catch {
-        openFleet();
+        redirectToFleet();
         return;
       }
     } else if (user && !user.isRoot && ADMIN_RUNTIME) {
-      openFleet();
+      redirectToFleet();
       return;
     }
     setCurrentUser(user);
@@ -135,7 +144,7 @@ export function useAuthSession() {
         );
       } catch (error) {
         if (!cancelled && [401, 403, 404].includes(Number((error as { status?: number }).status)))
-          openFleet();
+          redirectToFleet();
         // A transient network/node outage must not discard open forms or switch runtime.
       } finally {
         busy = false;
@@ -174,7 +183,7 @@ export function useAuthSession() {
 
     const verifyToken = async () => {
       try {
-        const token = apiClient.getAuthToken();
+        const token = apiClient.getAuthToken() || await apiClient.restoreSession();
         if (!token) {
           if (!cancelled) {
             setIsAuthenticated(false);

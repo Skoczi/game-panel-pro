@@ -260,6 +260,7 @@ export function ServerSettingsModal({
     setDeleteMultiNames,
     openDirectory,
   } = useFileManagerState({
+    syncLocation: !!pageTab,
     activeTab,
     isOpen,
     serverId,
@@ -914,7 +915,15 @@ export function ServerSettingsModal({
           />
         }
         gameConfigContent={
-          isNative ? <NativeGameConfig serverId={serverId} metadata={serverProviderMetadataJson} canRead={canUseFileManager} canWrite={canWriteFiles} onDirtyChange={setGameConfigDirty}
+          isNative ? <NativeGameConfig isRoot={Boolean(currentUser?.isRoot)} serverId={serverId} metadata={serverProviderMetadataJson} canRead={canUseFileManager} canWrite={canWriteFiles} canManageFrameworks={canCreateBackups && canRestoreBackups} onDirtyChange={setGameConfigDirty}
+            onOpenDirectory={(path, root) => {
+              const go = () => {
+              hasUserSelectedTabRef.current = true; setPendingFilePath(null); editorSession.select(null);
+              setSelectedFile(null); setSelectedItems([]); setFileError(null); setFilesError(null);
+              openDirectory(root, path); setActiveTab('filemanager');
+              };
+              if (gameConfigDirty) requestConfirm('Discard configuration changes?', 'Your unsaved Game Config changes will be lost.', async () => { setGameConfigDirty(false); go(); }); else go();
+            }}
             onOpen={(path, root) => { const go = () => { hasUserSelectedTabRef.current = true; setCurrentRoot(root); handleOpenFileManagerAtPath(path); }; if (gameConfigDirty) requestConfirm('Discard configuration changes?', 'Your unsaved Game Config changes will be lost.', async () => { setGameConfigDirty(false); go(); }); else go(); }} /> : <GameConfigTab
             serverGame={serverGame}
             serverProvider={serverProvider}
@@ -1068,6 +1077,8 @@ export function ServerSettingsModal({
             serverGame={serverGame}
             canRead={canAccessTab('scheduledtasks')}
             canWrite={canWriteScheduledTasks}
+            permissions={serverPermissions}
+            administrator={Boolean(currentUser?.isRoot)}
             contentBg={contentBg}
             borderColor={borderColor}
             textPrimary={textPrimary}
@@ -1091,6 +1102,8 @@ export function ServerSettingsModal({
               setActiveTab('filemanager');
             } : undefined}
             canWriteFiles={canWriteFiles}
+            canReadFiles={canUseFileManager}
+            canManageSftp={Boolean(currentUser?.isRoot || ((serverPermissions.includes('*') || serverPermissions.includes('sftp.manage')) && canUseFileManager && canWriteFiles))}
             serverId={serverId!}
             serverName={serverName}
             canDelete={Boolean(currentUser?.isRoot || serverPermissions.includes('*') || serverPermissions.includes('server.delete'))}

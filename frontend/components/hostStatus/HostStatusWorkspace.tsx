@@ -1,13 +1,25 @@
+import { useEffect, useState } from 'react';
+import { OperationalOverview } from '../OperationalOverview';
+import { nodesRequest } from '../../utils/nodesApi';
 import { useNodeScope } from '../../contexts/NodeScopeContext';
 import { HostStatus } from '../HostStatus';
 import { AppButton } from '../../src/ui/components';
 
 export function HostStatusWorkspace() {
   const { scope, selectScope, nodes, loading, error } = useNodeScope();
+  const [servers, setServers] = useState<Array<{ runtimeId?: number; displayId?: string; node: { id?: string } }>>([]);
+  useEffect(() => {
+    let active = true;
+    void nodesRequest<{ servers: typeof servers }>('/api/fleet')
+      .then(result => { if (active) setServers(result.servers); })
+      .catch(() => { /* Host checks remain available when server links cannot be resolved. */ });
+    return () => { active = false; };
+  }, []);
   const visible = scope === 'all' ? nodes : nodes.filter((node) => node.id === scope);
   return (
     <section className="space-y-6" aria-label="Host status">
       <header className="gp-page-header"><h1 className="gp-page-title">Host Status</h1></header>
+      <OperationalOverview scope={scope} servers={servers} />
       {loading && <p role="status">Loading nodes…</p>}
       {error && <p role="status">Node list unavailable. Retrying…</p>}
       {!loading && !error && !visible.length && (

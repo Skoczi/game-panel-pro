@@ -16,6 +16,18 @@ const allocation = loadWithMocks('../src/services/templatePortAllocation.ts', {
     './globalSettings.js': { globalSettings: () => ({ snapshot: () => ({ network }) }) },
     './hostPortAvailability.js': { reservedHostBindings: async () => [] }, '../templates/schema.js': schema,
 });
+
+test('linked TCP/UDP ports allocate a common free number and reserve TV separately', () => {
+    const template = { ports: [{ key: 'game', protocol: 'udp' }, { key: 'rcon', protocol: 'tcp', sameAs: 'game' }, { key: 'tv', protocol: 'udp' }] };
+    const bindings = template.ports.map(p => ({ key: p.key, hostIp: '192.0.2.10', host: 'auto' }));
+    const occupied = [{ protocol: 'tcp', hostPort: 27015, hostIp: '0.0.0.0' }, { protocol: 'udp', hostPort: 27016, hostIp: '192.0.2.10' }];
+    const result = allocation.chooseTemplateBindings(template, bindings, network, occupied);
+    assert.deepEqual(Array.from(result, (b: any) => b.host), [27017, 27017, 27015]);
+    const explicitTV = bindings.map(b => b.key === 'tv' ? { ...b, host: 27017 } : b);
+    assert.deepEqual(Array.from(allocation.chooseTemplateBindings(template, explicitTV, network, occupied), (b: any) => b.host), [27018, 27018, 27017]);
+    assert.throws(() => allocation.chooseTemplateBindings(template, bindings.map(b => b.key === 'rcon' ? { ...b, host: 27019 } : b), network, []), /same public/);
+    assert.throws(() => allocation.chooseTemplateBindings(template, bindings.map(b => ({ ...b, hostIp: '192.0.2.11' })), network, []), (e: any) => e.statusCode === 409);
+});
 test('free pools enforce address, protocol, ranges, wildcards and known reservations even in legacy mode', () => {
     const occupied = [
         { protocol: 'udp', hostPort: 27015, hostIp: '192.0.2.10' },
@@ -58,7 +70,8 @@ test('allocation mutation lock rejects overlapping writes and releases idempoten
     lock.enterPortAllocationMutation()();
 });
 test('available-port route is administrator-only and returns uncached runtime inventory', async () => {
-    const { rootOnly } = loadWithMocks('../src/middleware/auth.ts', { '../agent/identity.js': {}, '../utils/auth.js': {}, '../database/index.js': {}, '../utils/ids.js': {}, '../utils/logger.js': {}, '../permissions.js': {} });
+    const { rootOnly } = loadWithMocks('../src/middleware/auth.ts', {
+        '../services/loginSessions.js': {}, '../agent/identity.js': {}, '../utils/auth.js': {}, '../database/index.js': {}, '../utils/ids.js': {}, '../utils/logger.js': {}, '../permissions.js': {} });
     const module = loadWithMocks('../src/routes/servers/availablePorts.ts', {
         '../../database/index.js': {}, '../../permissions.js': { PERMISSIONS: { server: { edit: 'server.edit' } } },
         '../../providers/runtimeConfig.js': {}, '../../services/hostPortAvailability.js': {}, '../../services/globalSettings.js': {},

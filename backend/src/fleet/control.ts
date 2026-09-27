@@ -1,3 +1,7 @@
+import { runtimeSummary, type RuntimeSummary } from '../services/apiServerDto.js';
+import { serializeGameServerWithInstallProgress } from '../utils/apiSerialization.js';
+import { installProgressRepository } from '../database/index.js';
+import { getMonitoringSummary } from '../services/gameMonitoring.js';
 import express, { type Response, type NextFunction } from 'express';
 import http from 'node:http';
 import https from 'node:https';
@@ -25,7 +29,14 @@ import { fleetDisplayIdentity } from './displayIdentity.js';
 let store: FleetStore;
 let refreshing: Promise<void> | undefined;
 const reachable = new Map<string, number>();
+const summaries = new Map<string, RuntimeSummary>();
 export const fleet = () => store;
+export const fleetSummary = (row: FleetRow) => summaries.get(`${row.node_id}:${row.runtime_key}`) ?? null;
+export async function fleetAvailability(row: FleetRow) {
+    const node = row.node_id === 'local' ? null : await nodes().get(row.node_id);
+    const available = (row.node_id === 'local' || Boolean(node?.enabled)) && Date.now() - (reachable.get(row.node_id) || 0) < 75000 && Date.now() - row.observed_at < 75000;
+    return { available, node: { id: row.node_id, name: node?.name ?? 'Local', location: node?.location ?? null } };
+}
 export async function initializeFleet() {
     store = new FleetStore(await getDatabase());
     await store.initialize();
@@ -77,6 +88,7 @@ async function readInventory(id: string, deletionSnapshot?: NodeRow): Promise<In
                         );
                         if (!Array.isArray(value.servers))
                             throw new Error('Invalid inventory');
+                        for (const s of value.servers) if (typeof s.runtimeKey === 'string') summaries.set(`${id}:${s.runtimeKey}`, runtimeSummary(s));
                         // Secrets, environment and host paths are never retained in the fleet database.
                         resolve(
                             value.servers.map((s: InventoryItem & { providerMetadata?: unknown }) => ({
@@ -125,6 +137,9 @@ export function refreshFleet(): Promise<void> {
                 status: s.status,
             })),
         );
+        for (const s of local) summaries.set(`local:${s.runtime_uuid}`, runtimeSummary({ ...serializeGameServerWithInstallProgress(s, await installProgressRepository.getByServerId(s.id)), monitoring: await getMonitoringSummary(s) }));
+        const liveKeys = new Set((await store.list()).filter(s => !s.missing).map(s => `${s.node_id}:${s.runtime_key}`));
+        for (const key of summaries.keys()) if (!liveKeys.has(key)) summaries.delete(key);
         reachable.set('local', Date.now());
         // Bounded concurrency; one slow/offline node does not prevent the other inventories from advancing.
         const remaining = (await nodes().list()).filter((n) => n.enabled);
@@ -262,6 +277,7 @@ export function mountFleet(app: express.Application) {
                 servers.push({
                     id: row.id,
                     displayId: `SRV-${row.server_number}`,
+                    ...(req.user!.isRoot ? { runtimeId: row.runtime_id } : {}),
                     name: row.name,
                     provider: row.provider,
                     catalogId: row.catalog_id,

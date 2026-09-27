@@ -1,3 +1,5 @@
+import { AppOptionSelect } from '../src/ui/components/AppOptionSelect';
+import { SignedWebhookSettings } from './SignedWebhookSettings';
 import { NotificationSettings } from './NotificationSettings';
 import { confirmDialog } from '../utils/confirmDialog';
 import { useEffect, useState } from 'react';
@@ -11,7 +13,7 @@ import {
 } from '../types/globalSettings';
 import { PanelBrand } from './PanelBrand';
 import { nodesRequest } from '../utils/nodesApi';
-import { AppSelect } from '../src/ui/components';
+import { AppSelect, AppModal, AppModalContent, AppModalHeader, AppModalTitle, AppModalBody } from '../src/ui/components';
 import type { LoginTheme } from '../types/globalSettings';
 import './login-theme.css';
 
@@ -31,19 +33,25 @@ export function GlobalSettings({
   nodeId,
   nodeName,
   onDirtyChange,
-}: { nodeId?: string; nodeName?: string; onDirtyChange?: (dirty: boolean) => void } = {}) {
+  managedAddresses,
+  embedded = false,
+}: { nodeId?: string; nodeName?: string; onDirtyChange?: (dirty: boolean) => void; managedAddresses?: { ip: string; status?: string; mac?: string }[] | null; embedded?: boolean } = {}) {
   const [settings, setSettings] = useState<Settings | null>(null);
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [dirty, setDirty] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
+  useEffect(() => { if (notice !== 'Saved.') return; const timer = window.setTimeout(() => setNotice(''), 4000); return () => window.clearTimeout(timer); }, [notice]);
   const [draft, setDraft] = useState<Allocation>(blank);
   const [editing, setEditing] = useState<number | null>(null);
+  const [allocationOpen, setAllocationOpen] = useState(false);
+  const closeAllocation = () => { setAllocationOpen(false); setEditing(null); setDraft(blank); };
   const [pending, setPending] = useState(false);
+  const [savedAllocationIps, setSavedAllocationIps] = useState<string[]>([]);
   useEffect(() => {
-    onDirtyChange?.(dirty);
-  }, [dirty, onDirtyChange]);
+    onDirtyChange?.(dirty || Object.values(draft).some(Boolean));
+  }, [dirty, draft, onDirtyChange]);
 
   async function load() {
     setBusy(true);
@@ -57,6 +65,7 @@ export function GlobalSettings({
           appearance: DEFAULT_APPEARANCE,
         });
         setAssignments(value.assignments);
+        setSavedAllocationIps(value.network.allocations.map(a => a.ip));
         setPending(value.pending);
       } else {
         const { assignments: used, ...value } = await apiClient.getGlobalSettings();
@@ -113,6 +122,9 @@ export function GlobalSettings({
   }
   async function save() {
     if (!settings) return;
+    if (managedAddresses !== undefined && settings.network.allocations.some(a => !savedAllocationIps.includes(a.ip) && !managedAddresses?.some(e => e.ip === a.ip))) {
+      setError('A new allocation no longer has a saved host address. Refresh Host addresses and review the list before saving.'); return;
+    }
     setBusy(true);
     setError('');
     setNotice('');
@@ -125,10 +137,11 @@ export function GlobalSettings({
         );
         setSettings({ ...settings, revision: saved.revision, network: saved.network });
         setAssignments(saved.assignments);
+        setSavedAllocationIps(saved.network.allocations.map(a => a.ip));
         setPending(saved.pending);
       } else setSettings(await apiClient.saveGlobalSettings(settings));
       setDirty(false);
-      setNotice('Settings saved. Changes are active.');
+      setNotice(embedded ? 'Saved.' : 'Settings saved. Changes are active.');
       if (!nodeId) window.dispatchEvent(new Event('panel-settings-changed'));
     } catch (reason) {
       const message = (reason as { response?: { data?: { error?: string } } }).response?.data
@@ -164,6 +177,7 @@ export function GlobalSettings({
         appearance: DEFAULT_APPEARANCE,
       });
       setAssignments(saved.assignments);
+      setSavedAllocationIps(saved.network.allocations.map(a => a.ip));
       setPending(saved.pending);
       setDirty(false);
       setNotice('Pending save resolved. Current node settings loaded.');
@@ -184,6 +198,10 @@ export function GlobalSettings({
     const row = Object.fromEntries(
       Object.entries(draft).map(([key, value]) => [key, value.trim()])
     ) as Allocation;
+    const unchangedExisting = editing !== null && settings.network.allocations[editing]?.ip === row.ip;
+    if (managedAddresses !== undefined && !unchangedExisting && !managedAddresses?.some(e => e.ip === row.ip)) {
+      setError('Choose an address saved in Host addresses above. Save or import the IP there first.'); return;
+    }
     if (
       settings.network.allocations.some((item, index) => item.ip === row.ip && index !== editing)
     ) {
@@ -196,6 +214,7 @@ export function GlobalSettings({
     update({ ...settings, network: { ...settings.network, allocations } });
     setDraft(blank);
     setEditing(null);
+    setAllocationOpen(false);
     setError('');
   }
 
@@ -204,7 +223,7 @@ export function GlobalSettings({
       <header className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <h1 className="gp-page-title">
-            {nodeId ? `${nodeName || 'Node'} · Allocations` : 'Panel Settings'}
+            {embedded ? 'Network & IPs' : nodeId ? `${nodeName || 'Node'} · Allocations` : 'Panel Settings'}
           </h1>
 
         </div>
@@ -216,7 +235,7 @@ export function GlobalSettings({
             className={button}
             disabled={busy}
             onClick={async () => {
-              if (!dirty || await confirmDialog('Discard unsaved changes and reload?')) {
+              if ((!dirty && !Object.values(draft).some(Boolean)) || await confirmDialog('Discard unsaved changes and reload?')) {
                 setNotice('');
                 void load();
               }
@@ -252,27 +271,21 @@ export function GlobalSettings({
       )}
       {pending && (
         <div className="rounded-xl border border-amber-400 p-4 text-sm">
-          <p>
-            A previous save has not been confirmed. Its IP reservations remain held. Retry checks
-            the same request; it does not create a new operation.
-          </p>
+          <p>Save not confirmed. IPs remain reserved; Retry checks the original request.</p>
           <button className={`${button} mt-3`} disabled={busy} onClick={() => void retryPending()}>
             Retry pending save
           </button>
         </div>
       )}
       {!settings && !error && <p>Loading settings…</p>}
-      {!nodeId && settings && <NotificationSettings />}
+      {!nodeId && settings && <><NotificationSettings /><SignedWebhookSettings /></>}
       {settings && (
         <fieldset disabled={busy} className="min-w-0 space-y-6">
           {!nodeId && (
             <>
               <section className={card}>
                 <h2 className="text-lg font-semibold">Branding &amp; login page</h2>
-                <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                  These fields are public, including before sign-in. Do not enter secrets. Text is
-                  displayed as plain text, not HTML.
-                </p>
+                <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">Visible before sign-in. Plain text only; no credentials.</p>
                 <div className="mt-5 grid min-w-0 gap-6 lg:grid-cols-2">
                   <div className="min-w-0 space-y-4">
                     <div className="space-y-1">
@@ -380,11 +393,7 @@ export function GlobalSettings({
                         }}
                       />
                     </label>
-                    <p className="text-xs text-gray-500">
-                      PNG, JPEG or WebP, up to 256 KiB. Uploads stay in the panel database. HTTPS
-                      images load directly in visitors’ browsers. One logo is used on login and in
-                      the sidebar.
-                    </p>
+                    <p className="text-xs text-gray-500">PNG, JPEG or WebP · up to 256 KiB · login and sidebar logo</p>
                     {settings.appearance.logo && (
                       <button
                         type="button"
@@ -435,10 +444,7 @@ export function GlobalSettings({
                         </p>
                       )}
                     </div>
-                    <p className="mt-3 text-xs text-gray-500">
-                      Site name also sets the browser tab title. Blank subtitle or description hides
-                      that line. Save changes to publish.
-                    </p>
+
                   </div>
                 </div>
               </section>
@@ -447,16 +453,15 @@ export function GlobalSettings({
           {nodeId && (
             <>
               <section className="space-y-4">
-                <div>
+                {!embedded && <div>
                   <h2 className="flex items-center gap-2 text-lg font-semibold">
                     <Network size={20} />
                     IP allocations
                   </h2>
                   <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                    IPs must already exist on the host. Adding one here does not create an interface
-                    or firewall rule.
+                    IPs must already exist on the host.
                   </p>
-                </div>
+                </div>}
                 <div className={card}>
                   <label className="flex items-center gap-2 font-medium">
                     <input
@@ -472,14 +477,10 @@ export function GlobalSettings({
                     Restrict published ports to these allocations
                   </label>
                   <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
-                    When enabled, every port needs an explicit IP. Empty TCP or UDP ranges deny that
-                    protocol. Existing server bindings must fit before saving.
+                    Empty TCP or UDP ranges block that protocol.
                   </p>
                   {!settings.network.restrictPorts && (
-                    <p className="mt-2 text-sm text-amber-700 dark:text-amber-400">
-                      Legacy mode: port ranges are not enforced and Docker default bindings remain
-                      available.
-                    </p>
+                    <p className="mt-2 text-sm text-amber-700 dark:text-amber-400">Port restrictions are off. Docker default bindings are allowed.</p>
                   )}
                   {settings.network.restrictPorts && settings.network.allocations.length === 0 && (
                     <p className="mt-2 text-sm text-amber-700 dark:text-amber-400">
@@ -487,19 +488,19 @@ export function GlobalSettings({
                     </p>
                   )}
                 </div>
-                <div className="grid min-w-0 gap-5 xl:grid-cols-[minmax(0,1fr)_340px]">
+                <div className="gp-allocation-grid grid min-w-0 gap-5">
                   <div className={`${card} min-w-0`}>
-                    <h3 className="mb-4 font-semibold">
+                    <div className="gp-network-table-heading"><h3 className="font-semibold">
                       Configured addresses{' '}
                       <span className="ml-2 text-sm font-normal text-gray-500">
-                        {settings.network.allocations.length}
+                        {new Set([...settings.network.allocations.map(row => row.ip), ...(managedAddresses || []).map(row => row.ip)]).size}
                       </span>
-                    </h3>
+                    </h3><button className={button} onClick={() => setAllocationOpen(true)}><Plus size={16} /> {Object.values(draft).some(Boolean) ? 'Continue editing' : 'Add allocation'}</button></div>
                     <div className="overflow-x-auto">
-                      <table className="w-full text-left text-sm">
+                      <table className="gp-network-address-table w-full text-left text-sm" data-managed={managedAddresses !== undefined}>
                         <thead className="text-xs uppercase text-gray-500">
                           <tr>
-                            {['IP / alias', 'TCP ports', 'UDP ports', 'Used by', 'Actions'].map(
+                            {['IP / alias', ...(managedAddresses !== undefined ? ['MAC / status'] : []), 'TCP ports', 'UDP ports', 'Actions'].map(
                               (heading) => (
                                 <th
                                   key={heading}
@@ -520,23 +521,15 @@ export function GlobalSettings({
                               <td className="px-2 py-3">
                                 <span className="whitespace-nowrap font-mono">{row.ip}</span>
                                 <span className="block text-xs text-gray-500">
-                                  {row.alias || 'No alias'}
+                                  {row.alias || ''}
                                 </span>
                               </td>
+                              {managedAddresses !== undefined && <td className="px-2 py-3"><code className="text-xs">{managedAddresses?.find(host => host.ip === row.ip)?.mac || '—'}</code><span className="block text-xs text-gray-500">{managedAddresses === null ? 'Unavailable' : managedAddresses?.find(host => host.ip === row.ip)?.status === 'active' ? 'Active' : 'Needs attention'}</span></td>}
                               <td className="max-w-48 break-words px-2 py-3 font-mono text-xs">
                                 {row.tcp || 'None'}
                               </td>
                               <td className="max-w-48 break-words px-2 py-3 font-mono text-xs">
                                 {row.udp || 'None'}
-                              </td>
-                              <td className="px-2 py-3 text-xs">
-                                {[
-                                  ...new Set(
-                                    assignments
-                                      .filter((used) => used.ip === row.ip)
-                                      .map((used) => used.serverName)
-                                  ),
-                                ].join(', ') || 'Unassigned'}
                               </td>
                               <td className="px-2 py-3">
                                 <div className="flex gap-2">
@@ -547,6 +540,7 @@ export function GlobalSettings({
                                     onClick={async () => {
                                       setEditing(index);
                                       setDraft({ ...row });
+                                      setAllocationOpen(true);
                                     }}
                                   >
                                     <Pencil size={16} />
@@ -577,19 +571,20 @@ export function GlobalSettings({
                               </td>
                             </tr>
                           ))}
+                          {managedAddresses?.filter(host => !settings.network.allocations.some(row => row.ip === host.ip)).map(host => <tr key={host.ip} className="border-b border-gray-100 dark:border-gray-800"><td className="px-2 py-3 font-mono">{host.ip}</td><td className="px-2 py-3"><code className="text-xs">{host.mac || '—'}</code><span className="block text-xs text-gray-500">{host.status === 'active' ? 'Active' : 'Needs attention'}</span></td><td colSpan={2} className="px-2 py-3 text-sm text-gray-500">No port ranges</td><td className="px-2 py-3"><button className={button} aria-label={`Configure ports for ${host.ip}`} onClick={() => { setEditing(null); setDraft({ ...blank, ip: host.ip }); setAllocationOpen(true); }}><Plus size={16} /></button></td></tr>)}
                         </tbody>
                       </table>
                     </div>
-                    {!settings.network.allocations.length && (
+                    {!settings.network.allocations.length && !managedAddresses?.length && (
                       <p className="py-8 text-center text-sm text-gray-500">
-                        No IP allocations yet. Add an address and its allowed ports.
+                        No allocations.
                       </p>
                     )}
                   </div>
-                  <form className={`${card} space-y-4`} onSubmit={addAllocation}>
-                    <h3 className="font-semibold">
-                      {editing === null ? 'Add allocation' : 'Edit allocation'}
-                    </h3>
+                  <AppModal open={allocationOpen} onOpenChange={setAllocationOpen} positionerStyle={{ justifyContent: 'flex-end', padding: 0 }}>
+                  <AppModalContent className="gp-network-drawer"><AppModalHeader><AppModalTitle>{editing === null ? 'Add allocation' : 'Edit allocation'}</AppModalTitle></AppModalHeader><AppModalBody>
+                  <form className="space-y-4" onSubmit={addAllocation}>
+                    {error && <p role="alert" className="text-sm text-red-500">{error}</p>}
                     {(['ip', 'alias', 'tcp', 'udp'] as const).map((key) => (
                       <label key={key} className="block text-sm">
                         {
@@ -600,7 +595,11 @@ export function GlobalSettings({
                             udp: 'UDP ports',
                           }[key]
                         }
-                        <input
+                        {key === 'ip' && managedAddresses !== undefined ? <AppOptionSelect aria-label="IP address" className="mt-1 w-full" value={draft.ip} required onChange={value => setDraft({ ...draft, ip: value })}>
+                          <option value="">{managedAddresses === null ? 'Host address list unavailable' : 'Choose a saved IP address'}</option>
+                          {managedAddresses?.filter(e => !settings.network.allocations.some((a, i) => a.ip === e.ip && i !== editing)).map(e => <option key={e.ip} value={e.ip}>{e.ip}{e.status === 'needs-attention' ? ' · Needs attention' : ''}</option>)}
+                          {editing !== null && !managedAddresses?.some(e => e.ip === settings.network.allocations[editing].ip) && <option value={settings.network.allocations[editing].ip}>{settings.network.allocations[editing].ip} · Existing allocation</option>}
+                        </AppOptionSelect> : <input
                           className={`${field} mt-1`}
                           value={draft[key]}
                           required={key === 'ip'}
@@ -613,40 +612,35 @@ export function GlobalSettings({
                                 : '27015-27030,28015'
                           }
                           onChange={(event) => setDraft({ ...draft, [key]: event.target.value })}
-                        />
+                        />}
                       </label>
                     ))}
                     <p className="text-xs text-gray-500">
-                      Comma-separated ports or inclusive ranges, 1025–65535. Alias is a label, not a
-                      DNS name.
+                      Ports 1025–65535 · e.g. 27015–27030,28015
                     </p>
                     <div className="flex gap-2">
                       <button className={`${button} flex items-center gap-2`} type="submit">
                         <Plus size={16} />
                         {editing === null ? 'Add to list' : 'Update entry'}
                       </button>
-                      {editing !== null && (
                         <button
                           className={button}
                           type="button"
                           onClick={async () => {
-                            setEditing(null);
-                            setDraft(blank);
+                            closeAllocation();
                           }}
                         >
                           Cancel
                         </button>
-                      )}
                     </div>
-                    <p className="text-xs text-gray-500">Use Save changes to apply the list.</p>
                   </form>
+                  </AppModalBody></AppModalContent></AppModal>
                 </div>
               </section>
-              <section className={card}>
+              {assignments.length > 0 && <section className={card}>
                 <h2 className="mb-4 text-lg font-semibold">Assigned ports</h2>
                 <p className="mb-4 text-sm text-gray-500">
-                  Saved panel bindings, including stopped servers. Other host services are not
-                  listed.
+                  Includes stopped servers.
                 </p>
                 <div className="overflow-x-auto">
                   <table className="w-full text-left text-sm">
@@ -674,10 +668,7 @@ export function GlobalSettings({
                     </tbody>
                   </table>
                 </div>
-                {!assignments.length && (
-                  <p className="py-4 text-sm text-gray-500">No server ports assigned.</p>
-                )}
-              </section>
+              </section>}
             </>
           )}
         </fieldset>

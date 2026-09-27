@@ -49,7 +49,7 @@ The registry persists; reachability does not. After restart, cards can briefly s
 
 ## Upgrade
 
-Upgrade agents and panel to Revision 8 together, preserving databases and identities. Back up consistent databases before the additive runtime-identity migration. See [Nodes](NODES.md) and [Installation](INSTALLATION.md). This feature does not move, restart or reassign games; normal runtime startup reconciliation still applies.
+Upgrade agents and panel to Revision 8 together, preserving databases and identities. Back up consistent databases before the additive runtime-identity migration. See [Nodes](NODES.md) and [Installation](../README.md). This feature does not move, restart or reassign games; normal runtime startup reconciliation still applies.
 
 Mutation-journal fingerprints now include delegated actor/scope. Keys recorded by older versions may conflict after upgrade: inspect the outcome instead of blindly generating another key.
 

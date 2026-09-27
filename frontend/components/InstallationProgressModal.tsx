@@ -189,7 +189,7 @@ export function InstallationProgressModal({
             <p className={`text-sm ${textSecondary}`}>
               {installationStatus === 'failed'
                 ? 'An error occurred during setup.'
-                : 'Please wait while the server is being set up.'}
+                : 'Installing…'}
             </p>
           )}
         </div>
@@ -309,7 +309,7 @@ export function InstallationProgressModal({
                       </div>
                       <div>
                         <p className="text-sm font-semibold text-blue-300">Select Hytale Profile</p>
-                        <p className="text-xs text-blue-400/70">Choose the profile to use for this server</p>
+
                       </div>
                     </div>
 
@@ -366,7 +366,7 @@ export function InstallationProgressModal({
               <CheckCircle className="w-16 h-16 text-green-400 mx-auto mb-4" />
               <h3 className={`text-xl font-semibold ${textPrimary} mb-2`}>Installation {nativeRuntime ? 'completed' : 'started'}</h3>
               <p className={`${textSecondary} mb-6`}>
-                {nativeRuntime ? 'Installation finished and the server process was started. Open the console to check game readiness.' : 'You can follow the installation progress in the logs.'}
+                {nativeRuntime ? 'Installed. Check the console for game readiness.' : 'Installation logs are available below.'}
               </p>
 
               <div className="flex justify-center">
@@ -401,9 +401,7 @@ export function InstallationProgressModal({
                 </div>
               )}
 
-              <p className={`${textSecondary} mb-6`}>
-                Please close this window and modify your server configuration before trying again.
-              </p>
+
 
               <div className="flex flex-wrap gap-3 justify-center">
                 {onRetryInstall && (

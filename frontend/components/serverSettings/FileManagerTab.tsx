@@ -1,3 +1,5 @@
+import { apiClient } from '../../utils/api';
+import { createPortal } from 'react-dom';
 import { EditorLoadingState } from './EditorLoadingState';
 import { AppOptionSelect } from '../../src/ui/components/AppOptionSelect';
 import { FileOperations } from './FileOperations';
@@ -18,15 +20,17 @@ import {
   Loader2,
   LayoutGrid,
   List,
+  MoreHorizontal,
   RefreshCw,
   Save,
+  Search,
   Trash2,
   Upload,
   X,
   XCircle,
 } from 'lucide-react';
 import type { DragEvent, MouseEvent } from 'react';
-import { lazy, Suspense, useCallback, useState, useRef } from 'react';
+import { lazy, Suspense, useCallback, useState, useRef, useEffect } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { AppButton, AppInput, AppModal, AppModalContent, AppModalBody, AppModalHeader, AppModalTitle, AppModalDescription, AppModalFooter, AppToggle } from '../../src/ui/components';
 import './archive-options.css';
@@ -244,6 +248,44 @@ export function FileManagerTab({
   const [dragSourceName, setDragSourceName] = useState<string | null>(null);
   const [dropTargetName, setDropTargetName] = useState<string | null>(null);
   const [showHidden, setShowHidden] = useState(false);
+  const [mobileActionsOpen, setMobileActionsOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [fileSearch, setFileSearch] = useState('');
+  const searchRef = useRef<HTMLInputElement>(null);
+  const [contextMenu, setContextMenu] = useState<{ file: FileItem; x: number; y: number } | null>(null);
+  const [copySource, setCopySource] = useState<{ path: string; root: string } | null>(null);
+  const [copyDestination, setCopyDestination] = useState('');
+  const [copyRoot, setCopyRoot] = useState('data');
+  const [copyBusy, setCopyBusy] = useState(false);
+  const [copyError, setCopyError] = useState('');
+  const [copySuccess, setCopySuccess] = useState('');
+  useEffect(() => { if (!copySuccess) return; const timer = setTimeout(() => setCopySuccess(''), 4000); return () => clearTimeout(timer); }, [copySuccess]);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const contextTarget = useRef<HTMLElement | null>(null);
+  const closeContext = () => { setContextMenu(null); contextTarget.current?.focus(); };
+  useEffect(() => { setFileSearch(''); setContextMenu(null); }, [currentPath, currentRoot]);
+  useEffect(() => {
+    const keydown = (event: KeyboardEvent) => {
+      if (!(event.ctrlKey || event.metaKey) || event.key.toLowerCase() !== 'f') return;
+      if ((event.target as HTMLElement)?.closest('.monaco-editor, .gp-editor-session, [role="dialog"]')) return;
+      event.preventDefault(); setSearchOpen(true);
+      requestAnimationFrame(() => { searchRef.current?.focus(); searchRef.current?.select(); });
+    };
+    window.addEventListener('keydown', keydown);
+    return () => window.removeEventListener('keydown', keydown);
+  }, []);
+  useEffect(() => {
+    if (!contextMenu) return;
+    menuRef.current?.querySelector<HTMLButtonElement>('button:not(:disabled)')?.focus();
+    const outside = (event: PointerEvent) => { if (!menuRef.current?.contains(event.target as Node)) setContextMenu(null); };
+    const close = () => setContextMenu(null);
+    document.addEventListener('pointerdown', outside);
+    window.addEventListener('resize', close);
+    window.addEventListener('scroll', close, true);
+    return () => { document.removeEventListener('pointerdown', outside); window.removeEventListener('resize', close); window.removeEventListener('scroll', close, true); };
+  }, [contextMenu]);
+  const matchesSearch = (file: FileItem) => file.name === '..' || file.name.toLocaleLowerCase().includes(fileSearch.toLocaleLowerCase());
+
 
   const parentDir = '/' + currentPath.split('/').filter(Boolean).slice(0, -1).join('/');
 
@@ -292,6 +334,74 @@ export function FileManagerTab({
   return (
     <div className="h-full flex flex-col" {...getRootProps()}>
       {editorSession && <EditorSessionView session={editorSession} embedded={embeddedEditor} />}
+      <AppModal open={mobileActionsOpen} onOpenChange={setMobileActionsOpen} positionerStyle={{ alignItems: 'flex-end', padding: '12px' }}>
+        <AppModalContent className="gp-file-actions-sheet" dismissible={false}>
+          <div className="gp-file-actions-handle" aria-hidden="true" />
+          <div className="gp-file-actions-heading"><AppModalTitle>File actions</AppModalTitle><button aria-label="Close file actions" onClick={() => setMobileActionsOpen(false)}><X size={20} /></button></div>
+          <AppModalBody className="gp-file-actions-body">
+            <div className="gp-mobile-file-options" onClick={event => { if ((event.target as HTMLElement).closest('button:not(:disabled)')) setMobileActionsOpen(false); }}>
+              <button onClick={() => { const next = fileView === 'list' ? 'grid' : 'list'; setFileView(next); try { localStorage.setItem('gp-file-view', next); } catch { /* Storage unavailable. */ } }}>{fileView === 'list' ? <LayoutGrid size={20} /> : <List size={20} />}{fileView === 'list' ? 'Tile view' : 'List view'}</button>
+              <button onClick={() => setShowHidden(v => !v)}><Eye size={18} />{showHidden ? 'Hide hidden files' : 'Show hidden files'}</button>
+              <button disabled={!canWriteFiles} onClick={handleCreateFolder}><FolderPlus size={18} />New folder</button>
+              <button disabled={!canWriteFiles} onClick={handleCreateFile}><FilePlus size={18} />New file</button>
+              {onUploadFiles && <button disabled={!canWriteFiles} onClick={() => folderInput.current?.click()}><Folder size={18} />Upload folder</button>}
+              <button onClick={handleCopyPath}><Copy size={18} />Copy path</button>
+              {selectedItems.length > 0 && <>
+                <button onClick={handleDownloadSelected}><Download size={18} />Download selected ({selectedItems.length})</button>
+                <button className="is-danger" disabled={!canWriteFiles} onClick={handleDeleteSelected}><Trash2 size={18} />Delete selected ({selectedItems.length})</button>
+              </>}
+            </div>
+          </AppModalBody>
+        </AppModalContent>
+      </AppModal>
+      {contextMenu && createPortal(<div ref={menuRef} role="menu" aria-label={`Actions for ${contextMenu.file.name}`} className="gp-file-context-menu"
+        style={{ left: Math.min(contextMenu.x, Math.max(8, window.innerWidth - 232)), top: Math.min(contextMenu.y, Math.max(8, window.innerHeight - 270)) }}
+        onKeyDown={event => {
+          if (event.key === 'Escape' || event.key === 'Tab') { closeContext(); return; }
+          if (!['ArrowUp', 'ArrowDown', 'Home', 'End'].includes(event.key)) return;
+          event.preventDefault();
+          const buttons = Array.from(event.currentTarget.querySelectorAll<HTMLButtonElement>('button:not(:disabled)'));
+          const index = buttons.indexOf(document.activeElement as HTMLButtonElement);
+          buttons[event.key === 'Home' ? 0 : event.key === 'End' ? buttons.length - 1 : (index + (event.key === 'ArrowDown' ? 1 : -1) + buttons.length) % buttons.length]?.focus();
+        }}>
+        <button role="menuitem" disabled={contextMenu.file.type === 'symlink'} onClick={() => { void handleFileDoubleClick(contextMenu.file); closeContext(); }}><Folder size={16} />Open</button>
+        <button role="menuitem" disabled={contextMenu.file.type === 'symlink'} onClick={event => { void handleDownloadPath(contextMenu.file, event); closeContext(); }}><Download size={16} />Download</button>
+        {contextMenu.file.type === 'file' && <button role="menuitem" disabled={!canWriteFiles || !serverId} onClick={() => {
+          const name = contextMenu.file.name;
+          const dot = name.lastIndexOf('.');
+          const duplicate = dot > 0 ? `${name.slice(0, dot)}-copy${name.slice(dot)}` : `${name}-copy`;
+          const prefix = currentPath === '/' ? '' : currentPath;
+          setCopySource({ path: `${prefix}/${name}`, root: currentRoot });
+          setCopyDestination(`${prefix}/${duplicate}`); setCopyRoot(currentRoot); setCopyError(''); closeContext();
+        }}><Copy size={16} />Copy file</button>}
+        <button role="menuitem" disabled={!canWriteFiles} onClick={event => { handleRenameFile(contextMenu.file, event); closeContext(); }}><Edit2 size={16} />Rename</button>
+        {isExtractableArchive(contextMenu.file.name) && onExtractFile && <button role="menuitem" disabled={!canWriteFiles || isExtracting} onClick={() => { setPendingExtract(contextMenu.file.name); setUploadOptions({ extractZip: true, deleteArchive: false, overwrite: false }); closeContext(); }}><FileArchive size={16} />Extract</button>}
+        <button role="menuitem" className="is-danger" disabled={!canWriteFiles} onClick={event => { handleDeleteFile(contextMenu.file, event); closeContext(); }}><Trash2 size={16} />Delete</button>
+      </div>, document.body)}
+      {copySuccess && <div role="status" className="gp-server-toast">{copySuccess}</div>}
+      <AppModal open={copySource !== null} onOpenChange={open => { if (!open && !copyBusy) setCopySource(null); }}>
+        <AppModalContent>
+          <AppModalHeader><AppModalTitle>Copy file</AppModalTitle></AppModalHeader>
+          <AppModalBody>
+            <p className="mb-4 break-all text-sm opacity-70">{copySource?.path}</p>
+            {availableRoots.length > 1 && <AppOptionSelect aria-label="Destination directory" value={copyRoot} disabled={copyBusy} onChange={setCopyRoot}>{availableRoots.map(root => <option key={root.key} value={root.key}>{root.containerPath}</option>)}</AppOptionSelect>}
+            <label className="mt-3 block text-sm">Destination path<input autoFocus aria-label="Copy destination path" className="mt-2 w-full rounded-lg border border-gray-500 bg-transparent px-3 py-2" value={copyDestination} disabled={copyBusy} onChange={event => { setCopyDestination(event.target.value); setCopyError(''); }} /></label>
+            {copyError && <p role="alert" className="mt-3 text-sm text-red-400">{copyError}</p>}
+          </AppModalBody>
+          <AppModalFooter>
+            <AppButton tone="ghost" disabled={copyBusy} onClick={() => setCopySource(null)}>Cancel</AppButton>
+            <AppButton tone="primary" disabled={copyBusy || !copyDestination.startsWith('/') || !canWriteFiles} onClick={async () => {
+              if (!copySource || !serverId || copyBusy || !canWriteFiles) return;
+              setCopyBusy(true); setCopyError('');
+              try {
+                await apiClient.copyServerFile(serverId, copySource.path, copyDestination, copySource.root, copyRoot);
+                setCopySource(null); setCopySuccess('File copied.'); loadFiles(currentPath);
+              } catch (error: any) { setCopyError(error?.response?.data?.error || 'Could not confirm the copy. Refresh the destination before retrying.'); }
+              finally { setCopyBusy(false); }
+            }}>{copyBusy ? 'Copying…' : 'Copy'}</AppButton>
+          </AppModalFooter>
+        </AppModalContent>
+      </AppModal>
       <input {...getInputProps()} />
       <input type="file" multiple hidden aria-label="Upload folder" ref={element => {
         folderInput.current = element;
@@ -324,7 +434,7 @@ export function FileManagerTab({
                   <div><strong>Overwrite existing files</strong><p>Replace files with matching names.</p></div>
                   <AppToggle size="compact" ariaLabel="Allow extraction to overwrite existing files" checked={uploadOptions.overwrite} onChange={checked => setUploadOptions(o => ({ ...o, overwrite: checked }))} />
                 </div>
-                <p className="gp-archive-options-note">If extraction fails, the archive is kept. Existing files are preserved unless overwrite is enabled.</p>
+                <p className="gp-archive-options-note">Existing files are kept unless overwrite is enabled.</p>
               </>}
           </AppModalBody>
               <AppModalFooter>
@@ -339,7 +449,7 @@ export function FileManagerTab({
       </AppModal>
 
       <div
-        className={`h-[52px] px-3 border-b ${borderColor} ${contentBg} flex items-center gap-1 flex-shrink-0`}
+        className={`gp-file-toolbar h-[52px] px-3 border-b ${borderColor} ${contentBg} flex items-center gap-1 flex-shrink-0`}
       >
         {availableRoots.length > 1 && (
           <AppOptionSelect
@@ -394,7 +504,13 @@ export function FileManagerTab({
               })}
         </div>
 
-        <div className="ml-1 flex items-center gap-0.5 flex-shrink-0">
+        <div className="gp-file-mobile-toolbar">
+          <button aria-label="Search files" onClick={() => { setSearchOpen(true); requestAnimationFrame(() => searchRef.current?.focus()); }}><Search size={18} /></button>
+          <button aria-label="Refresh files" onClick={() => loadFiles(currentPath)}><RefreshCw size={18} /></button>
+          {onUploadFiles && <button aria-label="Upload files" disabled={!canWriteFiles} onClick={() => open()}><Upload size={18} /></button>}
+          <button aria-label="More file actions" aria-haspopup="dialog" onClick={() => setMobileActionsOpen(true)}><MoreHorizontal size={20} />{selectedItems.length > 0 && <span>{selectedItems.length}</span>}</button>
+        </div>
+        <div className="gp-file-toolbar-actions ml-1 flex items-center gap-0.5 flex-shrink-0">
           <AppButton
             tone="ghost"
             aria-label={fileView === 'list' ? 'Switch to tile view' : 'Switch to list view'}
@@ -498,9 +614,13 @@ export function FileManagerTab({
           >
             {copyPathSuccess ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
           </AppButton>
+        <button type="button" aria-label="Search files" title="Search files (Ctrl+F)" onClick={() => { setSearchOpen(true); requestAnimationFrame(() => searchRef.current?.focus()); }}><Search size={16} /></button>
         </div>
       </div>
 
+      {searchOpen && <div className="gp-file-search">
+        {searchOpen && <><input ref={searchRef} aria-label="Search files in this folder" placeholder="Search files…" value={fileSearch} onChange={event => setFileSearch(event.target.value)} onKeyDown={event => { if (event.key === 'Escape') { setFileSearch(''); setSearchOpen(false); } }} /><button type="button" aria-label="Close file search" onClick={() => { setFileSearch(''); setSearchOpen(false); }}><X size={16} /></button></>}
+      </div>}
       <div className="flex-1 overflow-y-auto p-2.5 relative">
         {isDragActive && canWriteFiles && (
           <div className="absolute inset-0 z-10 flex items-center justify-center bg-blue-500/10 border-2 border-dashed border-blue-400 rounded-lg m-1 pointer-events-none">
@@ -515,12 +635,12 @@ export function FileManagerTab({
           {filesLoading && <div className={`text-sm px-2 py-1 ${textSecondary}`}>Loading files...</div>}
           {filesError && <div role="alert" className="text-sm px-2 py-1 text-red-400">{filesError}</div>}
 
-          {!filesLoading && !filesError && !files.some(file => file.name !== '..' && (showHidden || !file.name.startsWith('.'))) && <p role="status" className={`col-span-full px-2 py-3 text-sm ${textSecondary}`}>
-            {files.some(file => file.name !== '..') ? 'Only hidden files are here. Use Show hidden files to see them.' : 'This folder is empty.'}
+          {!filesLoading && !filesError && !files.some(file => file.name !== '..' && (showHidden || !file.name.startsWith('.')) && matchesSearch(file)) && <p role="status" className={`col-span-full px-2 py-3 text-sm ${textSecondary}`}>
+            {fileSearch ? 'No matching files' : files.some(file => file.name !== '..') ? 'Only hidden files are here. Use Show hidden files to see them.' : 'This folder is empty.'}
           </p>}
           {!filesLoading &&
             files
-              .filter((file) => showHidden || file.name === '..' || !file.name.startsWith('.'))
+              .filter((file) => (showHidden || file.name === '..' || !file.name.startsWith('.')) && matchesSearch(file))
               .map((file, index) => {
               const isParentNav = file.name === '..';
               const isSelected = !isParentNav && selectedItems.includes(file.name);
@@ -554,6 +674,13 @@ export function FileManagerTab({
                   key={index}
                   draggable={isDraggable}
                   data-file-name={file.name}
+                  tabIndex={0}
+                  onContextMenu={event => { event.preventDefault(); contextTarget.current = event.currentTarget; setContextMenu({ file, x: event.clientX, y: event.clientY }); }}
+                  onKeyDown={event => {
+                    if (event.key === 'ContextMenu' || (event.shiftKey && event.key === 'F10')) {
+                      event.preventDefault(); const rect = event.currentTarget.getBoundingClientRect(); contextTarget.current = event.currentTarget; setContextMenu({ file, x: rect.left + 24, y: rect.top + 24 });
+                    }
+                  }}
                   title={file.name}
                   className={`gp-file-entry group w-full flex h-9 items-center gap-1.5 px-2 rounded-md select-none transition-colors ${
                     isDropTarget
@@ -709,6 +836,10 @@ export function FileManagerTab({
                         </AppButton>
                       </div>
 
+                      <button className="gp-file-mobile-more" aria-label={`Actions for ${file.name}`} aria-haspopup="menu" onClick={event => {
+                        event.stopPropagation(); const rect = event.currentTarget.getBoundingClientRect(); contextTarget.current = event.currentTarget;
+                        setContextMenu({ file, x: rect.right - 224, y: rect.bottom });
+                      }}><MoreHorizontal size={20} /></button>
                       {file.type === 'folder' && (
                         <ChevronRight className="w-3 h-3 text-gray-600 flex-shrink-0" />
                       )}

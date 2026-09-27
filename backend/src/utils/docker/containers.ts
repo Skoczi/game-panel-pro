@@ -190,7 +190,7 @@ function buildDockerHealthcheck(hc: NormalizedHealthcheck | null): any | undefin
     };
 }
 function buildBinds(mounts: ServerMountPath[]): string[] {
-    return mounts.map((mount) => `${mount.hostPath}:${mount.containerPath}`);
+    return mounts.map((mount) => `${mount.hostPath}:${mount.containerPath}${mount.readOnly ? ":ro" : ""}`);
 }
 
 export async function createContainer(

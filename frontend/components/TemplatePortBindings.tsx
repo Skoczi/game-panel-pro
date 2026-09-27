@@ -75,25 +75,37 @@ export function TemplatePortBindings({
     };
   }, [queryKey]);
   const ready = loaded?.key === queryKey && !loaded.error;
-  const pools = ready ? loaded.pools : {};
+  const poolsByProtocol = ready ? loaded.pools : {};
   // Match runtime assignment: protect explicit selections before allocating automatic ones.
   const chosen = bindings.map((b) => (typeof b.host === 'number' ? b.host : undefined));
   const freeFor = (index: number) => {
     const b = bindings[index];
-    const busy = new Set(
-      bindings.flatMap((other, j) =>
-        j !== index &&
-        other.hostIp === b.hostIp &&
-        ports[j].protocol === ports[index].protocol &&
-        chosen[j]
-          ? [chosen[j]]
-          : []
-      )
-    );
-    return (pools[`${b.hostIp}/${ports[index].protocol}`] ?? []).filter((port) => !busy.has(port));
+    const root = ports[index].sameAs || ports[index].key;
+    const group = ports.filter((p) => p.key === root || p.sameAs === root);
+    const pools = group.map((p) => {
+      const busy = new Set(
+        bindings.flatMap((other, j) =>
+          (ports[j].sameAs || ports[j].key) !== root &&
+          other.hostIp === b.hostIp &&
+          ports[j].protocol === p.protocol &&
+          chosen[j]
+            ? [chosen[j]]
+            : []
+        )
+      );
+      return new Set(
+        (poolsByProtocol[`${b.hostIp}/${p.protocol}`] ?? []).filter((port) => !busy.has(port))
+      );
+    });
+    return [...pools[0]].filter((port) => pools.every((pool) => pool.has(port)));
   };
-  for (let i = 0; i < bindings.length; i++)
+  for (let i = 0; i < bindings.length; i++) {
+    if (ports[i].sameAs) continue;
     if (bindings[i].host === 'auto') chosen[i] = freeFor(i)[0];
+    ports.forEach((p, j) => {
+      if (p.sameAs === ports[i].key) chosen[j] = chosen[i];
+    });
+  }
   const valid =
     !!ready && bindings.every((b, i) => b.hostIp && chosen[i] && freeFor(i).includes(chosen[i]!));
   const signature = bindingSignature(nodeId, bindings, refresh);
@@ -124,6 +136,7 @@ export function TemplatePortBindings({
         </p>
       )}
       {ports.map((p, i) => {
+        if (p.sameAs) return null;
         const b = bindings[i];
         const free = freeFor(i);
         const filtered = free.filter((port) => String(port).includes(search[p.key] || ''));
@@ -138,7 +151,9 @@ export function TemplatePortBindings({
             <div className="flex items-center justify-between gap-3">
               <h4 className="font-medium">{p.label}</h4>
               <span className="rounded-lg bg-blue-100 px-2 py-1 text-xs font-semibold text-blue-700 dark:bg-blue-500/15 dark:text-blue-300">
-                {p.protocol.toUpperCase()}
+                {[p, ...ports.filter((other) => other.sameAs === p.key)]
+                  .map((port) => port.protocol.toUpperCase())
+                  .join(' / ')}
               </span>
             </div>
             <div className="grid items-start gap-4 md:grid-cols-2">
@@ -151,7 +166,11 @@ export function TemplatePortBindings({
                   options={[
                     { value: '', label: 'Select an allocated address', disabled: true },
                     ...allocations
-                      .filter((a) => !!a[p.protocol])
+                      .filter((a) =>
+                        [p, ...ports.filter((other) => other.sameAs === p.key)].every(
+                          (port) => !!a[port.protocol]
+                        )
+                      )
                       .map((a) => ({
                         value: a.ip,
                         label: a.alias && a.alias !== a.ip ? `${a.ip} · ${a.alias}` : a.ip,
@@ -160,7 +179,9 @@ export function TemplatePortBindings({
                   onChange={(hostIp) =>
                     onChange(
                       bindings.map((binding, n) =>
-                        n === i ? { ...binding, hostIp, host: 'auto' } : binding
+                        n === i || ports[n].sameAs === p.key
+                          ? { ...binding, hostIp, host: 'auto' }
+                          : binding
                       )
                     )
                   }
@@ -198,7 +219,7 @@ export function TemplatePortBindings({
                   onChange={(host) =>
                     onChange(
                       bindings.map((binding, n) =>
-                        n === i
+                        n === i || ports[n].sameAs === p.key
                           ? { ...binding, host: host === 'auto' ? 'auto' : Number(host) }
                           : binding
                       )
@@ -255,8 +276,7 @@ export function TemplatePortBindings({
         );
       })}
       <p className="text-xs text-slate-500">
-        Excludes saved server reservations (including stopped servers) and Docker mappings. Other
-        host services may still occupy a port. Availability is checked again on creation.
+        Reserved ports are excluded. Host availability is rechecked on creation.
       </p>
     </section>
   );

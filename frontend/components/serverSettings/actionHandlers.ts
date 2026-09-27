@@ -1,9 +1,11 @@
+import type { BackupVerification } from '../../utils/backupPresentation';
 import { apiErrorMessage } from '../../utils/apiError';
 import type { Dispatch, SetStateAction } from 'react';
 import { apiClient } from '../../utils/api';
 import { isServerBusyForFileMutations } from './utils';
 
 export interface BackupItem {
+  verification?: BackupVerification;
   name: string;
   path: string;
   size: number;

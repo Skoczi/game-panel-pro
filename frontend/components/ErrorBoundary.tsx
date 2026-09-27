@@ -42,7 +42,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
           <h1 className="mb-2 text-lg font-semibold">Something went wrong</h1>
           <p className="mb-5 text-sm text-gray-400">
             {this.props.section
-              ? 'This section could not be displayed. You can retry or choose another section. Retrying does not repeat server commands.'
+              ? 'Could not load this section. Retry does not repeat server commands.'
               : 'The interface hit an unexpected error. Reload the page. If the problem persists, contact your administrator.'}
           </p>
           {import.meta.env.DEV && this.state.error && (

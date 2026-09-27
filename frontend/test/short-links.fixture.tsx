@@ -1,3 +1,4 @@
+import { PANEL_PATHS, panelUrl } from '../utils/panelLinks';
 import React from 'react';
 import { createRoot } from 'react-dom/client';
 import { useAuthSession } from '../components/app/useAuthSession';
@@ -9,10 +10,12 @@ import { ACTIVE_SERVER, openFleet } from '../utils/nodeContext';
 import { apiClient } from '../utils/api';
 
 function Routes() {
-  const { route, navigate } = useServerPageRoute();
-  if (!ACTIVE_SERVER || !route) return <h1>Fleet</h1>;
+  const { route, navigate, navigateMain, mainTab } = useServerPageRoute();
+  const navigation = <nav>{Object.keys(PANEL_PATHS).map(tab => <a key={tab} href={panelUrl(tab)} onClick={event => { event.preventDefault(); void navigateMain(tab); }}>{tab}</a>)}</nav>;
+  if (!ACTIVE_SERVER || !route) return <>{navigation}<h1>{mainTab === 'game-servers' ? 'Fleet' : mainTab}</h1></>;
   return (
     <>
+      {navigation}
       <h1>{ACTIVE_SERVER.name}</h1>
       <output>{route.tab}</output>
       {(['console', 'filemanager', 'backup'] as const).map((tab) => (
@@ -40,8 +43,8 @@ function Fixture() {
   if (!session.isAuthenticated)
     return (
       <button
-        onClick={() => {
-          localStorage.setItem('auth_token', 'test-token');
+        onClick={async () => {
+          await apiClient.login('fixture-user', 'fixture-password');
           location.reload();
         }}
       >

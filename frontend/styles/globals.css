@@ -1,5 +1,7 @@
 @import 'tailwindcss';
 @import './panel-density.css';
+@import './premium-workflows.css';
+@import './premium-refinement.css';
 
 @custom-variant dark (&:is(.dark *));
 
@@ -1146,17 +1148,17 @@ html:not(.dark) .gp-sidebar-bottom .hover\:text-\[\#f17993\]:hover { color: #f17
    (sidebar keeps its dark navy bg in light mode)
    ───────────────────────────────────────────────────── */
 
-html:not(.dark) .gp-sidebar-nav .gp-app-button--ghost[data-ods='button'] {
+html:not(.dark) .gp-sidebar-nav .gp-app-button--ghost {
   color: rgba(255, 255, 255, 0.8) !important;
 }
 
-html:not(.dark) .gp-sidebar-nav .gp-app-button--ghost[data-ods='button']:hover {
+html:not(.dark) .gp-sidebar-nav .gp-app-button--ghost:hover {
   color: #ffffff !important;
   background-color: rgba(255, 255, 255, 0.22) !important;
 }
 
-html:not(.dark) .gp-sidebar-nav .gp-app-button--ghost[data-ods='button'][disabled],
-html:not(.dark) .gp-sidebar-nav .gp-app-button--ghost[data-ods='button'][aria-disabled='true'] {
+html:not(.dark) .gp-sidebar-nav .gp-app-button--ghost[disabled],
+html:not(.dark) .gp-sidebar-nav .gp-app-button--ghost[aria-disabled='true'] {
   color: rgba(255, 255, 255, 0.35) !important;
 }
 
@@ -1706,3 +1708,65 @@ body:has(.fixed.inset-0) {
 .dark .gp-option-select .gp-app-select-control { background: #111e30; border-color: #334258; color: #edf2f8; }
 .gp-option-select .gp-app-select-control:hover { border-color: #0891b2; }
 .gp-option-select .gp-app-select-control:focus-within { border-color: #06b6d4; box-shadow: 0 0 0 3px #06b6d41a; }
+@media (max-width: 700px) {
+  .gp-file-toolbar {
+    height: auto;
+    min-height: 52px;
+    flex-wrap: wrap;
+    padding: 10px 12px;
+    gap: 8px;
+  }
+  .gp-file-toolbar .gp-path-breadcrumb {
+    flex: 1 1 100%;
+    height: 40px;
+  }
+  .gp-file-toolbar .gp-file-toolbar-actions {
+    flex: 1 1 100%;
+    min-width: 0;
+    margin-left: 0;
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+  .gp-file-toolbar-actions button {
+    flex-shrink: 0;
+    min-width: 40px;
+    min-height: 40px !important;
+  }
+}
+
+.gp-file-mobile-toolbar, .gp-file-mobile-more { display: none; }
+html .gp-file-actions-sheet[data-ods] {
+  width: min(480px, calc(100vw - 24px));
+  min-width: 0;
+  max-height: calc(100dvh - 24px);
+  padding: 0;
+  overflow: auto;
+  border: 1px solid #d5deeb;
+  border-radius: 24px;
+  background: #f7f9fc;
+  color: #172436;
+  box-shadow: 0 24px 80px #02061740;
+}
+html.dark .gp-file-actions-sheet[data-ods] { background: #101c2d; color: #edf2f8; border-color: #2b3d55; }
+.gp-file-actions-handle { width: 36px; height: 4px; border-radius: 4px; background: #7b8da34d; margin: 10px auto 0; }
+.gp-file-actions-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 18px 14px; }
+.gp-file-actions-heading .gp-app-modal-title { margin: 0; font-size: 18px; line-height: 24px; }
+.gp-file-actions-heading button { display: grid; place-items: center; width: 40px; height: 40px; border-radius: 12px; background: #7b8da314; color: inherit; }
+html .gp-file-actions-body[data-ods] { padding: 0 14px max(14px, env(safe-area-inset-bottom)); }
+.gp-mobile-file-options { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.gp-mobile-file-options button { display: flex; flex-direction: column; align-items: flex-start; justify-content: center; gap: 12px; min-height: 96px; padding: 14px; border: 1px solid #dce4ef; border-radius: 14px; background: #fff; color: #24364c; font-size: 14px; line-height: 20px; font-weight: 600; text-align: left; }
+html.dark .gp-mobile-file-options button { background: #162438; border-color: #293b52; color: #e7eef8; }
+.gp-mobile-file-options button svg { box-sizing: content-box; width: 19px; height: 19px; padding: 7px; border-radius: 10px; background: #06b6d412; color: #0891b2; }
+html.dark .gp-mobile-file-options button svg { color: #67d8eb; background: #22d3ee12; }
+.gp-mobile-file-options button:hover, .gp-mobile-file-options button:focus-visible { background: #22d3ee15; border-color: #0891b2; outline: none; }
+.gp-mobile-file-options button:disabled { opacity: .4; }
+.gp-mobile-file-options button.is-danger, .gp-mobile-file-options button.is-danger svg { color: #e85a70; }
+@media (max-width: 700px) {
+  .gp-file-toolbar .gp-file-toolbar-actions, .gp-file-entry .gp-file-actions { display: none; }
+  .gp-file-mobile-toolbar { display: flex; flex-basis: 100%; align-items: center; gap: 8px; }
+  .gp-file-mobile-toolbar button, .gp-file-mobile-more { display: flex; align-items: center; justify-content: center; width: 44px; height: 44px; flex-shrink: 0; border-radius: 8px; color: var(--gp-muted, #94a3b8); }
+  .gp-file-mobile-toolbar button:last-child { margin-left: auto; }
+  .gp-file-mobile-toolbar button:disabled { opacity: .4; }
+  .gp-file-mobile-toolbar button:hover, .gp-file-mobile-more:hover { background: #22d3ee15; }
+  .gp-file-grid .gp-file-mobile-more { position: absolute; top: 2px; right: 2px; }
+}

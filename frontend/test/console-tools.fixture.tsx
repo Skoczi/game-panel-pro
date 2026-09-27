@@ -1,0 +1,10 @@
+import React from 'react';
+import { createRoot } from 'react-dom/client';
+import { ServerConsoleTabs } from '../components/ServerConsoleTabs';
+import '@ovhcloud/ods-react/normalize-css';
+import '@ovhcloud/ods-themes/default/css';
+import '@ovhcloud/ods-themes/default/fonts';
+import '../styles/globals.css';
+const messages = ['Server started', 'Repeated warning', 'Repeated warning', 'Failed to load map', '[S_API FAIL] SteamAPI_Init() failed; SteamAPI_IsSteamRunning() failed.'];
+const logs: any = { fixture: messages.map((message, id) => ({ id, message, timestamp: '2026-09-26T18:00:00Z', type: id === 3 ? 'error' : id === 1 || id === 2 ? 'warning' : 'info' })) };
+createRoot(document.getElementById('root')!).render(<ServerConsoleTabs singleServer servers={[{ id: 'fixture', name: 'Test server', status: 'running', provider: 'external' } as any]} logs={logs} cliMessages={[]} onClearLogs={() => {}} onClearCLI={() => {}} activeTab="fixture" onSetActiveTab={() => {}} onCloseTab={() => {}} openTabs={['fixture']} />);

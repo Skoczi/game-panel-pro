@@ -1,14 +1,13 @@
 import { useState, type Dispatch, type SetStateAction } from 'react';
 import { AlertCircle, Eye, EyeOff, Save } from 'lucide-react';
 import { X } from 'lucide-react';
-import { Dialog, DialogContent } from '../ui/dialog';
+import { Dialog, DialogContent, DialogTitle } from '../ui/dialog';
 import { AppButton, AppInput, AppSelect, AppToggle } from '../../src/ui/components';
 import {
   BACKUP_OPTIONS,
   CS2_OVHCLOUD_OPTIONS,
   CS2_PRESETS,
   FILE_MANAGER_OPTIONS,
-  GLOBAL_OPTIONS,
   HYTALE_OVHCLOUD_OPTIONS,
   HYTALE_PRESETS,
   PALWORLD_OVHCLOUD_OPTIONS,
@@ -28,7 +27,6 @@ import {
   getAccessLevelLabel,
   isServerPermissionChecked,
   samePermissionSet,
-  togglePermission,
   toggleServerPermission,
 } from './utils';
 import { getSupportedWipeModes } from '../serverSettings/wipeModes';
@@ -124,7 +122,7 @@ export function UserEditDialog({
   const isRustOvhcloudServer = isOvhcloud && selectedServer?.catalogId === 'rust';
   const isValheimOvhcloudServer = isOvhcloud && selectedServer?.catalogId === 'valheim';
   const isExternalServer = selectedServer?.provider === 'external' && !isNativeTemplate(selectedServer.providerMetadataJson);
-  const isBusy = saveLoading || accessLoading || accessError;
+  const isBusy = saveLoading || (!globalKnown.includes('panel.operator') && (accessLoading || accessError));
 
   const wipeFamily = isMinecraftOvhcloudServer ? 'minecraft'
     : isHytaleOvhcloudServer ? 'hytale'
@@ -142,7 +140,8 @@ export function UserEditDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent dismissible={false} className="w-[94vw] sm:w-[86vw] lg:w-[68vw] xl:w-[62vw] max-h-[90vh] sm:max-w-[920px] xl:max-w-[980px] overflow-hidden border border-gray-700/80 bg-[#0f172a] p-0 text-white">
-        <div className="flex justify-end border-b border-gray-800 px-4 py-2">
+        <div className="flex items-center justify-between border-b border-gray-800 px-4 py-2">
+          <DialogTitle className="text-base font-semibold">Edit user · {username}</DialogTitle>
           <button
             type="button"
             onClick={() => onOpenChange(false)}
@@ -240,33 +239,26 @@ export function UserEditDialog({
                   </section>
 
                   <section className="rounded-lg border border-gray-700 bg-[#1f2937] p-4">
-                    <h3 className="text-lg font-semibold text-white">Global Permissions</h3>
-                    <div className="mt-3 space-y-2">
-                      {GLOBAL_OPTIONS.filter((opt) => opt.value !== '*').map((opt) => {
-                        const checked = globalKnown.includes(opt.value);
-
-                        return (
-                          <AppToggle
-                            key={`global-${opt.value}`}
-                            ariaLabel={opt.label}
-                            checked={checked}
-                            size="compact"
-                            onChange={() =>
-                              setGlobalKnown((current) => togglePermission(current, opt.value))
-                            }
-                            label={opt.label}
-                            className={`w-full flex-row-reverse justify-between rounded border px-3 py-2 transition-colors ${
-                              checked
-                                ? 'border-[var(--color-cyan-400)]/50 bg-[#0050D7]/10'
-                                : 'border-gray-700 bg-[#111827]'
-                            }`}
-                          />
-                        );
-                      })}
+                    <h3 className="text-lg font-semibold text-white">Account level</h3>
+                    <div className="mt-3 flex gap-2" role="group" aria-label="Account level">
+                      <AppButton type="button" tone={globalKnown.length === 0 ? 'primary' : 'neutral'} aria-pressed={globalKnown.length === 0} onClick={() => setGlobalKnown([])}>User</AppButton>
+                      <AppButton type="button" tone={globalKnown.includes('panel.operator') ? 'primary' : 'neutral'} aria-pressed={globalKnown.includes('panel.operator')} onClick={() => setGlobalKnown(['panel.operator'])}>Operator</AppButton>
                     </div>
+                    <p className="mt-3 text-sm text-gray-300">
+                      {globalKnown.includes('panel.operator')
+                        ? 'Operator has full panel access and all servers. The Super Admin account cannot be deleted, disabled or changed.'
+                        : 'User only has access to assigned servers, with the permissions selected below.'}
+                    </p>
+                    {globalKnown.some(p => p !== 'panel.operator') && <p className="mt-2 text-sm text-amber-300">This account has legacy global grants. Choose User to remove them, or Operator for full panel access.</p>}
                   </section>
                 </div>
 
+                {globalKnown.includes('panel.operator') ? (
+                  <section className="rounded-lg border border-gray-700 bg-[#1f2937] p-4">
+                    <h3 className="text-lg font-semibold">All servers and nodes</h3>
+                    <p role="status" className="mt-2 text-sm text-gray-300">Operator has access to all servers. User assignments are retained.</p>
+                  </section>
+                ) : (
                 <section className="rounded-lg border border-gray-700 bg-[#1f2937] p-4">
                   <h3 className="text-lg font-semibold text-white">Server access for this user</h3>
                   <p className="mt-1 text-sm text-gray-400">
@@ -319,7 +311,8 @@ export function UserEditDialog({
                       <p className="text-sm font-medium text-gray-200">
                         Set permissions for <span className="text-white">{selectedServerName}</span>
                       </p>
-                      <p className="mt-2 text-sm font-medium text-gray-200">Quick presets</p>
+                      <p className="mt-2 text-sm text-gray-400">Server administrator: console, files, backups and schedules. No resource, network, environment, terminal or deletion access. Global user management grants wider access.</p>
+                      <p className="mt-2 text-sm font-medium text-gray-200">Quick presets · replace the current selection</p>
                       {(() => {
                         const ADDON_PERMS = ['minecraft.addons.read', 'minecraft.addons.write'];
                         const filterAddons = (perms: string[]) =>
@@ -336,7 +329,8 @@ export function UserEditDialog({
                         const presetChips = !gamePresets
                           ? SERVER_PRESETS
                           : (() => {
-                              const [gameViewer, gameOperator] = gamePresets;
+                              const gameViewer = gamePresets.find(p => p.id.endsWith('-viewer'));
+                              const gameOperator = gamePresets.find(p => p.id.endsWith('-operator'));
                               return SERVER_PRESETS.map((p) =>
                                 p.id === 'viewer' && gameViewer ? { ...gameViewer, label: p.label }
                                 : p.id === 'operator' && gameOperator ? { ...gameOperator, label: p.label }
@@ -390,7 +384,10 @@ export function UserEditDialog({
                     </div>
 
                     {[
-                      { label: 'General', options: SERVER_GENERAL_OPTIONS },
+                      { label: 'Game console & power', options: SERVER_GENERAL_OPTIONS.filter(o => ['server.power', 'container.logs.read', 'server.command.send'].includes(o.value)) },
+                      { label: 'Infrastructure · CPU, RAM & network', options: SERVER_GENERAL_OPTIONS.filter(o => ['server.edit', 'server.env'].includes(o.value)) },
+                      { label: 'Terminal · system shell', options: SERVER_GENERAL_OPTIONS.filter(o => o.value === 'container.terminal') },
+                      { label: 'Server deletion', options: SERVER_GENERAL_OPTIONS.filter(o => o.value === 'server.delete') },
                       { label: 'File Manager', options: FILE_MANAGER_OPTIONS },
                       { label: 'Scheduled Tasks', options: SCHEDULED_TASKS_OPTIONS },
                     ].map(({ label, options }) => (
@@ -696,6 +693,7 @@ export function UserEditDialog({
                     )}
                   </div>
                 </section>
+                )}
 
                 <div className="flex flex-col gap-3 border-t border-gray-800 pt-4 sm:flex-row sm:items-center sm:justify-end">
                   {saveError && (

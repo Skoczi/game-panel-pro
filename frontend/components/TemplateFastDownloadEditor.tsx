@@ -17,10 +17,7 @@ export function TemplateFastDownloadEditor({
     <div className="space-y-5">
       <div>
         <h3 className="text-lg font-semibold">FastDownload</h3>
-        <p className="mt-2 text-sm text-slate-500">
-          Choose whether this game uses FastDownload and which folders are published automatically.
-          Each installed server receives this version’s configuration.
-        </p>
+
       </div>
       <AppToggle
         checked={!!f?.enabled}
@@ -65,10 +62,7 @@ export function TemplateFastDownloadEditor({
               onChange={(e) => update({ folders: e.target.value.split('\n') })}
             />
           </label>
-          <p className="text-sm text-slate-500">
-            Paths are relative to the game directory. Only supported asset files are published.
-            Configuration files, plugins, logs and links stay private.
-          </p>
+          <p className="text-sm text-slate-500">Paths relative to the game directory. Publishes game assets only.</p>
           <AppSelect
             controlLabel="Default compression"
             value={f.compression || 'none'}

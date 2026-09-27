@@ -1,3 +1,6 @@
+import { verifySharedBackup } from './sharedFiles.js';
+import { archiveWithProgress } from './archiveProgress.js';
+import type { ReportProgress } from './operationProgress.js';
 import { withStorageReserve } from './storageReserve.js';
 import { recordNativeBackup } from './nativeProtection.js';
 import { syncDirectory } from './nativeRestoreJournal.js';
@@ -42,9 +45,13 @@ export function normalizeBackupName(value: unknown): string {
 }
 
 const busy = new Set<number>();
-export async function createNativeBackup(server: GameServerRow & { docker_container_id: string }, operationHeld = false, requestedName?: string) {
+export async function createNativeBackup(server: GameServerRow & { docker_container_id: string }, operationHeld = false, requestedName?: string, report?: ReportProgress) {
     const backupName = normalizeBackupName(requestedName);
-    if (!nativeServerTemplate(server)) throw new Error('Not a Native server');
+    const template = nativeServerTemplate(server);
+    if (!template) throw new Error('Not a Native server');
+    // Steam's CS2 depot exceeds 70 GB. Its full recovery copy must not inherit
+    // the ten-minute limit intended for the much smaller GoldSrc archives.
+    const archiveTimeout = ['csgo','cs2'].includes(template.runtime?.catalogId) ? 7_200_000 : 600_000;
     if (busy.has(server.id)) throw Object.assign(new Error('A backup is already running'), { statusCode: 409 });
     busy.add(server.id);
     let release: (() => void) | undefined;
@@ -64,6 +71,7 @@ export async function createNativeBackup(server: GameServerRow & { docker_contai
         const fdl = await fs.lstat(path.join(serverRoot, 'data', 'fastdownload')).catch((e: any) => { if (e.code === 'ENOENT') return null; throw e; });
         if (fdl) { if (!fdl.isDirectory()) throw new Error('FastDownload must be a real directory'); keys.push('fastdownload'); }
         const archiveRoot = path.join(serverRoot, 'data');
+        await verifySharedBackup(template.mounts, path.join(archiveRoot, 'serverfiles'));
         for (const key of keys) {
             if (!(await fs.lstat(path.join(archiveRoot, key)).catch(() => null))?.isDirectory()) throw Object.assign(new Error('Invalid native data mount: expected data/serverfiles; migrate legacy layouts explicitly'), { statusCode: 409 });
         }
@@ -71,11 +79,12 @@ export async function createNativeBackup(server: GameServerRow & { docker_contai
         temporary = path.join(directory, `${filename}.partial`);
         // argv only; exclude logs, installers and backups by archiving only serverfiles.
         try {
-            await withStorageReserve(directory, signal => promisify(execFile)('tar', ['-czf', temporary!, '-C', archiveRoot, '--', ...keys], { signal, timeout: 600_000, maxBuffer: 1024 * 1024, env: { ...process.env, COPYFILE_DISABLE: '1' } }));
+            await withStorageReserve<unknown>(directory, signal => report ? archiveWithProgress(archiveRoot, keys, temporary!, signal, report, archiveTimeout) : promisify(execFile)('tar', ['-czf', temporary!, '-C', archiveRoot, '--', ...keys], { signal, timeout: archiveTimeout, maxBuffer: 1024 * 1024, env: { ...process.env, COPYFILE_DISABLE: '1' } }));
         } catch (error: any) {
             if (!live || error.code !== 1 || !String(error.stderr).includes('file changed as we read it')) throw error;
             await promisify(execFile)('tar', ['-tzf', temporary], { timeout: 600_000, maxBuffer: 16 * 1024 * 1024 });
         }
+        await report?.({ stage: 'backup-verify', message: 'Backup: verifying archive', percent: null });
         await validateNativeArchive(temporary);
         await fs.chmod(temporary, 0o600);
         const output = await fs.open(temporary, 'r');
@@ -84,9 +93,11 @@ export async function createNativeBackup(server: GameServerRow & { docker_contai
         await syncDirectory(directory);
         temporary = undefined;
         const recordWarning = await recordNativeBackup(path.join(directory, filename), live).then(() => '', () => 'Archive created and checked, but its protection record could not be saved.');
+        await report?.({ stage: 'backup-protection', message: policy.externalCopy ? 'Backup: copying to external storage and verifying' : 'Backup: applying retention', percent: null });
         const protection = await finishNativeBackup(server, path.join(directory, filename), live,
             recordWarning ? { ...policy, automaticRetention: false } : policy);
-        return { ok: true, exitCode: 0, stdout: `Native ${live ? 'live ' : ''}backup created: ${filename}${live ? '. Files may have changed during backup; game consistency is not guaranteed.' : ''} ${protection}`.trim(), stderr: recordWarning };
+        await report?.({ stage: 'backup-ready', message: 'Backup verified', percent: 100 });
+        return { ok: true, name: filename, exitCode: 0, stdout: `Native ${live ? 'live ' : ''}backup created: ${filename}${live ? '. Files may have changed during backup; game consistency is not guaranteed.' : ''} ${protection}`.trim(), stderr: recordWarning };
     } finally {
         if (temporary) await fs.unlink(temporary).catch(() => {});
         busy.delete(server.id);

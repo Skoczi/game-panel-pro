@@ -37,6 +37,27 @@ test('server header is a compact toolbar and wraps cleanly on mobile', async ({ 
   await expect(power.getByRole('button', { name: 'Restart', exact: true })).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   if (process.env.PLAYWRIGHT_SCREENSHOTS === '1') await page.screenshot({ path: 'test-results/server-header-mobile.png', fullPage: true });
+  const mobileBack = (await back.boundingBox())!;
+  const mobileName = (await name.boundingBox())!;
+  expect(mobileName.x).toBeGreaterThan(mobileBack.x + mobileBack.width);
+  expect(Math.abs(mobileBack.y + mobileBack.height / 2 - mobileName.y - mobileName.height / 2)).toBeLessThan(5);
+  await page.getByRole('link', { name: 'File Editor', exact: true }).click();
+  const breadcrumb = page.locator('.gp-path-breadcrumb');
+  await expect(breadcrumb.getByTitle('Root', { exact: true })).toBeVisible();
+  expect((await breadcrumb.boundingBox())!.width).toBeGreaterThan(250);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  if (process.env.PLAYWRIGHT_SCREENSHOTS === '1') await page.screenshot({ path: 'test-results/file-toolbar-mobile.png', fullPage: true });
+  await page.getByRole('button', { name: 'More file actions', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'New folder', exact: true })).toBeVisible();
+  if (process.env.PLAYWRIGHT_SCREENSHOTS === '1') {
+    await page.evaluate(() => Promise.all(document.getAnimations().filter(a => a.effect?.getComputedTiming().iterations !== Infinity).map(a => a.finished.catch(() => {}))));
+    await page.screenshot({ path: 'test-results/file-actions-sheet-mobile.png' });
+  }
+  await page.getByRole('button', { name: 'Show hidden files', exact: true }).click();
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+  await page.getByRole('button', { name: 'Actions for server.cfg', exact: true }).click();
+  await expect(page.getByRole('menuitem', { name: 'Copy file', exact: true })).toBeVisible();
+  await page.keyboard.press('Escape');
   await back.click();
   await expect(page).not.toHaveURL(/servers\/7/);
 });
@@ -49,13 +70,14 @@ test('console height is independent, persisted, and moves charts beside a tall c
   await page.goto('/test/server-page.fixture.html#/nodes/local/servers/7/console');
   const panel = page.locator('.gp-console-panel');
   expect((await panel.boundingBox())!.height).toBeGreaterThan(490);
-  expect(Math.abs((await panel.boundingBox())!.height - (await page.locator('.gp-server-stats').boundingBox())!.height)).toBeLessThan(2);
+  const initialHeight = (await panel.boundingBox())!.height;
   const handle = page.getByRole('separator', { name: 'Resize console' });
   const grip = (await handle.boundingBox())!;
   await page.mouse.move(grip.x + grip.width / 2, grip.y + grip.height / 2);
   await page.mouse.down();
   await page.mouse.move(grip.x + grip.width / 2, grip.y + 450, { steps: 10 });
   await page.mouse.up();
+  expect((await panel.boundingBox())!.height).toBeGreaterThan(initialHeight + 100);
   await expect(page.locator('.gp-server-overview')).toHaveClass(/gp-server-overview-tall/);
   const charts = page.locator('.gp-server-charts');
   expect((await charts.boundingBox())!.x).toBeGreaterThan((await panel.boundingBox())!.x + 500);
@@ -67,8 +89,12 @@ test('console height is independent, persisted, and moves charts beside a tall c
   await page.keyboard.press('Escape');
   await expect(panel).toHaveAttribute('data-fullscreen', 'false');
   await page.setViewportSize({ width: 390, height: 844 });
+  const performance = page.locator('.gp-server-performance');
+  await expect(performance).not.toHaveAttribute('open', '');
+  await performance.locator('summary').click();
+  await expect(charts).toBeVisible();
   await expect
-    .poll(async () => Math.abs((await charts.boundingBox())!.x - (await panel.boundingBox())!.x))
+    .poll(async () => Math.abs((await performance.boundingBox())!.x - (await panel.boundingBox())!.x))
     .toBeLessThan(2);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
 });
@@ -704,6 +730,7 @@ for (const status of ['running', 'stopped', 'unknown']) {
     await page.route('**/backups/compatibility', route => route.fulfill({ json: { native: true, capabilities: { backupJobs: 1, nativeRestoreRecovery: 1 }, layoutReady: true, legacy: [], recoveryCount: 0 } }));
     await page.goto(`/test/server-page.fixture.html?status=${status}#/nodes/local/servers/7/backup`);
     await expect(page.getByRole('button', { name: 'Create backup now' })).toBeEnabled();
+    await page.getByLabel('Actions for manual.tar.gz').click();
     const restore = page.getByRole('button', { name: 'Restore', exact: true });
     if (status === 'stopped') await expect(restore).toBeEnabled();
     else {
@@ -779,4 +806,135 @@ test('a full rolling console buffer counts new logs and keeps following the tail
   await expect(output.locator('pre').last()).toContainText('Performance log 5200:');
   await expect.poll(remaining).toBeLessThan(2);
   await expect(jump).not.toBeVisible();
+});
+
+
+test('console filters stay compact and log body fills the available desktop space', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await page.goto('/test/server-page.fixture.html?longLogs#/nodes/local/servers/7/console');
+  await page.getByRole('button', { name: 'Search console logs', exact: true }).click();
+  const filters = page.locator('.gp-console-filters:visible');
+  const body = page.locator('.gp-console-body:visible');
+  await expect(filters).toBeVisible();
+  await expect.poll(async () => (await filters.boundingBox())?.height || 1000).toBeLessThan(120);
+  const filterBox = (await filters.boundingBox())!;
+  const bodyBox = (await body.boundingBox())!;
+  expect(bodyBox.y - (filterBox.y + filterBox.height)).toBeLessThan(8);
+  expect(bodyBox.height).toBeGreaterThan(250);
+  await page.screenshot({ path: 'test-results/console-layout-audit.png', fullPage: true });
+});
+
+
+for (const width of [390, 1440]) for (const monitoring of [false, true]) test(`console detail icons stay separate and status shares game response ${width} ${monitoring}`, async ({ page }) => {
+  await page.setViewportSize({width,height:1000});
+  await page.goto(`/test/server-page.fixture.html${monitoring ? '?monitoring' : ''}#/nodes/local/servers/7/console`);
+  const cards = page.locator('.gp-server-stats .gp-server-stat');
+  await expect(cards).toHaveCount(7);
+  const status = page.locator('.gp-server-runtime-status');
+  await expect(status).toContainText('Running');
+  await expect(status.locator('.gp-game-monitor')).toHaveCount(monitoring ? 1 : 0);
+  if (monitoring) { await expect(status).toContainText('Game responding'); await expect(status).toContainText('cs_militia'); }
+  const overlaps = await cards.evaluateAll(cards => cards.flatMap(card => {
+    const icon = card.querySelector('.gp-stat-icon')!.getBoundingClientRect();
+    return [...card.children].filter(child => !child.classList.contains('gp-stat-icon')).map(child => {
+      const text = child.getBoundingClientRect();
+      return icon.right > text.left;
+    });
+  }));
+  expect(overlaps.some(Boolean)).toBe(false);
+  await page.locator(width === 390 ? '.gp-server-overview' : '.gp-server-stats').screenshot({path:`test-results/console-details-${width}-${monitoring}.png`});
+});
+
+
+test('assigned server administrator sees game console and files, with no terminal and read-only infrastructure', async ({ page }) => {
+ await page.goto('/test/server-page.fixture.html?gameAdmin#/nodes/local/servers/7/console');
+ await expect(page.locator('.gp-console-panel').getByText('Server Console', { exact: true })).toBeVisible();
+ await expect(page.getByRole('link', { name: 'File Editor', exact: true })).toBeVisible();
+ await expect(page.getByRole('link', { name: 'Terminal', exact: true })).toHaveCount(0);
+ await page.getByRole('link', { name: 'Settings', exact: true }).click();
+ await expect(page.getByPlaceholder('e.g. 2', { exact: true })).toBeDisabled();
+ await expect(page.getByPlaceholder('e.g. 4096', { exact: true })).toBeDisabled();
+ await expect(page.getByRole('button', { name: 'Delete server', exact: true })).toHaveCount(0);
+});
+
+test('folder back and forward preserve an open dirty editor without a discard prompt', async ({ page }) => {
+  await page.route('**/api/servers/7/files?**', route => {
+    const path = new URL(route.request().url()).searchParams.get('path') || '/';
+    return route.fulfill({ json: { path, entries: [{ name: 'server.cfg', type: 'file' }, { name: 'configs', type: 'dir' }] } });
+  });
+  await page.goto('/test/server-page.fixture.html#/nodes/local/servers/7/filemanager');
+  await page.locator('[data-file-name="configs"]').click();
+  await expect.poll(() => new URL(page.url()).searchParams.get('path')).toBe('/configs');
+  await page.getByText('server.cfg', { exact: true }).dblclick();
+  const editor = page.locator('.monaco-editor');
+  await editor.click();
+  await page.keyboard.press('ControlOrMeta+a');
+  await page.keyboard.type('hostname keep my changes');
+  await page.goBack();
+  await expect.poll(() => new URL(page.url()).searchParams.get('path')).toBe('/');
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+  await expect(editor).toContainText('hostname keep my changes');
+  await page.goForward();
+  await expect.poll(() => new URL(page.url()).searchParams.get('path')).toBe('/configs');
+  await expect(editor).toContainText('hostname keep my changes');
+});
+
+test('file context menu and Ctrl+F operate within the current directory', async ({ page }) => {
+  await page.route('**/api/servers/7/files?**', route => route.fulfill({ json: { path: '/', entries: [{ name: 'server.cfg', type: 'file' }, { name: 'notes.txt', type: 'file' }] } }));
+  await page.goto('/test/server-page.fixture.html#/nodes/local/servers/7/filemanager');
+  await page.keyboard.press('ControlOrMeta+f');
+  const search = page.getByRole('textbox', { name: 'Search files in this folder' });
+  await expect(search).toBeFocused();
+  await search.fill('server');
+  await expect(page.locator('[data-file-name="server.cfg"]')).toBeVisible();
+  await expect(page.locator('[data-file-name="notes.txt"]')).toHaveCount(0);
+  await search.press('Escape');
+  await expect(page.locator('[data-file-name="notes.txt"]')).toBeVisible();
+  await page.locator('[data-file-name="server.cfg"]').click({ button: 'right' });
+  const menu = page.getByRole('menu', { name: 'Actions for server.cfg' });
+  await expect(menu).toBeVisible();
+  await page.screenshot({ path: '/tmp/eserv-file-menu.png' });
+  await expect(menu.getByRole('menuitem', { name: 'Open', exact: true })).toBeFocused();
+  await page.keyboard.press('ArrowDown');
+  await expect(menu.getByRole('menuitem', { name: 'Download', exact: true })).toBeFocused();
+  await menu.getByRole('menuitem', { name: 'Rename', exact: true }).click();
+  await expect(menu).toHaveCount(0);
+  await expect(page.locator('input[value="server.cfg"]')).toBeVisible();
+});
+
+test('copy notification floats without moving server tabs and can be dismissed', async ({ page, context }) => {
+  await context.grantPermissions(['clipboard-write', 'clipboard-read']);
+  await page.goto('/test/server-page.fixture.html#/nodes/local/servers/7/console');
+  const tabs = page.getByRole('link', { name: 'File Editor', exact: true });
+  const before = (await tabs.boundingBox())!;
+  await page.getByRole('button', { name: 'Copy connection address', exact: true }).click();
+  await expect(page.locator('.gp-server-toast')).toContainText('Address copied');
+  expect((await tabs.boundingBox())!.y).toBe(before.y);
+  await page.getByRole('button', { name: 'Dismiss notification' }).click();
+  await expect(page.locator('.gp-server-toast')).toHaveCount(0);
+});
+
+test('context copy preserves the source, reports conflicts and refreshes the listing', async ({ page }) => {
+  let copied = false; let payload: any;
+  await page.route('**/api/servers/7/files?**', route => route.fulfill({ json: { path: '/', entries: [{ name: 'server.cfg', type: 'file' }, ...(copied ? [{ name: 'server-copy.cfg', type: 'file' }] : [])] } }));
+  await page.route('**/api/servers/7/file/copy', route => {
+    payload = route.request().postDataJSON();
+    if (payload.to === '/server.cfg') return route.fulfill({ status: 409, json: { error: 'Choose a different destination filename' } });
+    copied = true; return route.fulfill({ status: 201, json: { ok: true } });
+  });
+  await page.goto('/test/server-page.fixture.html#/nodes/local/servers/7/filemanager');
+  await page.locator('[data-file-name="server.cfg"]').click({ button: 'right' });
+  await page.getByRole('menuitem', { name: 'Copy file', exact: true }).click();
+  const dialog = page.getByRole('dialog');
+  const destination = dialog.getByRole('textbox', { name: 'Copy destination path' });
+  await expect(destination).toHaveValue('/server-copy.cfg');
+  await destination.fill('/server.cfg');
+  await dialog.getByRole('button', { name: 'Copy', exact: true }).click();
+  await expect(dialog.getByRole('alert')).toContainText('different destination');
+  await destination.fill('/server-copy.cfg');
+  await dialog.getByRole('button', { name: 'Copy', exact: true }).click();
+  await expect(dialog).toHaveCount(0);
+  expect(payload).toEqual({ from: '/server.cfg', to: '/server-copy.cfg', root: 'data', toRoot: 'data' });
+  await expect(page.locator('[data-file-name="server.cfg"]')).toBeVisible();
+  await expect(page.locator('[data-file-name="server-copy.cfg"]')).toBeVisible();
 });

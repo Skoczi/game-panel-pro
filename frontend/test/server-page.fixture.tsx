@@ -1,3 +1,4 @@
+import { SERVER_ADMIN_PERMISSIONS } from '../components/userAdministration/utils';
 import React, { useEffect, useState } from 'react';
 import { MAX_SERVER_LOG_LINES } from '../components/app/appRuntime';
 import { createRoot } from 'react-dom/client';
@@ -12,7 +13,8 @@ import '../src/ui/theme/ods-light.css';
 import '../styles/globals.css';
 const noop = () => {};
 const deleteOnly = location.search.includes('deleteOnly');
-const admin = !location.search.includes('restricted') && !deleteOnly;
+const gameAdmin = location.search.includes('gameAdmin');
+const admin = !location.search.includes('restricted') && !deleteOnly && !gameAdmin;
 const metadata = JSON.stringify({
   template: {
     document: {
@@ -64,6 +66,7 @@ function Fixture() {
         provider: 'external',
         providerMetadataJson: metadata,
         status: new URLSearchParams(location.search).get('status') || 'running',
+        monitoring: location.search.includes('monitoring') ? { enabled: true, state: 'online', checkedAt: new Date().toISOString(), staleAfterSeconds: 60, latencyMs: 21, failures: 0, info: { map: 'cs_militia', players: 0, maxPlayers: 16 } } : undefined,
         connectionHost: '51.75.61.237',
         port: 27050,
         resources: { cpuCores: 0.12, cpuLimitCores: 2, cpuLimitPercent: 6, memoryBytes: 312 * 1024 ** 2, memoryLimitBytes: 1024 ** 3, memoryLimitPercent: 30.5, diskBytes: 1024 ** 3, nodeFreeBytes: 100 * 1024 ** 3 },
@@ -91,7 +94,7 @@ function Fixture() {
       ],
     },
     gameNamesByKey: {},
-    serverPermissionsById: { '7': admin ? ['*'] : deleteOnly ? ['server.delete'] : [] },
+    serverPermissionsById: { '7': admin ? ['*'] : gameAdmin ? SERVER_ADMIN_PERMISSIONS : deleteOnly ? ['server.delete'] : [] },
     handleServerAction: async (id: string, name: string, action: string) => {
       (window as any).actions = [...((window as any).actions || []), { id, name, action }];
     },

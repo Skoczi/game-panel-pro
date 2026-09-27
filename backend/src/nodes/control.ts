@@ -1,3 +1,4 @@
+import { isPanelAdministrator } from '../utils/accountRole.js';
 import { alertStore } from '../services/alerts.js';
 import { validateAlertBatch } from '../services/alertStore.js';
 import express, { type Request, type Response, type NextFunction } from 'express';
@@ -9,10 +10,11 @@ import { getConfig } from '../config.js';
 import { authMiddleware, rootOnly, type AuthenticatedRequest } from '../middleware/auth.js';
 import { userRepository } from '../database/index.js';
 import { verifyToken } from '../utils/auth.js';
+import { loginSessions } from '../services/loginSessions.js';
 import { NodeStore, NodeRemovalError } from './store.js';
 import { NODE_ID, RequestVerifier, runtimePath, signNodeRequest, secret } from './protocol.js';
 import { nodeTls, proxyRuntime } from './transport.js';
-import { serverDelegation, verifyNodeEmpty } from '../fleet/control.js';
+import { fleet, serverDelegation, verifyNodeEmpty } from '../fleet/control.js';
 import { delegatedPath, type Delegation } from './delegation.js';
 import { NodeAllocations, AllocationError } from './allocations.js';
 import { allocationRuntime } from './allocationRuntime.js';
@@ -67,10 +69,10 @@ export function mountNodeControl(app: express.Application) {
             let delegatedDownload: Delegation | undefined;
             try {
                 const user = await activeUser(claim.userToken);
-                if (!user.is_root || claim.serverId) {
+                if (!isPanelAdministrator(user) || claim.serverId) {
                     const delegation = await serverDelegation(claim.serverId || '', claim.nodeId, {
                         userId: user.id,
-                        isRoot: Boolean(user.is_root),
+                        isRoot: isPanelAdministrator(user),
                     });
                     if (!delegation.permissions.includes('fs.read')) throw new Error();
                     delegatedDownload = { ...delegation, downloadPath: claim.path };
@@ -192,6 +194,18 @@ export function mountNodeControl(app: express.Application) {
             res.status(401).json({ error: 'Enrollment rejected' });
         }
     });
+    router.post('/:id/server-identities/:runtimeKey', async (req, res) => {
+        try {
+            const node = await store.get(req.params.id);
+            if (!node?.enabled || !node.key_encrypted) throw new Error();
+            const claim = verifier.verify(String(req.headers['x-gamepanel-node-auth'] || ''),
+                store.key(node), node.id, 'POST', req.originalUrl);
+            if (claim.delegation) throw new Error();
+        } catch { res.status(401).json({ error: 'Node authentication required' }); return; }
+        try {
+            res.json(await fleet().reserve(req.params.id, req.params.runtimeKey));
+        } catch { res.status(503).json({ error: 'Central server identity unavailable' }); }
+    });
     router.post('/:id/heartbeat', async (req, res) => {
         try {
             const node = await store.get(req.params.id);
@@ -307,7 +321,8 @@ async function activeUser(token: string) {
         !user ||
         payload.delegation ||
         !user.is_enabled ||
-        user.token_version !== payload.tokenVersion
+        user.token_version !== payload.tokenVersion ||
+        !await (await loginSessions()).active(payload.sessionId, user.id, user.token_version)
     )
         throw new Error('Access denied');
     return user;
@@ -354,16 +369,16 @@ function bridgeNodeSocket(client: WebSocket, nodeId: string, serverId?: string) 
     let accessFingerprint = '';
     const access = async () => {
         const user = await activeUser(token);
-        const delegation = user.is_root && !serverId
+        const delegation = isPanelAdministrator(user) && !serverId
             ? undefined
             : await serverDelegation(serverId || '', nodeId, {
                   userId: user.id,
-                  isRoot: Boolean(user.is_root),
+                  isRoot: isPanelAdministrator(user),
               });
         return {
             user,
             delegation,
-            fingerprint: JSON.stringify([Boolean(user.is_root), delegation]),
+            fingerprint: JSON.stringify([isPanelAdministrator(user), delegation]),
         };
     };
     const authDeadline = setTimeout(() => client.close(1008, 'Authentication timeout'), 3000);

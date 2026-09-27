@@ -1,3 +1,4 @@
+import { verifySharedBackup } from './sharedFiles.js';
 import { withStorageReserve } from './storageReserve.js';
 import { validateNativeArchive } from './nativeArchive.js';
 import { promises as fs, createReadStream, createWriteStream } from 'node:fs';
@@ -97,7 +98,7 @@ export async function stageNativeArchive(archive: string, staging: string, keys:
     await syncDirectory(staging);
 }
 
-export async function restoreNativeBackup(server: GameServerRow & { docker_container_id: string }, apiPath: string, operationHeld = false) {
+export async function restoreNativeBackup(server: GameServerRow & { docker_container_id: string }, apiPath: string, operationHeld = false, prepareStaged?: (directory: string) => Promise<void>) {
     const release = (operationHeld ? () => {} : acquireNativeOperation(server.id, true));
     let staging: string | undefined;
     let journalActive = false;
@@ -116,6 +117,8 @@ export async function restoreNativeBackup(server: GameServerRow & { docker_conta
         for (const key of keys) if (!(await fs.lstat(path.join(serverRoot, key))).isDirectory()) throw new Error('Invalid Native mount');
         staging = await fs.mkdtemp(path.join(directory, '.restore-'));
         await stageNativeArchive(archive, staging, keys);
+        await verifySharedBackup(nativeServerTemplate(server)!.mounts, path.join(staging, 'serverfiles'));
+        await prepareStaged?.(staging);
         if (!['exited', 'created', 'dead'].includes(await checkContainerStatus(server.docker_container_id))) throw new Error('Server state changed during restore preparation');
         const recovery = path.join(directory, `recovery-${randomUUID()}`);
         await fs.mkdir(recovery, { mode: 0o700 });

@@ -1,3 +1,5 @@
+import { authorizeScheduledTask } from '../services/scheduledTaskAccess.js';
+import { maintenanceRuns } from '../services/maintenanceWorkflow.js';
 import { Router, type Response } from 'express';
 import { type AuthenticatedRequest, requireServerPermission } from '../middleware/auth.js';
 import { sendRouteError } from '../utils/routeErrors.js';
@@ -22,7 +24,7 @@ router.get(
             const serverId = requirePositiveInt(req.params.id, 'Invalid server id');
 
             const tasks = await listScheduledTasks(serverId);
-            return res.json({ tasks });
+            return res.json({ tasks, maintenanceWorkflow: true, maintenanceRuns: await maintenanceRuns(serverId) });
         } catch (error) {
             return sendRouteError(res, error, {
                 route: 'ROUTE:SCHEDULED_TASKS:LIST',
@@ -47,7 +49,7 @@ router.post(
                 schedule: body.schedule,
                 enabled: body.enabled,
                 payload: body.payload,
-            });
+            }, authorizeScheduledTask(req.user, serverId));
 
             return res.status(201).json({ task });
         } catch (error) {
@@ -101,7 +103,7 @@ router.patch(
                 schedule: body.schedule,
                 enabled: body.enabled,
                 payload: body.payload,
-            });
+            }, authorizeScheduledTask(req.user, serverId));
 
             return res.json({ task });
         } catch (error) {

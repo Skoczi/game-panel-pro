@@ -26,8 +26,8 @@ def fetch(url, limit):
 
 
 def release_archive(version):
-    if not re.fullmatch(r'2\.0\.[0-9]+', version):
-        raise ValueError('Only Game Panel PRO 2.0.X releases are accepted')
+    if not re.fullmatch(r'2\.(?:0|1)\.[0-9]+', version):
+        raise ValueError('Only Game Panel PRO 2.0.x or 2.1.x releases are accepted')
     release = json.loads(fetch(f'https://api.github.com/repos/{REPOSITORY}/releases/tags/v{version}', 1024 * 1024))
     if release.get('draft') or release.get('prerelease') or release.get('tag_name') != 'v' + version:
         raise ValueError('A published stable release is required')

@@ -1,3 +1,4 @@
+import * as sharedFiles from '../src/services/sharedFiles.js';
 import { withStorageReserve } from '../src/services/storageReserve.js';
 import { validateNativeArchive } from '../src/services/nativeArchive.js';
 import { test } from 'node:test';
@@ -15,8 +16,8 @@ test('scheduler executes the real Native backup for stopped and running servers'
  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'gp-schedule-'));
  let status = 'exited'; const outcomes: string[] = []; let failBackup = false; const commands: string[] = [];
  const server = { id: 1, docker_container_id: 'game', provider_metadata_json: '{}' };
- const native = loadWithMocks('../src/services/nativeBackups.ts', {
-  './nativeProtection.js': { recordNativeBackup: async () => ({}) },
+ const native = loadWithMocks('../src/services/nativeBackups.ts', { './sharedFiles.js': sharedFiles,
+  './archiveProgress.js': {}, './nativeProtection.js': { recordNativeBackup: async () => ({}) },
         './nativeBackupPolicy.js': { readNativeBackupPolicy: async () => ({ automaticRetention: false, externalCopy: false }) },
         './finishNativeBackup.js': { finishNativeBackup: async () => '' },
         './storageReserve.js': { withStorageReserve },
@@ -29,6 +30,7 @@ test('scheduler executes the real Native backup for stopped and running servers'
  }, { process, Buffer });
  const row = { id: 1, server_id: 1, type: 'backup', enabled: 1, schedule: '0 5 * * *', payload_json: '{}' };
  const scheduler = loadWithMocks('../src/services/scheduledTasks.ts', {
+        './maintenanceWorkflow.js': { interruptMaintenance: async () => {} },
   './serverReconfiguration.js': { applyPendingServerConfiguration: async () => ({ applied: false }) },
  './panelMaintenance.js': { isPanelMaintenance: () => false },
   './nativeBackups.js': native,

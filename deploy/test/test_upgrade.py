@@ -1,3 +1,4 @@
+import hashlib
 import importlib.util
 import io
 import json
@@ -80,14 +81,22 @@ class UpgradeTests(unittest.TestCase):
         self.assertEqual((self.root/'data/account').read_text(),'account-before')
 
     def test_failed_health_restores_data_source_environment_and_pinned_images(self):
+        self.assert_failed_health_rollback('1.5.0', '2.0.50')
+
+    def test_minor_upgrade_failed_health_restores_2059(self):
+        self.assert_failed_health_rollback('2.0.59', '2.1.0')
+
+    def assert_failed_health_rollback(self, old_version, new_version):
+        for name in ['backend', 'frontend']:
+            (self.root / 'app' / name / 'package.json').write_text(json.dumps({'version': old_version}))
         source = Path(self.temp.name).resolve()/'release'; source.mkdir()
         for name in upgrade.SOURCE_ITEMS:
             target=source/name
             if '.' in name or name in ['LICENSE','NOTICE']:target.write_text('source')
             else:target.mkdir()
         for name in ['backend','frontend']:
-            (source/name/'package.json').write_text('{"version":"2.0.50"}')
-        manifest={'fromVersion':'1.5.0','root':str(self.root),'project':'gamepanel','images':{'backend':'sha256:oldbackend','frontend':'sha256:oldfrontend'}}
+            (source/name/'package.json').write_text(json.dumps({'version': new_version}))
+        manifest={'fromVersion':old_version,'root':str(self.root),'project':'gamepanel','images':{'backend':'sha256:oldbackend','frontend':'sha256:oldfrontend'}}
         events=[]; real_run=upgrade.run
         def command(args,capture=True):
             if args[0]=='du': return '1000\tdata'
@@ -96,13 +105,13 @@ class UpgradeTests(unittest.TestCase):
             return real_run(args,capture)
         def compose(*args,**kwargs): events.append(list(args));return ''
         def healthy(expected):
-            if expected=='2.0.50':
+            if expected==new_version:
                 (self.root/'data/account').write_text('migrated-account')
                 raise RuntimeError('health failed')
-            self.assertEqual(expected,'1.5.0')
+            self.assertEqual(expected,old_version)
         with patch.object(self.app,'inspect',return_value=manifest),patch.object(self.app,'compose',side_effect=compose),patch.object(self.app,'healthy',side_effect=healthy),patch.object(upgrade,'run',side_effect=command):
             with self.assertRaisesRegex(RuntimeError,'health failed'):self.app.apply(source)
-        self.assertEqual(upgrade.version(self.root/'app'),'1.5.0')
+        self.assertEqual(upgrade.version(self.root/'app'),old_version)
         self.assertEqual((self.root/'data/account').read_text(),'account-before')
         self.assertEqual((self.root/'servers/game').read_text(),'game-data')
         self.assertEqual((self.root/'deploy/.env').read_text(),'JWT_SECRET=keep-this\nDOMAIN=panel.example.com\n')
@@ -131,5 +140,35 @@ class UpgradeTests(unittest.TestCase):
         release['assets'][0]['browser_download_url']='https://example.com/untrusted'
         with patch.object(runner,'fetch',return_value=json.dumps(release).encode()):
             with self.assertRaisesRegex(ValueError,'verified source'):runner.release_archive(version)
+
+    def test_minor_release_download_accepts_valid_checksum_and_rejects_unreviewed_versions(self):
+        content = b'reviewed release fixture'
+        version = '2.1.0'; name = f'game-panel-pro-{version}.tar.gz'
+        release = {'tag_name': 'v' + version, 'assets': [
+            {'name': n, 'browser_download_url': f'https://github.com/{runner.REPOSITORY}/releases/download/v{version}/{n}'}
+            for n in [name, 'SHA256SUMS']]}
+        sums = (hashlib.sha256(content).hexdigest() + '  ' + name + '\n').encode()
+        with patch.object(runner, 'fetch', side_effect=[json.dumps(release).encode(), sums, content]):
+            self.assertEqual(runner.release_archive(version), content)
+        for bad in ['2.1.0-rc.1', '2.2.0', '3.0.0', '../2.1.0', 'v2.1.0']:
+            with self.subTest(version=bad), patch.object(runner, 'fetch') as fetch:
+                with self.assertRaises(ValueError): runner.release_archive(bad)
+                fetch.assert_not_called()
+
+    def test_upgrade_rejects_downgrade_across_minor_boundary(self):
+        source = Path(self.temp.name) / 'candidate'
+        for name in ['backend', 'frontend']:
+            (source / name).mkdir(parents=True)
+            (source / name / 'package.json').write_text('{"version":"2.0.99"}')
+        with patch.object(self.app, 'inspect', return_value={'fromVersion': '2.1.0'}):
+            with self.assertRaisesRegex(ValueError, 'newer PRO release'):
+                self.app.apply(source)
+        self.assertFalse((self.root / 'pro-update-backups').exists())
+
+    def test_21_maintenance_still_waits_for_inflight_work(self):
+        with patch.object(self.app, 'compose', side_effect=[subprocess.CalledProcessError(1, 'probe'), '']) as compose, patch.object(upgrade.time, 'sleep'):
+            self.app.drain('2.1.0')
+            self.assertEqual(compose.call_count, 2)
+            self.assertIn('updateDrain', compose.call_args.args[-1])
 
 if __name__=='__main__':unittest.main()

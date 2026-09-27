@@ -1,9 +1,17 @@
 import { clearAppCache } from './appStorage';
+import { panelTab } from './panelLinks';
+import { fileLocationUrl } from './fileLocationUrl';
 import { appRootPath, serverNumber, shortServerRoute, shortServerUrl } from './serverLinks';
 
 const KEY = 'gamepanel_active_node';
 const SERVER_KEY = 'gamepanel_active_server';
 const ADMIN_KEY = 'gamepanel_admin_runtime';
+// A shared administration URL must never inherit a previously opened game runtime.
+if (panelTab() && !location.hash.startsWith('#/nodes/') && !new URLSearchParams(location.search).has('server')) {
+  sessionStorage.removeItem(KEY);
+  sessionStorage.removeItem(SERVER_KEY);
+  sessionStorage.removeItem(ADMIN_KEY);
+}
 const valid = /^(?:local|[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$/;
 export type ServerContext = {
   displayId?: string;
@@ -70,20 +78,34 @@ export function openServer(context: ServerContext) {
     ? location.hash
     : '';
   const number = serverNumber(context.displayId);
-  const tab = shortServerRoute()?.tab || hash.split('/').pop() || 'console';
-  history.replaceState(
+  const requested = shortServerRoute();
+  const tab = requested?.tab || hash.split('/').pop() || 'console';
+  const destination = new URL(number ? shortServerUrl(number, tab) : `${appRootPath()}?server=${encodeURIComponent(context.id)}${hash}`, location.origin);
+  if (tab === 'filemanager' && (requested?.number === number || (!number && !!hash))) {
+    const query = new URLSearchParams(location.search);
+    for (const key of ['root', 'path']) {
+      const value = query.get(key);
+      if (value !== null) destination.searchParams.set(key, value);
+    }
+  }
+  const writeLocation = requested || new URLSearchParams(location.search).has('server') || hash ? 'replaceState' : 'pushState';
+  history[writeLocation](
     null,
     '',
-    number
-      ? shortServerUrl(number, tab)
-      : `${appRootPath()}?server=${encodeURIComponent(context.id)}${hash}`
+    fileLocationUrl(destination)
   );
   clearAppCache();
   window.location.reload();
 }
 export function openFleet() {
+  navigateToFleet(false);
+}
+export function redirectToFleet() {
+  navigateToFleet(true);
+}
+function navigateToFleet(replace: boolean) {
   clearNodeSelection();
-  history.replaceState(null, '', appRootPath());
+  if (location.href !== new URL(appRootPath(), location.origin).href) history[replace ? 'replaceState' : 'pushState'](null, '', appRootPath());
   clearAppCache();
   window.location.reload();
 }

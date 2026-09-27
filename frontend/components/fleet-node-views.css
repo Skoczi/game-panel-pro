@@ -518,3 +518,12 @@
 .fleet-node-table .fleet-node-metric strong { grid-column: 2; white-space: nowrap; text-align: left; }
 .fleet-node-table .fleet-node-track { display: block; height: 7px; border-radius: 999px; }
 .fleet-node-table .fleet-node-track i { border-radius: inherit; transition: width 180ms ease; }
+
+.fleet-row-name { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.fleet-row-name > .gp-list-server-name { flex: 1; min-width: 0; }
+.fleet-row-drag { display: inline-flex; align-items: center; justify-content: center; flex: 0 0 28px; width: 28px; height: 44px; border: 0; border-radius: 6px; background: transparent; color: var(--ui-muted, #94a3b8); cursor: grab; touch-action: none; }
+.fleet-row-drag:hover, .fleet-row-drag:focus-visible { color: var(--ui-accent, #22d3ee); background: rgba(34, 211, 238, .08); }
+.fleet-row-drag:focus-visible { outline: 2px solid currentColor; outline-offset: 2px; }
+.fleet-row-drag:active { cursor: grabbing; }
+.fleet-node-table tbody tr.is-dragging { background: #e2e8f0; box-shadow: 0 8px 24px #0003; }
+.dark .fleet-node-table tbody tr.is-dragging { background: #172638; }

@@ -26,3 +26,13 @@
 .gp-file-grid .gp-file-rename input { width: 100%; flex-basis: 100%; }
 .gp-file-actions:focus-within { opacity: 1; }
 @media (pointer: coarse) { .gp-file-actions { opacity: 1; } }
+
+.gp-file-context-menu { position: fixed; z-index: 1200; width: 224px; max-height: calc(100vh - 16px); overflow: auto; padding: 6px; border: 1px solid #334155; border-radius: 10px; background: #101b2e; color: #e2e8f0; box-shadow: 0 12px 36px #0005; }
+.gp-file-context-menu button { display: flex; align-items: center; gap: 10px; width: 100%; min-height: 40px; padding: 8px 10px; border-radius: 6px; text-align: left; }
+.gp-file-context-menu button:hover, .gp-file-context-menu button:focus-visible { background: #22d3ee18; outline: none; }
+.gp-file-context-menu button:disabled { opacity: .4; cursor: not-allowed; }
+.gp-file-context-menu .is-danger { color: #f87171; }
+.gp-file-search { display: flex; align-items: center; gap: 8px; padding: 4px 10px; }
+.gp-file-search button { display: grid; place-items: center; width: 32px; height: 32px; border-radius: 6px; }
+.gp-file-search input { flex: 1; min-width: 0; padding: 6px 10px; border: 1px solid #334155; border-radius: 6px; background: transparent; }
+html:not(.dark) .gp-file-context-menu { background: #fff; color: #172436; border-color: #cbd5e1; }

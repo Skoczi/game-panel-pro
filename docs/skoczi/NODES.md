@@ -1,6 +1,6 @@
 # Nodes and Game Panel Agent
 
-Multi-node preview: protocol 1 for administration, protocol 2 for scoped server delegation. Built on the OVHcloud Game Panel runtime; node control and agent packaging are additions in the Skoczi Edition.
+Multi-node administration and scoped server delegation for Game Panel PRO. See the current [deployment guide](../pro/DEPLOYMENT.md) for release coordination.
 
 ## What runs where
 
@@ -13,7 +13,7 @@ Browser ── HTTPS / WebSocket ── Panel (users, branding, node registry)
 
 Each runtime owns its servers, files, transfers, schedules, operation journal and IP/port allocations. The panel maintains a central UUID per server backed by a durable runtime identity. Opening a server resolves placement automatically; node switching is confined to the administrator runtime workspace. Context changes reload the tab, close sockets and clear cached runtime data. Requests never fall back to Local.
 
-Existing installations keep their Local runtime. This release does not adopt existing Docker containers, migrate servers, move files or remove the panel's Docker dependency. Nodes are managed by **root administrators only**; ordinary users access assigned servers through scoped delegation. See [Server workspace and access](FLEET.md). Automatic placement and cross-node migration are not implemented.
+Existing installations keep their Local runtime. This release does not adopt existing Docker containers, migrate servers, move files or remove the panel's Docker dependency. Nodes are managed by **root administrators only**; ordinary users access assigned servers through scoped delegation. See [Server workspace and access](FLEET.md). Automatic placement is not implemented. Reviewed Native transfers are documented in [clone and transfer](../pro/SERVER-CLONING.md).
 
 ## Local runtime and deleting nodes
 
@@ -83,7 +83,7 @@ The Docker socket gives the agent host-level authority. Labels prevent accidenta
    The panel reverse proxy must also forward WebSocket upgrades under `/api/nodes/`, without response/request buffering for file transfer routes. Existing `/api/` proxy rules can cover both. Do not cache `/api/`. Do not log authorization or `X-GamePanel-Node-Auth` headers, and redact `/api/node-download/` capability paths in access logs.
 
 4. Check **Nodes**. A heartbeat arrives about every 15 seconds; after 60 seconds without one the node is shown offline. Heartbeat only establishes agent-to-panel reachability. Open the node's IP allocations or server list to check the reverse direction as well.
-5. Configure **Nodes → IP allocations** before creating a game. New agents start with an empty, restrictive port policy. Add only IPs already configured on the host and permitted TCP/UDP ranges. The panel does not assign IP addresses to Linux or modify the host firewall.
+5. Configure **Nodes → IP allocations** before creating a game. New agents start with an empty, restrictive port policy. Add only IPs already configured on the host and permitted TCP/UDP ranges. Managed additional IPs require the separately configured [host network service](../pro/HOST-NETWORK-2026-09-27.md); allocations alone do not configure the host firewall.
 6. Open servers for that node and create a small test server on a free port. Verify console, file edit, download, stop/start and reconnect before placing production games there.
 
 `install` refuses an existing destination. Failed setup leaves its directory for inspection; it never recursively deletes it. After a consumed/lost enrollment response, revoke and issue another token. Do not rerun `install` over existing data.

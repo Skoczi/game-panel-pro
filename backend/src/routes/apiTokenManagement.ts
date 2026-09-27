@@ -1,15 +1,21 @@
 import { Router } from 'express';
 import type { AuthenticatedRequest } from '../middleware/auth.js';
-import { API_SCOPES, type ApiScope, type ApiTokenStore } from '../services/apiTokens.js';
+import { API_SCOPES, validProvisionPolicy, type ApiScope, type ApiTokenStore } from '../services/apiTokens.js';
 
 type Dependencies = {
+    options?: () => Promise<unknown>;
     store: () => ApiTokenStore;
     permissions: (serverId: string, user: NonNullable<AuthenticatedRequest['user']>) => Promise<string[] | null>;
 };
 /** Mount behind session auth on the panel only. API bearer tokens cannot manage credentials. */
-export function apiTokenManagement({ store, permissions }: Dependencies) {
+export function apiTokenManagement({ store, permissions, options }: Dependencies) {
     const router = Router();
     router.use((_req, res, next) => { res.setHeader('Cache-Control', 'no-store'); next(); });
+    router.get('/options', async (req: AuthenticatedRequest, res) => {
+        if (!req.user || req.user.delegation) { res.sendStatus(401); return; }
+        try { res.json(req.user.isRoot ? { administrator: true, ...await options?.() as object } : { administrator: false, nodes: [], templates: [] }); }
+        catch { res.status(503).json({ error: 'Token options unavailable' }); }
+    });
     router.get('/', async (req: AuthenticatedRequest, res) => {
         if (!req.user || req.user.delegation) { res.sendStatus(401); return; }
         try { res.json({ tokens: await store().list(req.user.userId) }); }
@@ -22,16 +28,22 @@ export function apiTokenManagement({ store, permissions }: Dependencies) {
             typeof body.name !== 'string' || !body.name.trim() || body.name.trim().length > 80 || /[\x00-\x1f\x7f]/.test(body.name) ||
             !Array.isArray(body.scopes) || !body.scopes.length || body.scopes.length > API_SCOPES.length ||
             !body.scopes.every((scope: unknown) => API_SCOPES.includes(scope as ApiScope)) ||
-            !Array.isArray(body.serverIds) || !body.serverIds.length || body.serverIds.length > 100 ||
+            !Array.isArray(body.serverIds) || (!body.serverIds.length && !body.scopes.some((s: string) => ['servers.create', 'users.read', 'users.create', 'nodes.read', 'templates.read'].includes(s))) || body.serverIds.length > 100 ||
             !body.serverIds.every((id: unknown) => typeof id === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) ||
             !Number.isSafeInteger(body.expiresAt) || body.expiresAt <= Date.now() || body.expiresAt > Date.now() + 365 * 86400000) {
             res.status(400).json({ error: 'Provide a name, expiry within one year, scopes and specific server IDs' }); return;
+        }
+        if (body.scopes.some((s: string) => ['templates.read', 'nodes.read', 'servers.create', 'users.read', 'users.create', 'members.read', 'members.write'].includes(s)) && !req.user.isRoot) {
+            res.status(403).json({ error: 'Administrative API scopes require a panel administrator' }); return;
+        }
+        if ((body.provisioning != null && !validProvisionPolicy(body.provisioning)) || (body.scopes.includes('servers.create') && !body.provisioning)) {
+            res.status(400).json({ error: 'Select allowed nodes, templates and provisioning limits' }); return;
         }
         try {
             for (const id of new Set<string>(body.serverIds.map((id: string) => id.toLowerCase()))) {
                 const current = await permissions(id, req.user);
                 if (current === null || body.scopes.some((scope: string) =>
-                    (scope === 'backups.read' || scope === 'backups.create') && !current.includes(scope))) {
+                    ((scope === 'game-admins.read' || scope === 'game-admins.write') && !current.includes('fs.read')) || (scope === 'game-admins.write' && !current.includes('fs.write')) || ((scope === 'backups.read' || scope === 'backups.create') && !current.includes(scope)) || (scope === 'servers.power' && !current.includes('server.power')))) {
                     res.status(403).json({ error: 'Requested token access exceeds your server permissions' }); return;
                 }
             }

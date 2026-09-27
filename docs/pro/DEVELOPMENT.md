@@ -1,13 +1,45 @@
-# Local development
+# Development
 
-The backend is TypeScript/Express with SQLite, Docker operations and agent transport. The frontend is React/Vite. `runtime/` contains the existing Native recipes. Do not regenerate installed snapshots when editing templates.
+Game Panel PRO uses TypeScript/Express, SQLite, Docker and agent transport on the backend; React/Vite and Playwright on the frontend. CI uses Node.js 22. Keep Linux and macOS development compatibility; deployment tools target supported Linux hosts.
 
-Run `npm ci`, `npm test` and `npm run build` in `backend`; run `npm ci`, `npm run build` and `npm run test:ui` in `frontend`. Playwright uses a local Vite server and headless Chromium. Existing screenshot calls require `PLAYWRIGHT_SCREENSHOTS=1`; omit it for background checks without captures.
+```bash
+cd backend
+npm ci
+npm test
+npm run build
+cd ../frontend
+npm ci
+npx playwright install chromium
+npm run build
+npm run test:ui
+```
 
-Meaningful regressions for this release are in `cron.test.ts`, `native-schedules.test.ts`, `native-backups.test.ts`, `native-restore.test.ts`, `atomic-file.test.ts` and `resources.test.ts`. The recorded release results are in [VALIDATION-2.0.50.md](VALIDATION-2.0.50.md). They cover the actual scheduler/backup connection, filesystem restore, rollback on a simulated failed swap, malicious archive entries, byte limits and stale saves.
+Run deployment checks from the repository root:
 
-Docker acceptance is separate: `npm run test:docker` with the environment required by each integration fixture. Passing mocked/unit/UI tests does not establish a working game install, game-client connection or backup consistency on WAW1.
+```bash
+python3 -B deploy/agent/test_agent.py
+python3 -B -m unittest discover -s deploy/test -v
+find deploy -name '*.sh' -exec bash -n {} \;
+```
 
-Keep feature changes small; use AppButton, AppInput, AppToggle, AppModal and ConfirmationModal. Add a release note when behavior changes. Do not insert credentials, database files or deployment environment files into Git.
+Docker-backed tests are separate and must use an isolated local Docker engine. See [.github/workflows/skoczi-ci.yml](../../.github/workflows/skoczi-ci.yml) for the actual Compose/agent integration commands. Unit/UI fixtures do not establish a real game-client connection.
 
-Deployment checks: `python3 -B -m unittest discover -s deploy/test -v`. The isolated Linux runner also exercises real Compose migration/rollback with fixture HTTP services, builds the frontend/updater images and runs the full panel/agent scenario. See [installation](INSTALL.md).
+Use the shared AppButton, AppInput, AppToggle, AppModal and dropdown controls. Preserve existing runtime records and installed template snapshots. Add regression tests for permission boundaries, recovery and asynchronous writes.
+
+## Documentation and screenshots
+
+Current documentation starts at [docs/README.md](../README.md). Add factual behavior and restrictions beside each feature. Do not publish host inventories, deployment diaries or credentials. Historical release notes are under docs/history.
+
+Set `PLAYWRIGHT_SCREENSHOTS=1` to capture supported UI fixtures. Label fixture captures as demonstration data; never present a mockup as a production validation result. Screenshots are reviewed before copying into docs/screenshots.
+
+## Release packaging
+
+Commit a fixed candidate after validation, then run:
+
+```bash
+python3 scripts/prepare-local-release.py --candidate HEAD \
+  --rollback v2.0.59 --version 2.1.0 \
+  --output ../game-panel-pro-2.1.0-release
+```
+
+The package includes committed sources only. It rejects private data paths, records commit IDs and writes SHA256SUMS. It does not deploy, tag or publish. A source rollback archive is not a snapshot of a live database or game files.

@@ -14,9 +14,9 @@ export function TemplateGameConfigEditor({ draft, change }: { draft: GameTemplat
   };
   if (draft.schemaVersion !== 2) return <p>Form-based Game Config is available for native templates.</p>;
   return <div className="space-y-5">
-    <div><h3 className="text-lg font-semibold">Game Config</h3><p className="text-sm text-slate-500">Define the settings shown above configuration files. Values are read from the server file; the form never executes commands.</p></div>
+    <div><h3 className="text-lg font-semibold">Game Config</h3></div>
     <AppToggle label="Enable configuration form" checked={Boolean(config)} onChange={enabled => enabled ? preset() : change({ gameConfig: false })} />
-    {config === undefined && <p className="text-sm text-slate-500">Installed CS 1.6 / ReHLDS templates with a declared cstrike/server.cfg use the built-in compatibility profile. Published snapshots remain unchanged.</p>}
+    {config === undefined && <p className="text-sm text-slate-500">CS 1.6 / ReHLDS uses the built-in cstrike/server.cfg profile.</p>}
     {config === false && <p className="text-sm text-slate-500">Only configuration file links will be shown for this template.</p>}
     {config && <>
       <div className="flex flex-wrap gap-3 items-center"><span className="text-sm">Valve CFG · GoldSrc / Source</span><AppButton tone="ghost" onClick={() => { if (window.confirm('Replace the current form with the CS 1.6 preset?')) preset(); }}>Use CS 1.6 preset</AppButton></div>
@@ -29,7 +29,7 @@ export function TemplateGameConfigEditor({ draft, change }: { draft: GameTemplat
           change({ gameConfig: { ...config, path }, configFiles: (draft.configFiles || []).map(f => f.root === config.root && f.path === config.path ? { ...f, path } : f) });
         }} /></label>
       </div>
-      <p className="text-sm text-slate-500">Choose the actual file loaded by the game. Hostname is read from this file. Starting map and player slots remain in server Settings.</p>
+      <p className="text-sm text-slate-500">Use the config loaded by the game. Starting map and slots are in Settings.</p>
       {config.sections.map((section, si) => <section className="rounded-xl border border-slate-500/30 p-4 space-y-4" key={si}>
         <div className="grid gap-3 md:grid-cols-3">
           <label>Section ID<AppInput aria-label={`Section ${si + 1} ID`} value={section.id} onChange={e => update({ sections: config.sections.map((s, i) => i === si ? { ...s, id: e.target.value } : s) })} /></label>

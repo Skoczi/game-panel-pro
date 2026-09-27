@@ -176,7 +176,7 @@ export function GameSettingsSection({
         ? isRunning && (
             <div className="flex items-start gap-2 p-3 rounded-lg bg-amber-500/10 border border-amber-500/30 text-sm text-amber-300">
               <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5" />
-              <span>The server must be stopped to edit these settings. Stop it, make your changes, then start it again.</span>
+              <span>Stop the server to edit these settings.</span>
             </div>
           )
         : <RestartToApplyNote serverStatus={serverStatus} />}

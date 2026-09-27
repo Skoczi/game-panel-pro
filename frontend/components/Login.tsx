@@ -13,6 +13,8 @@ export function Login({ onLogin }: LoginProps) {
   const { appearance } = useBranding();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [code, setCode] = useState('');
+  const [mfaRequired, setMfaRequired] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -46,13 +48,14 @@ export function Login({ onLogin }: LoginProps) {
     setLoading(true);
     setError('');
     try {
-      const response = await apiClient.login(username, password);
+      const response = await apiClient.login(username, password, code || undefined);
       if (response.token) {
         onLogin();
         return;
       }
       setError('Unexpected login response');
     } catch (err: any) {
+      if (err?.response?.data?.mfaRequired) setMfaRequired(true);
       setError(err?.response?.data?.error || 'Invalid username or password');
     } finally {
       setLoading(false);
@@ -78,6 +81,12 @@ export function Login({ onLogin }: LoginProps) {
         >
           <div className="px-8 py-8" style={{ background: 'var(--login-card)' }}>
             <form onSubmit={handleCredentialsSubmit} className="space-y-5">
+              {mfaRequired && <div className="space-y-2">
+                <label htmlFor="mfa-code" className="block text-sm" style={{ color: 'var(--login-label)' }}>Authenticator or recovery code</label>
+                <input id="mfa-code" autoComplete="one-time-code" autoFocus value={code} onChange={event => setCode(event.target.value)}
+                  className="w-full rounded-lg border p-3" style={{ background: 'var(--login-field)', color: 'var(--login-text)' }} />
+                <p className="text-sm" style={{ color: 'var(--login-label)' }}>Enter a fresh 6-digit code or one unused recovery code.</p>
+              </div>}
               {showError && (
                 <div
                   role="alert"

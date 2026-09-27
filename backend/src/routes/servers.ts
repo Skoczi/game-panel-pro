@@ -1,3 +1,8 @@
+import { gameAdminRoutes } from './gameAdmins.js';
+import { serverCloneRoutes, cloneImportRoutes } from './serverClone.js';
+import { rehldsRoutes } from './rehlds.js';
+import { sourceAddonRoutes } from './sourceAddons.js';
+import { serverSftpRoutes } from './serverSftp.js';
 import { nativeGameConfigRoutes } from './nativeGameConfig.js';
 import { gameMonitoringRoutes } from './gameMonitoring.js';
 import { fastDownloadRoutes } from './fastDownload.js';
@@ -24,6 +29,7 @@ import { createNativeUpdateRoutes } from './servers/nativeUpdate.js';
 import { createAvailablePortRoutes } from './servers/availablePorts.js';
 
 const router = Router();
+router.use('/clone-import', cloneImportRoutes);
 // Check membership before reporting mutation conflicts or acquiring locks.
 router.use('/:id', (req: AuthenticatedRequest, res, next) => {
     if (!/^\d+$/.test(req.params.id)) return next();
@@ -48,9 +54,14 @@ router.use('/:id', (req, res, next) => {
     } catch (error) { res.status(409).json({ error: (error as Error).message }); }
 });
 // /api/servers/:id/file
+router.use('/:id/game-admins', gameAdminRoutes);
 router.use('/:id/game-config', nativeGameConfigRoutes);
+router.use('/:id/rehlds', rehldsRoutes);
+router.use('/:id/source-addons', sourceAddonRoutes);
+router.use('/:id/clone', serverCloneRoutes);
 router.use('/:id/monitoring', gameMonitoringRoutes);
 router.use('/:id/fastdownload', fastDownloadRoutes);
+router.use('/:id/sftp', serverSftpRoutes);
 router.use('/:id/file', serverFileRoutes);
 // /api/servers/:id/files
 router.use('/:id/files', serverFilesRoutes);

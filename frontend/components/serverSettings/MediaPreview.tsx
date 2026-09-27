@@ -49,7 +49,7 @@ export function MediaPreview({ doc, serverId }: { doc: EditorDocument; serverId:
     })();
     return () => { controller.abort(); if (objectUrl) URL.revokeObjectURL(objectUrl); };
   }, [serverId, doc.path, doc.root, doc.kind, attempt]);
-  if (doc.kind === 'binary') return <div className="gp-media-preview"><FileQuestion size={32} /><h3>No preview available</h3><p>This file cannot be safely edited as text. Use Download to open it locally.</p></div>;
+  if (doc.kind === 'binary') return <div className="gp-media-preview"><FileQuestion size={32} /><h3>No preview available</h3><p>Binary file. Download to open.</p></div>;
   return <div className="gp-media-preview">
     {error ? <><p role="alert">{error}</p><AppButton onClick={() => setAttempt(value => value + 1)}>Retry preview</AppButton></> : !url ? <p>Loading preview…</p> : doc.kind === 'audio' ? <>
       <Music size={40} /><h3>{doc.name}</h3>

@@ -1,3 +1,4 @@
+import { useFileManagerLocation } from './useFileManagerLocation';
 import { useEffect, useRef, useState } from 'react';
 import { apiClient } from '../../utils/api';
 import { formatBytes } from './utils';
@@ -51,11 +52,13 @@ interface UseFileManagerStateArgs {
   isOpen: boolean;
   serverId?: number | null;
   containerConfigSaveCount?: number;
+  syncLocation?: boolean;
 }
 
-export function useFileManagerState({ activeTab, isOpen, serverId, containerConfigSaveCount = 0 }: UseFileManagerStateArgs) {
-  const [currentPath, setCurrentPath] = useState('/');
-  const [currentRoot, setCurrentRoot] = useState('data');
+export function useFileManagerState({ activeTab, isOpen, serverId, containerConfigSaveCount = 0, syncLocation = false }: UseFileManagerStateArgs) {
+  const [currentPath, setCurrentPath] = useState(() => readSavedPosition(serverId).path);
+  const [currentRoot, setCurrentRoot] = useState(() => readSavedPosition(serverId).root);
+  const previousRoot = useRef(currentRoot);
   const [availableRoots, setAvailableRoots] = useState<FileRoot[]>([]);
   const [selectedFile, setSelectedFile] = useState<FileItem | null>(null);
   const [fileContent, setFileContent] = useState('');
@@ -84,12 +87,15 @@ export function useFileManagerState({ activeTab, isOpen, serverId, containerConf
 
   const pendingRestoreRef = useRef<FileManagerPosition | null>(null);
 
+  const listRequest = useRef(0);
   const loadFiles = async (path: string) => {
     if (!serverId) return;
+    const request = ++listRequest.current;
     setFilesLoading(true);
     setFilesError(null);
     try {
       const result = await apiClient.listServerFiles(serverId, path, currentRoot);
+      if (request !== listRequest.current) return;
       const entries: FileItem[] = result.entries.map((entry) => {
         const isDir = entry.type === 'dir';
         const isSymlink = entry.type === 'symlink';
@@ -106,9 +112,10 @@ export function useFileManagerState({ activeTab, isOpen, serverId, containerConf
         result.path !== '/' ? [{ name: '..', type: 'folder' as const }, ...entries] : entries;
       setFiles(withParent);
     } catch (error: any) {
+      if (request !== listRequest.current) return;
       setFilesError(error?.response?.data?.error || error?.message || 'Failed to load files');
     } finally {
-      setFilesLoading(false);
+      if (request === listRequest.current) setFilesLoading(false);
     }
   };
 
@@ -147,6 +154,8 @@ export function useFileManagerState({ activeTab, isOpen, serverId, containerConf
   }, [isOpen, serverId, containerConfigSaveCount]);
 
   useEffect(() => {
+    if (previousRoot.current === currentRoot) return;
+    previousRoot.current = currentRoot;
     const pending = pendingRestoreRef.current;
     const nextPath = pending && pending.root === currentRoot ? pending.path : '/';
     pendingRestoreRef.current = null;
@@ -179,12 +188,14 @@ export function useFileManagerState({ activeTab, isOpen, serverId, containerConf
     setCurrentPath(path);
   };
 
+  useFileManagerLocation(syncLocation && isOpen && activeTab === 'filemanager', currentRoot, currentPath, openDirectory);
+
   return {
     openDirectory,
     currentPath,
     setCurrentPath,
     currentRoot,
-    setCurrentRoot,
+    setCurrentRoot: (root: string) => openDirectory(root, '/'),
     availableRoots,
     selectedFile,
     setSelectedFile,

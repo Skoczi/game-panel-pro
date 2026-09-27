@@ -1,6 +1,11 @@
+import { isPanelAdministrator, accountRole, OPERATOR_PERMISSION } from '../utils/accountRole.js';
 import { Router, type Request, type Response } from 'express';
+import { LoginRateLimit } from '../services/loginRateLimit.js';
 import { type AuthenticatedRequest, authMiddleware, requireGlobalPermission } from '../middleware/auth.js';
-import { comparePasswords, generateToken, hashPassword } from '../utils/auth.js';
+import { comparePasswords, hashPassword } from '../utils/auth.js';
+import { loginSessions } from '../services/loginSessions.js';
+import { mfaStore } from '../services/mfa.js';
+import { clearSessionCookie, issueSession, sessionAccessToken, sessionCookie, trustedSessionRequest } from '../services/sessionHttp.js';
 import { userRepository, serverMemberRepository } from '../database/index.js';
 import { asNonEmptyString } from './users.js';
 import { sendRouteError } from '../utils/routeErrors.js';
@@ -8,6 +13,7 @@ import { PERMISSIONS } from '../permissions.js';
 import { requireBodyObject } from '../utils/httpValidation.js';
 
 const router = Router();
+router.use((_req, res, next) => { res.setHeader('Cache-Control', 'no-store'); next(); });
 
 function isStrongEnoughPassword(password: string): boolean {
   return password.length >= 8;
@@ -32,11 +38,6 @@ function asStringArray(value: unknown): string[] | null {
   return arr;
 }
 
-type LoginRateBucket = {
-  attempts: number[];
-  blockedUntil: number;
-};
-
 function readPositiveIntEnv(name: string, fallback: number): number {
   const raw = process.env[name];
   if (!raw) return fallback;
@@ -48,96 +49,18 @@ const LOGIN_RATE_WINDOW_MS = readPositiveIntEnv('LOGIN_RATE_WINDOW_MS', 15 * 60_
 const LOGIN_RATE_MAX_ATTEMPTS = readPositiveIntEnv('LOGIN_RATE_MAX_ATTEMPTS', 10);
 const LOGIN_RATE_BLOCK_MS = readPositiveIntEnv('LOGIN_RATE_BLOCK_MS', 15 * 60_000);
 
-const loginRateByIp = new Map<string, LoginRateBucket>();
-const loginRateByIdentifier = new Map<string, LoginRateBucket>();
-
-function normalizeIp(value: string): string {
-  const trimmed = value.trim();
-  return trimmed.startsWith('::ffff:') ? trimmed.slice(7) : trimmed;
-}
-
-function getClientIp(req: Request): string {
-  if (typeof req.ip === 'string' && req.ip.trim()) {
-    return normalizeIp(req.ip);
-  }
-
-  if (typeof req.socket.remoteAddress === 'string' && req.socket.remoteAddress.trim()) {
-    return normalizeIp(req.socket.remoteAddress);
-  }
-
-  return 'unknown';
-}
-
-function getBucket(map: Map<string, LoginRateBucket>, key: string): LoginRateBucket {
-  let bucket = map.get(key);
-  if (!bucket) {
-    bucket = { attempts: [], blockedUntil: 0 };
-    map.set(key, bucket);
-  }
-  return bucket;
-}
-
-function pruneBucket(bucket: LoginRateBucket, now: number): void {
-  const minTs = now - LOGIN_RATE_WINDOW_MS;
-  bucket.attempts = bucket.attempts.filter((ts) => ts >= minTs);
-  if (bucket.blockedUntil <= now) {
-    bucket.blockedUntil = 0;
-  }
-}
-
-function getRetryAfterMs(map: Map<string, LoginRateBucket>, key: string, now: number): number {
-  const bucket = map.get(key);
-  if (!bucket) return 0;
-
-  pruneBucket(bucket, now);
-  return bucket.blockedUntil > now ? bucket.blockedUntil - now : 0;
-}
-
-function registerLoginFailure(map: Map<string, LoginRateBucket>, key: string, now: number): void {
-  const bucket = getBucket(map, key);
-  pruneBucket(bucket, now);
-  bucket.attempts.push(now);
-
-  if (bucket.attempts.length >= LOGIN_RATE_MAX_ATTEMPTS) {
-    bucket.blockedUntil = now + LOGIN_RATE_BLOCK_MS;
-    bucket.attempts = [];
-  }
-}
-
-function clearLoginRate(map: Map<string, LoginRateBucket>, key: string): void {
-  map.delete(key);
-}
+const loginRateByIp = new LoginRateLimit(readPositiveIntEnv('LOGIN_RATE_IP_MAX_ATTEMPTS', 100), LOGIN_RATE_WINDOW_MS, LOGIN_RATE_BLOCK_MS);
+const loginRateByIdentifier = new LoginRateLimit(LOGIN_RATE_MAX_ATTEMPTS, LOGIN_RATE_WINDOW_MS, LOGIN_RATE_BLOCK_MS);
 
 function ensureLoginRateLimit(req: Request, res: Response, identifier: string): boolean {
-  const now = Date.now();
-  const ipKey = getClientIp(req);
-  const idKey = identifier.toLowerCase();
-
-  const retryMs = Math.max(
-    getRetryAfterMs(loginRateByIp, ipKey, now),
-    getRetryAfterMs(loginRateByIdentifier, idKey, now)
-  );
-
-  if (retryMs <= 0) return true;
-
-  const retryAfterSeconds = Math.max(1, Math.ceil(retryMs / 1000));
+  // Express only reads forwarding information when trust proxy is configured.
+  const ip = (req.ip || req.socket.remoteAddress || 'unknown').replace(/^::ffff:/, '');
+  const sourceRetry = loginRateByIp.take(ip);
+  const retryAfterSeconds = sourceRetry || loginRateByIdentifier.take(identifier.toLowerCase());
+  if (!retryAfterSeconds) return true;
   res.setHeader('Retry-After', String(retryAfterSeconds));
   res.status(429).json({ error: 'Too many login attempts', retryAfterSeconds });
   return false;
-}
-
-function noteLoginFailure(req: Request, identifier: string): void {
-  const now = Date.now();
-  const ipKey = getClientIp(req);
-  const idKey = identifier.toLowerCase();
-
-  registerLoginFailure(loginRateByIp, ipKey, now);
-  registerLoginFailure(loginRateByIdentifier, idKey, now);
-}
-
-function clearLoginFailures(req: Request, identifier: string): void {
-  clearLoginRate(loginRateByIdentifier, identifier.toLowerCase());
-  clearLoginRate(loginRateByIp, getClientIp(req));
 }
 
 // POST /api/auth/register
@@ -145,7 +68,7 @@ router.post(
   '/register',
   authMiddleware,
   requireGlobalPermission(PERMISSIONS.users.manage),
-  async (req: Request, res: Response) => {
+  async (req: AuthenticatedRequest, res: Response) => {
     try {
       const body = requireBodyObject(req.body);
       const username = asNonEmptyString(body.username);
@@ -167,6 +90,7 @@ router.post(
           return res.status(400).json({ error: 'Wildcard permission "*" is reserved for root' });
         }
 
+        if (parsed.includes(OPERATOR_PERMISSION) && !req.user?.isRoot) return res.status(403).json({ error: 'Only panel administrators can grant Operator access' });
         globalPermissions = parsed;
       }
 
@@ -211,7 +135,7 @@ router.post(
           username: user.username,
           isRoot: Boolean(user.is_root),
           isEnabled: Boolean(user.is_enabled),
-          globalPermissions,
+          globalPermissions: globalPermissions || [],
         },
       });
     } catch (error) {
@@ -245,36 +169,36 @@ router.post('/login', async (req: Request, res: Response) => {
 
     const user = await userRepository.findByUsername(normalizedIdentifier);
     if (!user) {
-      noteLoginFailure(req, normalizedIdentifier);
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
     if (!user.is_enabled) {
-      noteLoginFailure(req, normalizedIdentifier);
       return res.status(403).json({ error: 'Account disabled' });
     }
 
     const validPassword = await comparePasswords(password, user.password_hash);
     if (!validPassword) {
-      noteLoginFailure(req, normalizedIdentifier);
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
-    clearLoginFailures(req, normalizedIdentifier);
+    const mfa = await mfaStore();
+    if (await mfa.enabled(user.id)) {
+      const code = typeof body.code === 'string' ? body.code.trim() : '';
+      if (!code || !await mfa.verify(user.id, code)) {
+          return res.status(401).json({ error: code ? 'Invalid or already used authenticator/recovery code' : 'Authenticator code required', mfaRequired: true });
+      }
+    }
+    loginRateByIdentifier.clear(normalizedIdentifier.toLowerCase());
 
-    const token = generateToken({
-      userId: user.id,
-      username: user.username,
-      isRoot: Boolean(user.is_root),
-      tokenVersion: user.token_version,
-    });
+    const token = await issueSession(req, res, user);
 
     return res.json({
       success: true,
       user: {
         id: user.id,
         username: user.username,
-        isRoot: Boolean(user.is_root),
+        isRoot: isPanelAdministrator(user),
+        role: accountRole(user),
         isEnabled: Boolean(user.is_enabled),
       },
       token,
@@ -295,7 +219,7 @@ router.get('/me', authMiddleware, async (req: AuthenticatedRequest, res: Respons
     const user = await userRepository.findById(userId);
     if (!user) return res.status(404).json({ error: 'User not found' });
 
-    const isRoot = Boolean(user.is_root);
+    const isRoot = isPanelAdministrator(user);
 
     const globalPermissions = isRoot
       ? ['*']
@@ -323,6 +247,7 @@ router.get('/me', authMiddleware, async (req: AuthenticatedRequest, res: Respons
         id: user.id,
         username: user.username,
         isRoot,
+        role: accountRole(user),
         isEnabled: Boolean(user.is_enabled),
       },
       permissions: {
@@ -376,14 +301,8 @@ router.post('/change-password', authMiddleware, async (req: AuthenticatedRequest
     await userRepository.updatePassword(req.user!.userId, newPasswordHash);
 
     const refreshed = await userRepository.findById(req.user!.userId);
-    const token = refreshed
-      ? generateToken({
-          userId: refreshed.id,
-          username: refreshed.username,
-          isRoot: Boolean(refreshed.is_root),
-          tokenVersion: refreshed.token_version,
-        })
-      : undefined;
+    await (await loginSessions()).revokeAll(req.user!.userId);
+    const token = refreshed ? await issueSession(req, res, refreshed) : undefined;
 
     return res.json({ success: true, message: 'Password changed successfully', token });
   } catch (error) {
@@ -392,6 +311,51 @@ router.post('/change-password', authMiddleware, async (req: AuthenticatedRequest
       fallbackMessage: 'Failed to change password',
     });
   }
+});
+
+router.post('/session', async (req, res) => {
+  res.setHeader('Cache-Control', 'no-store');
+  if (!trustedSessionRequest(req, res)) return;
+  try {
+    const session = await (await loginSessions()).fromSecret(sessionCookie(req));
+    const user = session ? await userRepository.findById(session.user_id) : undefined;
+    if (!session || !user?.is_enabled || user.token_version !== session.token_version) {
+      clearSessionCookie(res);
+      return res.status(401).json({ error: 'Session expired or revoked' });
+    }
+    return res.json({ token: sessionAccessToken(user, session) });
+  } catch {
+    return res.status(503).json({ error: 'Session service unavailable' });
+  }
+});
+
+router.post('/logout', async (req, res) => {
+  res.setHeader('Cache-Control', 'no-store');
+  if (!trustedSessionRequest(req, res)) return;
+  try {
+    const store = await loginSessions(), session = await store.fromSecret(sessionCookie(req));
+    if (session) await store.revoke(session.user_id, session.id);
+    clearSessionCookie(res);
+    return res.json({ success: true });
+  } catch {
+    return res.status(503).json({ error: 'Sign-out could not be confirmed. Please retry.' });
+  }
+});
+
+router.get('/sessions', authMiddleware, async (req: AuthenticatedRequest, res) => {
+  res.setHeader('Cache-Control', 'no-store');
+  try {
+    const rows = await (await loginSessions()).list(req.user!.userId);
+    return res.json({ sessions: rows.map(row => ({ id: row.id, label: row.label,
+      createdAt: row.created_at, expiresAt: row.expires_at, current: row.id === req.user!.sessionId })) });
+  } catch { return res.status(503).json({ error: 'Unable to list sessions' }); }
+});
+router.delete('/sessions/:id', authMiddleware, async (req: AuthenticatedRequest, res) => {
+  try {
+    await (await loginSessions()).revoke(req.user!.userId, req.params.id);
+    if (req.params.id === req.user!.sessionId) clearSessionCookie(res);
+    return res.json({ success: true });
+  } catch { return res.status(503).json({ error: 'Unable to revoke session' }); }
 });
 
 export default router;

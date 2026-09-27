@@ -2,6 +2,9 @@ import { randomUUID } from 'node:crypto';
 import type { Database } from 'sqlite';
 import { CS16_TEMPLATE, TemplateError, validateTemplate, templateHash } from './schema.js';
 import { NATIVE_CS16_TEMPLATE } from './nativeCs16.js';
+import { SOURCE_TEMPLATES } from './sourceTemplates.js';
+import { CLASSIC_OFFENSIVE_TEMPLATE } from './classicOffensive.js';
+import { HLTV_TEMPLATE } from './hltv.js';
 
 export class TemplateStore {
     constructor(private db: Database) {}
@@ -19,6 +22,10 @@ export class TemplateStore {
         const t = validateTemplate(CS16_TEMPLATE);
         await this.db.run(`INSERT OR IGNORE INTO game_template_versions VALUES(?,1,'draft',?,?,?,?)`, 'builtin-cs16', JSON.stringify(t), templateHash(t), 'bundled', new Date().toISOString());
         const native = validateTemplate(NATIVE_CS16_TEMPLATE);
+        for (const entry of [...SOURCE_TEMPLATES, { id: 'builtin-classic-offensive-native', document: CLASSIC_OFFENSIVE_TEMPLATE }, { id: 'builtin-hltv-native', document: HLTV_TEMPLATE }]) {
+            const document = validateTemplate(entry.document);
+            await this.db.run(`INSERT OR IGNORE INTO game_template_versions VALUES(?,1,'draft',?,?,?,?)`, entry.id, JSON.stringify(document), templateHash(document), 'bundled', new Date().toISOString());
+        }
         await this.db.run(`INSERT OR IGNORE INTO game_template_versions VALUES(?,1,'draft',?,?,?,?)`, 'builtin-cs16-native', JSON.stringify(native), templateHash(native), 'bundled', new Date().toISOString());
     }
     async list() {

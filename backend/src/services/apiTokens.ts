@@ -1,25 +1,38 @@
 import { createHash, randomBytes, randomUUID } from 'node:crypto';
 import type { Database } from 'sqlite';
 
-export const API_SCOPES = ['servers.read', 'resources.read', 'backups.read', 'backups.create', 'operations.read'] as const;
+export const API_SCOPES = ['servers.read', 'resources.read', 'backups.read', 'backups.create', 'operations.read', 'servers.power', 'templates.read', 'nodes.read', 'servers.create', 'users.read', 'users.create', 'members.read', 'members.write', 'game-admins.read', 'game-admins.write'] as const;
 export type ApiScope = typeof API_SCOPES[number];
+export type ProvisionPolicy = { nodeIds: string[]; templateIds: string[]; maxServers: number; maxCpu: number; maxMemoryMb: number };
+export function validProvisionPolicy(p: any): p is ProvisionPolicy {
+    return !!p && typeof p === 'object' && !Array.isArray(p) && Object.keys(p).every(k => ['nodeIds', 'templateIds', 'maxServers', 'maxCpu', 'maxMemoryMb'].includes(k)) &&
+        Array.isArray(p.nodeIds) && p.nodeIds.length > 0 && p.nodeIds.length <= 100 && p.nodeIds.every((s: unknown) => typeof s === 'string' && (s === 'local' || uuid.test(s))) &&
+        Array.isArray(p.templateIds) && p.templateIds.length > 0 && p.templateIds.length <= 100 && p.templateIds.every((s: unknown) => typeof s === 'string' && /^[A-Za-z0-9_-]{1,128}$/.test(s)) &&
+        Number.isInteger(p.maxServers) && p.maxServers >= 1 && p.maxServers <= 100 && Number.isFinite(p.maxCpu) && p.maxCpu >= 0.1 && p.maxCpu <= 128 &&
+        Number.isInteger(p.maxMemoryMb) && p.maxMemoryMb >= 128 && p.maxMemoryMb <= 1048576;
+}
 export type ApiToken = {
+    provisioning?: ProvisionPolicy | null;
     id: string; ownerId: number; name: string; scopes: ApiScope[]; serverIds: string[];
     createdAt: number; expiresAt: number; revokedAt: number | null; lastUsedAt: number | null;
 };
 type TokenRow = {
-    id: string; owner_id: number; name: string; scopes: string; server_ids: string;
+    provisioning: string | null; id: string; owner_id: number; name: string; scopes: string; server_ids: string;
     created_at: number; expires_at: number; revoked_at: number | null; last_used_at: number | null;
 };
 const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const digest = (secret: string) => createHash('sha256').update(secret).digest('hex');
-const columns = 'id,owner_id,name,scopes,server_ids,created_at,expires_at,revoked_at,last_used_at';
+const columns = 'provisioning,id,owner_id,name,scopes,server_ids,created_at,expires_at,revoked_at,last_used_at';
 function decode(row: TokenRow): ApiToken {
     const scopes: unknown = JSON.parse(row.scopes), serverIds: unknown = JSON.parse(row.server_ids);
     if (!Array.isArray(scopes) || !scopes.length || !scopes.every(s => API_SCOPES.includes(s)) ||
-        !Array.isArray(serverIds) || !serverIds.length || !serverIds.every(s => typeof s === 'string' && uuid.test(s)))
+        !Array.isArray(serverIds) || !serverIds.every(s => typeof s === 'string' && uuid.test(s)))
         throw new Error('Invalid stored API token restrictions');
-    return { id: row.id, ownerId: row.owner_id, name: row.name, scopes, serverIds,
+    const provisioning = row.provisioning ? JSON.parse(row.provisioning) : null;
+    if (!serverIds.length && !scopes.some(s => ['servers.create', 'users.read', 'users.create', 'nodes.read', 'templates.read'].includes(s))) throw new Error('Token has no target');
+    if (provisioning && !validProvisionPolicy(provisioning)) throw new Error('Invalid provisioning policy');
+    if (scopes.includes('servers.create') && !provisioning) throw new Error('Missing provisioning policy');
+    return { provisioning, id: row.id, ownerId: row.owner_id, name: row.name, scopes, serverIds,
         createdAt: row.created_at, expiresAt: row.expires_at, revokedAt: row.revoked_at, lastUsedAt: row.last_used_at };
 }
 
@@ -33,25 +46,31 @@ export class ApiTokenStore {
             server_ids TEXT NOT NULL, created_at INTEGER NOT NULL, expires_at INTEGER NOT NULL,
             revoked_at INTEGER, last_used_at INTEGER
         ); CREATE INDEX IF NOT EXISTS api_tokens_owner ON api_tokens(owner_id)`);
+        if (!await this.db.get("SELECT name FROM pragma_table_info('api_tokens') WHERE name='provisioning'")) await this.db.exec('ALTER TABLE api_tokens ADD COLUMN provisioning TEXT');
     }
-    async create(ownerId: number, input: { name: string; scopes: ApiScope[]; serverIds: string[]; expiresAt: number }) {
+    async attachServer(id: string, serverId: string) {
+        await this.db.run(`UPDATE api_tokens SET server_ids=json_insert(server_ids,'$[#]',?) WHERE id=? AND NOT EXISTS (SELECT 1 FROM json_each(server_ids) WHERE value=?)`, serverId, id, serverId);
+    }
+    async create(ownerId: number, input: { provisioning?: ProvisionPolicy | null; name: string; scopes: ApiScope[]; serverIds: string[]; expiresAt: number }) {
         const now = this.now();
         if (!Number.isSafeInteger(ownerId) || ownerId < 1 || typeof input.name !== 'string' ||
             !input.name.trim() || input.name.trim().length > 80 || /[\x00-\x1f\x7f]/.test(input.name) ||
             !Array.isArray(input.scopes) || !input.scopes.length || input.scopes.length > API_SCOPES.length ||
             !input.scopes.every(s => API_SCOPES.includes(s)) ||
-            !Array.isArray(input.serverIds) || !input.serverIds.length || input.serverIds.length > 100 ||
+            !Array.isArray(input.serverIds) || input.serverIds.length > 100 ||
             !input.serverIds.every(s => typeof s === 'string' && uuid.test(s)) ||
             !Number.isSafeInteger(input.expiresAt) || input.expiresAt <= now || input.expiresAt > now + 365 * 86400000)
             throw new Error('Invalid API token parameters');
-        const token: ApiToken = { id: randomUUID(), ownerId, name: input.name.trim(),
+        if (!input.serverIds.length && !input.scopes.some(s => ['servers.create', 'users.read', 'users.create', 'nodes.read', 'templates.read'].includes(s))) throw new Error('Token has no target');
+        if ((input.provisioning != null && !validProvisionPolicy(input.provisioning)) || (input.scopes.includes('servers.create') && !input.provisioning)) throw new Error('Invalid provisioning policy');
+        const token: ApiToken = { provisioning: input.provisioning ?? null, id: randomUUID(), ownerId, name: input.name.trim(),
             scopes: [...new Set(input.scopes)], serverIds: [...new Set(input.serverIds.map(s => s.toLowerCase()))],
             createdAt: now, expiresAt: input.expiresAt, revokedAt: null, lastUsedAt: null };
         // 256 random bits. Only this creation response contains the bearer secret.
         const secret = `gpp_${randomBytes(32).toString('base64url')}`;
-        await this.db.run(`INSERT INTO api_tokens(id,owner_id,name,secret_hash,scopes,server_ids,created_at,expires_at)
-            VALUES(?,?,?,?,?,?,?,?)`, token.id, ownerId, token.name, digest(secret),
-            JSON.stringify(token.scopes), JSON.stringify(token.serverIds), now, token.expiresAt);
+        await this.db.run(`INSERT INTO api_tokens(id,owner_id,name,secret_hash,scopes,server_ids,created_at,expires_at,provisioning)
+            VALUES(?,?,?,?,?,?,?,?,?)`, token.id, ownerId, token.name, digest(secret),
+            JSON.stringify(token.scopes), JSON.stringify(token.serverIds), now, token.expiresAt, token.provisioning ? JSON.stringify(token.provisioning) : null);
         return { token, secret };
     }
     async list(ownerId: number): Promise<ApiToken[]> {
@@ -79,6 +98,9 @@ export function tokenAllows(token: ApiToken, serverId: string, scope: ApiScope,
     owner: { enabled: boolean; permissions: readonly string[] | null }, now = Date.now()): boolean {
     if (!owner.enabled || owner.permissions === null || token.revokedAt !== null || token.expiresAt <= now ||
         !token.serverIds.includes(serverId) || !token.scopes.includes(scope)) return false;
+    if (scope === 'game-admins.read') return owner.permissions.includes('fs.read');
+    if (scope === 'game-admins.write') return owner.permissions.includes('fs.read') && owner.permissions.includes('fs.write');
+    if (scope === 'servers.power') return owner.permissions.includes('server.power');
     if (scope === 'backups.read' || scope === 'backups.create') return owner.permissions.includes(scope);
     return true;
 }

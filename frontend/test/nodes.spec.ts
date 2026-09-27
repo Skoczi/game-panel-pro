@@ -69,8 +69,8 @@ test('Local and remote node settings open distinct allocation endpoints and prot
   await page.goto('/test/nodes.fixture.html');
   await page.getByRole('button', { name: 'Node settings', exact: true }).first().click();
   await expect(page.getByText('No additional agent required', { exact: true })).toBeVisible();
-  await page.getByRole('button', { name: 'IP allocations', exact: true }).click();
-  await expect(page.getByRole('heading', { name: 'Local · Allocations' })).toBeVisible();
+  await page.getByRole('button', { name: 'Network & IPs', exact: true }).click();
+  await expect(page.getByRole('heading', { name: /Configured addresses/ })).toBeVisible();
   await page.getByLabel('Restrict published ports').uncheck();
   await page.getByRole('button', { name: '← Nodes' }).click();
   await page.getByRole('dialog').getByRole('button', { name: 'Cancel', exact: true }).click();
@@ -78,8 +78,8 @@ test('Local and remote node settings open distinct allocation endpoints and prot
   await page.getByRole('button', { name: '← Nodes' }).click();
   await page.getByRole('dialog').getByRole('button', { name: 'Continue', exact: true }).click();
   await page.getByRole('button', { name: 'Node settings', exact: true }).last().click();
-  await page.getByRole('button', { name: 'IP allocations', exact: true }).click();
-  await expect(page.getByRole('heading', { name: 'Warsaw test · Allocations' })).toBeVisible();
+  await page.getByRole('button', { name: 'Network & IPs', exact: true }).click();
+  await expect(page.getByRole('heading', { name: /Configured addresses/ })).toBeVisible();
   await expect(page.getByLabel('Show Follow Us')).toHaveCount(0);
   expect(requested.some((url) => url.endsWith('/local/allocations'))).toBe(true);
   expect(requested.some((url) => url.endsWith(`/${id}/allocations`))).toBe(true);
@@ -90,6 +90,7 @@ test('Local and remote node settings open distinct allocation endpoints and prot
   if (process.env.PLAYWRIGHT_SCREENSHOTS === '1') await page.screenshot({ path: 'test-results/node-allocations-dark-mobile.png', fullPage: true });
 });
 test.beforeEach(async ({ page }) => {
+  await page.route('**/api/system/host-network', r => r.fulfill({ json: { available: true, revision: 1, entries: [], discovered: [], parents: ['eno1'], autostart: true } }));
   await page.route('**/api/system/appearance', (r) =>
     r.fulfill({ json: { appearance: { siteName: 'Example' } } })
   );
@@ -112,7 +113,7 @@ test('node enrollment keeps token masked and gives explicit operator instruction
   await page.getByRole('button', { name: 'Create enrollment' }).click();
   await expect(page.getByLabel('Enrollment token')).toHaveAttribute('type', 'password');
   await expect(
-    page.getByText('One-time token, valid for 15 minutes.', { exact: false })
+    page.getByText('One-use token · expires in 15 minutes', { exact: false })
   ).toBeVisible();
   await page.getByRole('button', { name: 'Dismiss token' }).click();
   await expect(page.getByLabel('Enrollment token')).toHaveCount(0);
@@ -389,4 +390,17 @@ test('node compatibility distinguishes unavailable runtime from unsupported capa
   await expect(section).toContainText('2.0.49');
   await expect(section).toContainText('Native restore recovery: Supported');
   await expect(section.getByText('Not recorded', { exact: true })).toHaveCount(2);
+});
+
+test('local and remote node cards align actions and use the same online badge', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await page.route('**/api/nodes', route => route.fulfill({ json: { nodes: [node], local: { id: 'local', name: 'FR1', location: 'France', status: 'online', agent_version: '2.0.59', last_seen: Date.now(), heartbeat_kind: 'panel-response' } } }));
+  await page.goto('/test/nodes.fixture.html');
+  const local = page.getByRole('article').filter({ hasText: 'FR1' });
+  const remote = page.getByRole('article').filter({ hasText: 'Warsaw test' });
+  const open = local.getByRole('button', { name: 'Open servers', exact: true });
+  const settings = local.getByRole('button', { name: 'Node settings', exact: true });
+  expect(Math.abs((await open.boundingBox())!.y - (await settings.boundingBox())!.y)).toBeLessThan(2);
+  await expect(local.getByText('online', { exact: true })).toHaveAttribute('class', await remote.getByText('online', { exact: true }).getAttribute('class') || '');
+  await page.screenshot({ path: '/tmp/eserv-nodes-layout.png', fullPage: true });
 });

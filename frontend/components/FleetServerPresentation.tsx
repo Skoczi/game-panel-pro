@@ -211,17 +211,19 @@ export function FleetManagement({
 }) {
   return (
     <div className="fleet-node-management">
-      <button className="fleet-node-manage" disabled={disabled} onClick={onManage}>
+      <button className="fleet-node-manage" aria-label="Manage" title="Manage" disabled={disabled} onClick={onManage}>
         <Settings size={17} />
-        Manage
+        <span className="fleet-mobile-action-label">Manage</span>
       </button>
       <button
         className="fleet-node-console"
+        aria-label="Console"
+        title="Console"
         disabled={disabled || !runtime || !fleetAllowed(runtime.context, 'container.logs.read')}
         onClick={onConsole}
       >
         <Terminal size={18} />
-        Console
+        <span className="fleet-mobile-action-label">Console</span>
       </button>
     </div>
   );

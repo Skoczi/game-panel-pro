@@ -12,7 +12,8 @@ import * as tickets from '../src/templates/tickets.js';
 test('template HTTP routes enforce root, draft publication, node isolation and secret-free export', async () => {
     const native = new DatabaseSync(':memory:');
     const db = { exec: async (s: string) => native.exec(s), run: async (s: string, ...a: any[]) => native.prepare(s).run(...a), get: async (s: string, ...a: any[]) => native.prepare(s).get(...a), all: async (s: string, ...a: any[]) => native.prepare(s).all(...a) };
-    const { rootOnly } = loadWithMocks('../src/middleware/auth.ts', { '../agent/identity.js': {}, '../utils/auth.js': {}, '../database/index.js': {}, '../utils/ids.js': {}, '../utils/logger.js': {}, '../permissions.js': {} });
+    const { rootOnly } = loadWithMocks('../src/middleware/auth.ts', {
+        '../services/loginSessions.js': {}, '../agent/identity.js': {}, '../utils/auth.js': {}, '../database/index.js': {}, '../utils/ids.js': {}, '../utils/logger.js': {}, '../permissions.js': {} });
     const key = 'test-only-template-node-key';
     const module = loadWithMocks('../src/templates/routes.ts', {
         express, '../middleware/auth.js': { rootOnly }, '../database/init.js': { getDatabase: async () => db },

@@ -6,7 +6,8 @@ import { Server, Plus, RefreshCw, ExternalLink, Network } from 'lucide-react';
 import { nodesRequest, type ExecutionNode, type LocalNode } from '../utils/nodesApi';
 import { LocalNodeProfile, LocalRuntimeInfo } from './LocalNodeProfile';
 import { ACTIVE_NODE, openFleet } from '../utils/nodeContext';
-import { GlobalSettings } from './GlobalSettings';
+import { SharedFiles } from './SharedFiles';
+import { NodeNetwork } from './NodeNetwork';
 import {
   AppModal,
   AppModalContent,
@@ -41,7 +42,7 @@ export function Nodes() {
   const [showCreate, setShowCreate] = useState(false);
   const [enrollment, setEnrollment] = useState<{ nodeId: string; token: string } | null>(null);
   const [selected, setSelected] = useState<{ id: string; name: string } | null>(null);
-  const [nodeTab, setNodeTab] = useState<'overview' | 'allocations'>('overview');
+  const [nodeTab, setNodeTab] = useState<'overview' | 'network' | 'shared'>('overview');
   const [allocationDirty, setAllocationDirty] = useState(false);
   const [draft, setDraft] = useState({ name: '', origin: '', location: '' });
   const [deleting, setDeleting] = useState<ExecutionNode | null>(null);
@@ -123,9 +124,9 @@ export function Nodes() {
         </header>
         <nav
           aria-label="Node settings sections"
-          className="flex gap-2 rounded-xl border border-slate-200 p-2 dark:border-slate-700"
+          className="flex flex-wrap gap-2 rounded-xl border border-slate-200 p-2 dark:border-slate-700"
         >
-          {(['overview', 'allocations'] as const).map((tab) => (
+          {(['overview', 'network', 'shared'] as const).map((tab) => (
             <button
               key={tab}
               aria-current={nodeTab === tab ? 'page' : undefined}
@@ -138,17 +139,12 @@ export function Nodes() {
                 }
               }}
             >
-              {tab === 'overview' ? 'Overview' : 'IP allocations'}
+              {tab === 'overview' ? 'Overview' : tab === 'shared' ? 'Shared files' : 'Network & IPs'}
             </button>
           ))}
         </nav>
-        {nodeTab === 'allocations' ? (
-          <GlobalSettings
-            key={selected.id}
-            nodeId={selected.id}
-            nodeName={local ? localNode?.name || 'Local' : selected.name}
-            onDirtyChange={setAllocationDirty}
-          />
+        {nodeTab === 'shared' ? <SharedFiles key={selected.id} nodeId={selected.id} onDirtyChange={setAllocationDirty} /> : nodeTab === 'network' ? (
+          <NodeNetwork key={selected.id} nodeId={selected.id} nodeName={local ? localNode?.name || 'Local' : selected.name} onDirtyChange={setAllocationDirty} />
         ) : (
           <section className={`${card} space-y-4`}>
             <h2 className="text-lg font-semibold">Runtime information</h2>
@@ -185,10 +181,7 @@ export function Nodes() {
               </dl>
             )}
             <RuntimeCapabilities key={selected.id} nodeId={selected.id} />
-            <p className="text-sm text-slate-500">
-              IP addresses and TCP/UDP ranges belong to this node. Existing servers stay on their
-              current runtime.
-            </p>
+
           </section>
         )}
       </div>
@@ -270,10 +263,7 @@ export function Nodes() {
               placeholder="Warsaw, PL"
             />
           </label>
-          <p className="text-xs text-slate-500 md:col-span-2">
-            The origin is for agent management, not a game allocation. Configure verified HTTPS
-            before enrollment.
-          </p>
+          <p className="text-xs text-slate-500 md:col-span-2">Agent HTTPS address. Game IPs are configured separately.</p>
           <button className={button} disabled={busy} type="submit">
             {busy ? 'Creating…' : 'Create enrollment'}
           </button>
@@ -282,10 +272,7 @@ export function Nodes() {
       {enrollment && (
         <section className={`${card} space-y-3`} aria-label="Node enrollment">
           <h2 className="text-lg font-semibold">Connect your agent</h2>
-          <p className="text-sm text-slate-500">
-            One-time token, valid for 15 minutes. Paste it into the installer prompt; never put it
-            in command history or a URL.
-          </p>
+          <p className="text-sm text-slate-500">One-use token · expires in 15 minutes · paste into the installer prompt</p>
           <p className="break-all font-mono text-xs">Node ID: {enrollment.nodeId}</p>
           <label className="block text-sm">
             Enrollment token
@@ -324,28 +311,27 @@ export function Nodes() {
         </section>
       )}
       <div className="grid gap-4 xl:grid-cols-2">
-        <article className={card}>
+        <article className={`${card} flex flex-col gap-4`}>
           <div className="flex items-center gap-3">
             <Server className="text-blue-600" />
             <div className="min-w-0">
               <h2 className="break-words font-semibold">{localNode?.name || 'Local'}</h2>
               <p className="text-xs text-slate-500">{localNode?.location || 'No location set'}</p>
             </div>
-            <span className="ml-auto rounded-full bg-slate-100 px-2 py-1 text-xs text-slate-600">
+            <span className={`ml-auto rounded-full px-2 py-1 text-xs font-medium ${colors[runtimeUnavailable ? 'offline' : localNode ? 'online' : 'pending']}`}>
               {runtimeUnavailable ? 'Unavailable' : localNode ? 'online' : 'Built in'}
             </span>
           </div>
-          <p className="my-4 text-sm text-slate-500">
-            Create and manage servers on the panel host. No additional agent is required.
-          </p>
+
           <div className="mb-4">
             <LocalRuntimeInfo node={localNode} unavailable={runtimeUnavailable} />
           </div>
+          <div className="mt-auto flex flex-wrap gap-2">
           <button className={button} disabled={busy} onClick={() => openNodeServers('local')}>
             Open servers
           </button>
           <button
-            className={`${button} ml-2`}
+            className={button}
             onClick={async () => {
               setSelected({ id: 'local', name: localNode?.name || 'Local' });
               setNodeTab('overview');
@@ -354,9 +340,10 @@ export function Nodes() {
             <Network size={14} />
             Node settings
           </button>
+          </div>
         </article>
         {nodes.map((node) => (
-          <article key={node.id} className={`${card} space-y-4`}>
+          <article key={node.id} className={`${card} flex flex-col gap-4`}>
             <div className="flex items-center gap-3">
               <Server className="shrink-0 text-blue-600" />
               <div className="min-w-0">
@@ -379,7 +366,7 @@ export function Nodes() {
                 {node.last_seen ? new Date(node.last_seen).toLocaleString() : 'Waiting for agent'}
               </dd>
             </dl>
-            <div className="flex flex-wrap gap-2">
+            <div className="mt-auto flex flex-wrap gap-2">
               <button
                 className={button}
                 disabled={busy || node.status === 'disabled' || node.status === 'pending'}
@@ -496,10 +483,7 @@ export function Nodes() {
                 }
               }}
             >
-              <p className="text-sm text-slate-500">
-                Tracked servers block deletion. Previously connected agents must be reachable and
-                empty.
-              </p>
+              <p className="text-sm text-slate-500">To delete a node, its agent must be reachable and have no servers.</p>
               <label className="block text-sm">
                 Type the node name to confirm
                 <input

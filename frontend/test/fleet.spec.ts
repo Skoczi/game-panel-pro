@@ -52,7 +52,8 @@ test('game monitoring appears in fleet cards and list using the selected node ru
   await expect(row.getByText('Running', { exact: true })).toHaveCount(0);
   await expect(row.locator('.gp-game-icon img')).toHaveAttribute('src', '/game-icons/counter-strike-go.jpg');
   await expect(row.locator('.gp-game-icon img')).toHaveJSProperty('naturalWidth', 32);
-  await expect(page.getByRole('columnheader')).toHaveText(['Server name', 'Server IP', 'Server status', 'Server metrics', 'Power', 'Management']);
+  await expect(page.getByRole('columnheader')).toHaveText([/^Server name\s*$/, /^Server IP\s*↑$/, /^Server status\s*$/, 'Server metrics', 'Power', 'Management']);
+  await expect(page.getByRole('columnheader').nth(1)).toHaveAttribute('aria-sort', 'ascending');
   await expect(row.getByRole('cell').nth(2).getByText('Game responding')).toBeVisible();
   await expect(row.getByRole('cell').first().getByRole('img', { name: 'Custom image' })).toBeVisible();
   await expect(page.getByRole('row').filter({ hasText: 'Survival World' }).getByText('Unavailable', { exact: true })).toBeVisible();
@@ -383,7 +384,7 @@ test('global IDs, premium views and quick consoles stay scoped across identical 
   expect(new URL(mutations[0].url).pathname).toBe('/api/servers/1/console/commands');
   await first.getByRole('button', { name: 'restart Community Arena', exact: true }).click();
   expect(mutations).toHaveLength(1);
-  await page.getByRole('dialog').getByRole('button', { name: 'restart', exact: true }).click();
+  await page.getByRole('dialog').getByRole('button', { name: 'Restart', exact: true }).click();
   await expect.poll(() => mutations.length).toBe(2);
   expect(mutations[1].scope).toBe(serverId);
   expect(new URL(mutations[1].url).pathname).toBe(
@@ -398,6 +399,17 @@ test('global IDs, premium views and quick consoles stay scoped across identical 
     .poll(() => page.evaluate(() => document.documentElement.scrollWidth))
     .toBeLessThanOrEqual(390);
   if (process.env.PLAYWRIGHT_SCREENSHOTS === '1') await page.screenshot({ path: 'test-results/fleet-premium-mobile.png', fullPage: true });
+  for (const width of [320, 390, 430]) {
+    await page.setViewportSize({ width, height: 900 });
+    const manage = await first.getByRole('button', { name: 'Manage', exact: true }).boundingBox();
+    const power = await first.getByRole('button', { name: 'restart Community Arena', exact: true }).boundingBox();
+    expect(Math.abs(manage!.y + manage!.height / 2 - power!.y - power!.height / 2)).toBeLessThanOrEqual(3);
+    await expect(first.locator('.fleet-mobile-action-label').first()).toBeHidden();
+    const refresh = await page.locator('header .fleet-refresh').boundingBox();
+    const add = await page.getByRole('button', { name: 'Add Game Server', exact: true }).boundingBox();
+    expect(Math.abs(refresh!.y + refresh!.height / 2 - add!.y - add!.height / 2)).toBeLessThanOrEqual(3);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  }
 });
 test('custom dropdown supports keyboard, typeahead, cancellation and focus', async ({ page }) => {
   await page.goto('/test/fleet.fixture.html');
@@ -466,7 +478,7 @@ test('view filters, grouping and sort persist per account and can be reset', asy
   await expect(page.getByRole('heading', { name: 'Community Arena', exact: true })).toHaveCount(0);
   await expect(page.getByRole('heading', { name: 'Survival World', exact: true })).toBeVisible();
   await select(page, 'Sort servers', 'Name A–Z');
-  await expect(page.getByRole('button', { name: 'Reorder Survival World' })).toBeDisabled();
+  await expect(page.getByRole('button', { name: 'Reorder Survival World' })).toBeEnabled();
   await page.reload();
   await openFilters(page);
   await expect(page.getByRole('combobox', { name: 'Filter by game type' })).toContainText(
@@ -493,6 +505,7 @@ test('keyboard and pointer reorder cards and retain custom order after reload', 
 }) => {
   await page.setViewportSize({ width: 1440, height: 1100 });
   await page.goto('/test/fleet.fixture.html');
+  await select(page, 'Sort servers', 'My order');
   const headings = page.locator('.gp-fleet-card h3');
   await expect(headings).toHaveText(['Community Arena', 'Survival World']);
   const handle = page.getByRole('button', { name: 'Reorder Community Arena' });
@@ -535,9 +548,10 @@ test('damaged preferences and unavailable stored filters remain recoverable', as
   await expect(page.getByRole('article')).toHaveCount(2);
 });
 
-test('touch handle reorders cards on mobile without a desktop pointer', async ({ page }) => {
+for (const view of ['cards', 'table']) test(`touch handle reorders ${view} on mobile without a desktop pointer`, async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 1000 });
   await page.goto('/test/fleet.fixture.html');
+  if (view === 'table') await page.getByRole('button', { name: 'List view' }).click();
   const handles = page.getByRole('button', { name: /^Reorder / });
   await expect(handles).toHaveCount(2);
   await handles.first().scrollIntoViewIfNeeded();
@@ -552,9 +566,10 @@ test('touch handle reorders cards on mobile without a desktop pointer', async ({
       type: 'touchMove',
       touchPoints: [{ x, y: y + ((to.y - from.y) * i) / 12 }],
     });
-  await expect(page.locator('.gp-fleet-card.is-dragging')).toHaveCount(1);
+  await expect(page.locator(view === 'table' ? 'tr.is-dragging' : '.gp-fleet-card.is-dragging')).toHaveCount(1);
   await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
-  await expect(page.locator('.gp-fleet-card h3')).toHaveText(['Survival World', 'Community Arena']);
+  await expect(page.locator(view === 'table' ? '.fleet-node-table tbody .gp-list-server-name' : '.gp-fleet-card h3')).toHaveText(['Survival World', 'Community Arena']);
+  if (view === 'table') await page.screenshot({ path: '/tmp/fleet-list-drag-mobile.png', fullPage: true });
   await cdp.detach();
 });
 
@@ -696,7 +711,7 @@ test('administrator can assign and revoke scoped server permissions', async ({ p
   await page.evaluate(() => document.documentElement.classList.add('dark'));
   await expect(
     accessDialog.locator('.gp-app-modal-footer').getByRole('button', { name: 'Close', exact: true })
-  ).toHaveCSS('background-color', 'rgb(17, 24, 39)');
+  ).toHaveCSS('background-color', 'rgb(12, 21, 35)');
   if (process.env.PLAYWRIGHT_SCREENSHOTS === '1') await page.screenshot({ path: 'test-results/server-access-dark.png' });
   await page.setViewportSize({ width: 390, height: 844 });
   await expect(page.getByRole('button', { name: 'Save access' })).toBeVisible();
@@ -798,4 +813,31 @@ test('long server names stay inside the list column and leave actions readable',
   await expect(page.getByRole('button', { name: 'Console', exact: true })).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   if (process.env.PLAYWRIGHT_SCREENSHOTS === '1') await page.screenshot({ path: 'test-results/fleet-long-name.png', fullPage: true });
+});
+
+ test('list drag switches address sorting to saved custom order and supports keyboard', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await page.goto('/test/fleet.fixture.html');
+  await page.getByRole('button', { name: 'List view' }).click();
+  const names = page.locator('.fleet-node-table tbody .gp-list-server-name');
+  await expect(names).toHaveText(['Community Arena', 'Survival World']);
+  const from = (await page.getByRole('button', { name: 'Reorder Community Arena' }).boundingBox())!;
+  const to = (await page.getByRole('button', { name: 'Reorder Survival World' }).boundingBox())!;
+  await page.mouse.move(from.x + from.width / 2, from.y + from.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(to.x + to.width / 2, to.y + to.height / 2, { steps: 15 });
+  await page.mouse.up();
+  await expect(names).toHaveText(['Survival World', 'Community Arena']);
+  await page.reload();
+  await expect(names).toHaveText(['Survival World', 'Community Arena']);
+  await openFilters(page);
+  await expect(page.getByRole('combobox', { name: 'Sort servers', exact: true })).toContainText('My order');
+  await page.getByRole('button', { name: 'Reorder Survival World' }).focus();
+  await page.keyboard.press('Space');
+  await expect(page.locator('tr.is-dragging')).toHaveCount(1);
+  await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+  await page.keyboard.press('ArrowDown');
+  await expect(page.locator('[role="status"]').filter({ hasText: 'Over server Community Arena.' })).toHaveCount(1);
+  await page.keyboard.press('Space');
+  await expect(names).toHaveText(['Community Arena', 'Survival World']);
 });

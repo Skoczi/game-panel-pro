@@ -23,12 +23,14 @@ test('node deletion API is root-only and preserves registrations on rejected rem
     } as any;
     await new FleetStore(db).initialize();
     const { rootOnly } = loadWithMocks('../src/middleware/auth.ts', {
+        '../services/loginSessions.js': {},
         '../agent/identity.js': { isAgent: () => false },
         '../utils/auth.js': {}, '../database/index.js': {}, '../utils/ids.js': {},
         '../utils/logger.js': {}, '../permissions.js': {},
     });
     let checked = 0;
     const control = loadWithMocks('../src/nodes/control.ts', {
+        '../services/loginSessions.js': {},
         '../services/alerts.js': { alertStore: async () => ({ view: async () => ({ enabled: false }), save: async () => ({ enabled: false }) }) },
         '../services/alertStore.js': { validateAlertBatch: () => [] },
         express, ws: {},
@@ -122,6 +124,7 @@ test('deletion inventory verification is signed, read-only and rejects unavailab
     server.listen(0, '127.0.0.1'); await once(server, 'listening');
     const node = { id: nodeId, enabled: 0, key_encrypted: 'encrypted', origin: `http://127.0.0.1:${(server.address() as any).port}` };
     const { verifyNodeEmpty } = loadWithMocks('../src/fleet/control.ts', {
+        '../services/apiServerDto.js': {}, '../utils/apiSerialization.js': {}, '../services/gameMonitoring.js': {},
         '../services/alerts.js': { alertStore: async () => ({ view: async () => ({ enabled: false }), save: async () => ({ enabled: false }) }) },
         '../services/alertStore.js': { validateAlertBatch: () => [] },
         express, 'node:http': http, 'node:https': https,

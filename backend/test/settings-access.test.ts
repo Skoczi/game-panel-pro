@@ -7,6 +7,7 @@ import { loadWithMocks } from './loadWithMocks.js';
 
 test('settings routes require root; appearance exposes no allocations', async () => {
     const { rootOnly } = loadWithMocks('../src/middleware/auth.ts', {
+        '../services/loginSessions.js': {},
         '../agent/identity.js': { isAgent: () => false },
         '../utils/auth.js': {},
         '../database/index.js': {},
@@ -23,6 +24,9 @@ test('settings routes require root; appearance exposes no allocations', async ()
         network: { restrictPorts: true, allocations: [] },
     };
     const { default: router } = loadWithMocks('../src/routes/system.ts', {
+        './sharedFiles.js': { sharedFilesRoutes: express.Router() },
+        '../services/hostNetwork.js': { hostNetworkSnapshot: async () => ({ available: false }), changeHostNetwork: async () => ({}) },
+        '../services/operationalHealth.js': { operationalHealthStore: async () => ({ snapshot: async () => ({ checks: [] }) }) },
         '../services/alerts.js': { alertStore: async () => ({ view: async () => ({ enabled: false }), save: async () => ({ enabled: false }) }) },
         '../services/alertStore.js': { validateAlertBatch: () => [] },
         express,

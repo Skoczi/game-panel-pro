@@ -19,7 +19,7 @@ test('settings preview, parameter editing and port checks preserve IP and block 
  await page.getByLabel('Map', { exact: true }).fill('de_dust2');
  await expect(page.locator('.gp-settings-startup pre')).toContainText('+map de_dust2');
  await page.getByRole('button', { name: 'Edit startup parameters' }).click();
- await expect(page.getByText('Dostępne parametry:', { exact: true })).toBeVisible();
+ await expect(page.getByText('Available parameters:', { exact: true })).toBeVisible();
  await expect(page.locator('.gp-startup-variables')).toContainText('{{SERVER_PORT}}');
  await page.getByLabel('Startup parameters').fill('./hlds_linux -port {{SERVER_PORT}} +map {{MAP}} +maxplayers {{MAX_PLAYERS}}');
  await expect(page.locator('.gp-settings-startup pre')).toContainText('+maxplayers 32');
@@ -81,4 +81,29 @@ test('legacy ReHLDS no longer offers a startup hostname variable', async ({ page
  await expect(page.getByLabel('Hostname', { exact: true })).toHaveCount(0);
  await page.getByRole('button', { name: 'Edit startup parameters' }).click();
  await expect(page.locator('.gp-startup-variables')).not.toContainText('SERVER_NAME');
+});
+
+
+test('clone is an expandable Settings action immediately before deletion', async ({ page }) => {
+  await page.addInitScript(() => sessionStorage.setItem('gamepanel_active_server', JSON.stringify({ id: 'aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa', nodeId: 'local', runtimeId: 7 })));
+  let previews = 0;
+  await page.route('**/api/**', route => {
+    const path = new URL(route.request().url()).pathname;
+    if (!path.startsWith('/api/')) return route.continue();
+    if (path.includes('/clone')) { previews++; return route.fulfill({json:{name:'Source',stopped:true,fingerprint:'v1',ports:{tcp:[],udp:[]},changes:[]}}); }
+    return route.fulfill({json:server});
+  });
+  await page.goto('/test/container-settings.fixture.html');
+  const summary = page.locator('summary').filter({hasText: /^Clone server$/});
+  await expect(summary).toBeVisible();
+  expect(previews).toBe(0);
+  const section = summary.locator('..');
+  await expect(section.locator('xpath=following-sibling::*[1]')).toHaveAttribute('aria-label','Delete server');
+  await summary.click();
+  await expect(page.getByLabel('Clone name')).toHaveValue('Source clone');
+  await page.getByLabel('Clone name').fill('My copy');
+  await summary.click();
+  await summary.click();
+  await expect(page.getByLabel('Clone name')).toHaveValue('My copy');
+  expect(previews).toBe(1);
 });

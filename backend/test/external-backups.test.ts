@@ -8,11 +8,11 @@ import tar from 'tar-stream';
 import { gzipSync } from 'node:zlib';
 import { ExternalBackupStore, requireExternalFilesystem } from '../src/services/externalBackupStore.js';
 
-test('external copies are atomically published, hashed, isolated by runtime and imported without overwrite', async () => {
+for (const compact of [false, true]) test(`external copies publish/import without overwrite using ${compact ? 'SQLite 32-hex' : 'hyphenated'} runtime identities`, async () => {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), 'gp-external-'));
   try {
     const store = new ExternalBackupStore(root, async () => {});
-    const id = randomUUID(), source = path.join(root, 'source'), local = path.join(root, 'local');
+    const id = compact ? randomUUID().replaceAll('-', '') : randomUUID(), source = path.join(root, 'source'), local = path.join(root, 'local');
     const pack = tar.pack();
     pack.entry({ name: 'serverfiles', type: 'directory' });
     pack.entry({ name: 'serverfiles/server.cfg', type: 'file' }, 'game files'); pack.finalize();

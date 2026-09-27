@@ -1,26 +1,28 @@
-# Install Game Panel PRO 2.0.54
+# Install Game Panel PRO 2.1.0
 
-No prior OVHcloud Game Panel installation is needed. This release contains the panel, frontend, runtime agent code and its deployment tools. The installer builds our source locally; it does not pull an upstream panel or updater image.
+No prior panel installation is needed. This release contains the panel, frontend, runtime agent code and its deployment tools. The installer builds our source locally; it does not pull an upstream panel or updater image.
 
 ## New Linux host
 
 Use a supported Debian or Ubuntu host with root access, Git and a domain pointing to the host. The installer checks the distribution, installs Docker/Compose when necessary and configures Traefik with Let's Encrypt. Ports 80/443 must be available. Game ports are configured separately. Allow space for source builds, game data and rollback copies. Building the frontend uses a 4 GiB Node heap; allow at least 6 GiB available RAM for the build (8 GiB host RAM recommended when games also run). Runtime memory usage is separate from this build requirement.
 
 ```sh
-git clone --branch v2.0.54 --depth 1 https://github.com/Skoczi/game-panel-skoczi.git
+git clone --branch v2.1.0 --depth 1 https://github.com/Skoczi/game-panel-skoczi.git
 cd game-panel-skoczi
 sudo bash deploy/install.sh
 ```
 
 Enter the panel domain, administrator username/password and certificate email when prompted. The default root is `/opt/gamepanel`. A non-empty root is rejected; installation never overwrites an existing panel. Telemetry is off unless explicitly enabled.
 
-The installer builds the backend, frontend and local `gamepanel-pro-updater:2.0.54` image. Successful installation requires an HTTP health check. It prints the URL and configuration paths, not the password.
+The installer builds the backend, frontend and local `gamepanel-pro-updater:2.1.0` image. Successful installation requires an HTTP health check. It prints the URL and configuration paths, not the password.
 
 For a different root use `sudo bash deploy/install.sh --app-root /opt/game-panel-pro`. Keep the checkout outside that root. See `deploy/install.sh` for noninteractive `GP_*` inputs; keep passwords out of shell history and source control.
 
-## Upgrade OVHcloud Game Panel 1.5.0
+## Upgrade to 2.1.0
 
-The supported automatic migration is the standard upstream Compose layout:
+For existing 2.0.x installations, the old managed updater cannot accept 2.1.0. Clone this release into a separate directory and use its update script for the first minor-version upgrade. Agents must be updated first when remote nodes are configured.
+
+The supported migration layout (including original 1.5.0 installations) is:
 
 ```text
 /opt/gamepanel/
@@ -38,7 +40,7 @@ Clone the release into a separate directory, then inspect the existing installat
 sudo python3 deploy/upgrade.py check --app-root /opt/gamepanel --project-name gamepanel
 ```
 
-This command reads configuration and container metadata without changing the installation. Custom service definitions, build contexts or mounts are rejected. Existing custom WAW deployments need their reviewed deployment procedure; do not force them through this installer.
+This command reads configuration and container metadata without changing the installation. Custom service definitions, build contexts or mounts are rejected. Existing custom deployments need their reviewed deployment procedure; do not force them through this installer.
 
 Finish uploads, installations and backups, and ask other operators to stop making changes before upgrading 1.5.0. The upstream panel does not implement the new maintenance barrier. Keep an independent backup of the installation and game data.
 
@@ -61,7 +63,7 @@ Accounts, password hashes, memberships and existing game records are retained by
 
 Open **Version & changelog**, check GitHub and select **Update to …**. Confirm the target version. The browser may disconnect while backend/frontend restart; do not submit a second update during reconnection. Status survives reload.
 
-The updater accepts published stable `2.0.X` releases only from `Skoczi/game-panel-skoczi`. Each release must include `game-panel-pro-VERSION.tar.gz` and `SHA256SUMS`. The archive is checked before extraction; traversal paths, links and oversized archives are rejected. No upstream updater image is downloaded.
+The 2.1 updater accepts published stable `2.0.x` and `2.1.x` releases only from `Skoczi/game-panel-skoczi`. Each release must include `game-panel-pro-VERSION.tar.gz` and `SHA256SUMS`. The archive is checked before extraction; traversal paths, links and oversized archives are rejected. No upstream updater image is downloaded.
 
 This option is enabled by the standalone installer and supported migration. Installations with remote nodes use coordinated manual updates so the panel cannot silently leave agents behind. Custom deployments stay manual unless adapted and tested. There is no unattended scheduled update.
 

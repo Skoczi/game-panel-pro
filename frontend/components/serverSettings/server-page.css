@@ -216,15 +216,16 @@
 @media (max-width: 700px) {
   .gp-server-heading-main {
     flex-basis: 100%;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     gap: 12px;
   }
   .gp-server-heading-divider {
     display: none;
   }
   .gp-server-identity {
-    flex-basis: 100%;
+    flex: 1;
   }
+  .gp-server-back { flex-shrink: 0; }
   .gp-server-heading h1 {
     font-size: 20px;
   }
@@ -346,7 +347,7 @@
   .gp-console-tool-label {
   display: none;
 }
-.gp-console-dock .gp-console-panel:not([data-fullscreen='true']) > div:nth-child(2) {
+.gp-console-dock .gp-console-panel:not([data-fullscreen='true']) > .gp-console-body {
   height: auto !important;
   flex: 1;
   min-height: 0;
@@ -420,22 +421,32 @@
   align-content: start;
 }
 .gp-server-stats .gp-server-stat {
-  position: relative;
-  padding: 18px 16px 18px 56px;
+  display: grid;
+  grid-template-columns: 20px minmax(0, 1fr);
+  column-gap: 12px;
+  row-gap: 6px;
+  align-content: center;
+  padding: 14px 16px;
   border-radius: 12px;
   min-height: 86px;
 }
+.gp-server-stats .gp-server-stat > :not(.gp-stat-icon) { grid-column: 2; min-width: 0; }
 .gp-server-stats .gp-stat-icon {
-  position: absolute;
-  left: 18px;
-  top: 22px;
+  position: static;
+  grid-column: 1;
+  grid-row: 1 / span 2;
+  align-self: start;
+  margin-top: 2px;
   color: var(--gp-accent);
 }
-.gp-server-stats .gp-server-stat small {
+.gp-server-stats .gp-server-stat > small {
   font-size: 12px;
-  margin-bottom: 8px;
+  margin: 0;
   color: var(--gp-muted);
 }
+.gp-server-address-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.gp-server-game-response { padding-top: 12px; margin-top: 6px; border-top: 1px solid var(--gp-border); }
+.gp-server-game-response .gp-game-monitor { margin-top: 0; }
 .gp-server-stats .gp-server-stat strong {
   color: var(--gp-foreground);
   font-size: 18px;
@@ -527,6 +538,34 @@
   gap: 20px;
   grid-column: 1 / -1;
   min-width: 0;
+}
+.gp-server-performance { grid-column: 1 / -1; min-width: 0; }
+.gp-server-performance > summary { cursor: pointer; color: var(--gp-muted); font-size: 13px; padding: 8px 0 16px; }
+.gp-server-performance .gp-server-charts { gap: 16px; }
+.gp-server-resources { border: 1px solid var(--gp-border); border-radius: 12px; background: var(--gp-surface); overflow: hidden; }
+html .gp-server-page .gp-server-stats .gp-server-resources .gp-server-stat { border: 0; border-radius: 0; min-height: 72px; }
+html .gp-server-page .gp-server-stats .gp-server-resources .gp-server-stat + .gp-server-stat { border-top: 1px solid var(--gp-border); }
+html .gp-server-page .gp-server-stats .gp-server-resources .gp-server-stat strong { font-size: 15px; }
+@media (min-width: 1101px) {
+  .gp-server-overview-tall .gp-server-performance { grid-column: 2; grid-row: 2; }
+}
+@media (max-width: 700px) {
+  .gp-server-overview { gap: 12px; }
+  .gp-server-overview .gp-server-stats { display: contents; }
+  .gp-server-runtime-status { order: -3; }
+  .gp-server-connection { order: -2; }
+  .gp-server-overview .gp-server-console { order: -1; }
+  .gp-server-uptime { order: 1; }
+  .gp-server-resources { order: 2; display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); }
+  html .gp-server-page .gp-server-stats .gp-server-resources .gp-server-stat { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; padding: 14px; }
+  html .gp-server-page .gp-server-stats .gp-server-resources .gp-server-stat + .gp-server-stat { border-top: 0; }
+  html .gp-server-page .gp-server-stats .gp-server-resources .gp-server-stat:nth-child(n+3) { border-top: 1px solid var(--gp-border); }
+  html .gp-server-page .gp-server-stats .gp-server-resources .gp-server-stat:nth-child(even) { border-left: 1px solid var(--gp-border); }
+  .gp-server-resources .gp-stat-icon { display: none; }
+  .gp-server-performance { order: 3; border: 1px solid var(--gp-border); border-radius: 12px; padding: 14px; }
+  .gp-server-performance > summary { padding: 4px 0; }
+  .gp-server-performance[open] > summary { margin-bottom: 12px; }
+  .gp-server-performance .gp-server-charts { grid-template-columns: minmax(0,1fr); }
 }
 .gp-server-chart-canvas {
   height: 180px;
@@ -679,13 +718,6 @@
 .gp-server-state-message p { font-size: 14px; }
 .gp-server-state-icon { width: 40px; height: 40px; border-radius: 10px; }
 
-/* Fill the overview row down to the last server statistic. */
-@media (min-width: 1101px) {
-  .gp-server-overview > .gp-server-console { align-self: stretch; display: flex; flex-direction: column; }
-  .gp-server-console > .gp-console-panel:not([data-fullscreen='true']) { flex: 1; display: flex; flex-direction: column; min-height: 0; }
-  .gp-server-console > .gp-console-panel:not([data-fullscreen='true']) > div:nth-child(2) { flex-grow: 1; }
-}
-
 /* One heading rhythm across server management tabs. */
 .gp-server-page .gp-server-tab-body { padding: 24px; }
 .gp-server-page .gp-server-tab-header {
@@ -712,3 +744,6 @@
   .gp-server-page .gp-server-tab-body { padding: 16px; }
   .gp-server-page .gp-server-tab-header { margin-bottom: 20px; }
 }
+
+.gp-server-toast { position: fixed; z-index: 1000; right: 24px; bottom: 24px; display: flex; align-items: center; gap: 16px; max-width: min(420px, calc(100vw - 32px)); padding: 14px 16px; border: 1px solid var(--gp-border, #334155); border-radius: 12px; color: var(--gp-foreground); background: var(--gp-surface, #101b2e); box-shadow: 0 12px 40px #0004; }
+.gp-server-toast button { flex-shrink: 0; width: 32px; height: 32px; border-radius: 6px; }

@@ -1,5 +1,13 @@
 import type { Database } from 'sqlite';
 
+export function journalResponse(method: string, pathname: string, body: unknown): string {
+    if (method === 'POST' && /^\/api\/servers\/\d+\/sftp\/?$/i.test(pathname) && body && typeof body === 'object') {
+        const { password: _password, ...safe } = body as Record<string, unknown>;
+        return JSON.stringify(safe);
+    }
+    return JSON.stringify(body);
+}
+
 type Operation = {
     id: string;
     fingerprint: string;

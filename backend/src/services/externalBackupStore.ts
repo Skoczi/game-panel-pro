@@ -19,7 +19,9 @@ export interface ExternalBackupRecord {
   // Private recovery metadata stays on the backup volume, never in list responses.
   server: Record<string, unknown>;
 }
-const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+// SQLite migration/insert trigger emits 32 hex characters; imported identities
+// can use the canonical hyphenated UUID form. Preserve each identity verbatim.
+const uuid = /^(?:[0-9a-f]{32}|[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$/i;
 function safeName(name: string) {
   if (typeof name !== 'string' || !name.startsWith('native-') || !name.endsWith('.tar.gz')
     || path.basename(name) !== name || /[\\\x00-\x1f]/.test(name) || name.length > 240) throw new Error('Invalid external backup name');

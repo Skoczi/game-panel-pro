@@ -1,3 +1,4 @@
+import * as sharedFiles from '../src/services/sharedFiles.js';
 import assert from 'node:assert/strict';
 import * as nativeContract from '../src/templates/nativeContract.js';
 import { test } from 'node:test';
@@ -23,7 +24,7 @@ test('actual install route verifies target authorization before persistence and 
     let beforeCreate: (() => Promise<void>) | undefined;
     let missingImage = false;
     const key = 'test-runtime-ticket-key';
-    const module = loadWithMocks('../src/routes/servers/install.ts', {
+    const module = loadWithMocks('../src/routes/servers/install.ts', { '../../services/sharedFiles.js': sharedFiles,
         '../../services/cpuTopology.js': { assertCpuBinding: async () => {} },
         '../../services/portAllocationLock.js': allocationLock,
         '../../services/nativeImages.js': { resolveNativeImages: async () => {

@@ -1,3 +1,4 @@
+import { resolveSharedPath, type SharedReference } from '../services/sharedFiles.js';
 import path from 'node:path';
 import fs from 'node:fs/promises';
 import { getConfig } from '../config.js';
@@ -13,6 +14,7 @@ type ServerStoragePaths = {
 export type ServerMountPath = {
   key: string;
   hostPath: string;
+  readOnly?: boolean;
   containerPath: string;
 };
 
@@ -81,7 +83,7 @@ async function chownRecursive(target: string, ownership: ServerMountOwnership): 
 
 export async function ensureServerMountDirs(
   storageKey: string | number,
-  mounts: Array<{ key: string; containerPath: string }>,
+  mounts: Array<{ key: string; containerPath: string; shared?: SharedReference }>,
   ownership?: ServerMountOwnership
 ): Promise<ServerMountPath[]> {
   const id = assertValidServerId(storageKey, 'for mount creation');
@@ -93,6 +95,24 @@ export async function ensureServerMountDirs(
   const resolved: ServerMountPath[] = [];
 
   for (const mount of mounts) {
+    if (mount.shared) {
+      const parent = mounts.find(m => !m.shared && mount.containerPath.startsWith(m.containerPath + '/'));
+      if (parent) {
+        const privateRoot = path.join(rootResolved, parent.key);
+        const relative = path.posix.relative(parent.containerPath, mount.containerPath);
+        if (relative.split('/').some(p => !p || p === '..' || p === '.')) throw new Error('Invalid nested mount destination');
+        let placeholder = privateRoot;
+        if (!(await fs.lstat(placeholder)).isDirectory()) throw new Error('Invalid private mount directory');
+        for (const part of relative.split('/')) {
+          placeholder = path.join(placeholder, part);
+          await fs.mkdir(placeholder).catch(e => { if (e.code !== 'EEXIST') throw e; });
+          if (!(await fs.lstat(placeholder)).isDirectory()) throw new Error('Nested mount parents must be real directories');
+          if (ownership) await fs.chown(placeholder, ownership.uid, ownership.gid);
+        }
+      }
+      resolved.push({ key: mount.key, hostPath: await resolveSharedPath(mount.shared), containerPath: mount.containerPath, readOnly: true });
+      continue;
+    }
     const hostPath = getServerMountDir(id, mount.key);
     const hostResolved = path.resolve(hostPath);
 

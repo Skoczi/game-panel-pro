@@ -274,10 +274,7 @@ export function ServerSshTerminal({ serverId, serverStatus }: ServerSshTerminalP
             <AlertTriangle className="w-5 h-5 text-yellow-400 mt-0.5" />
             <div className="flex-1">
               <p className="text-sm text-yellow-200 font-semibold mb-2">Advanced feature warning</p>
-              <p className="text-sm text-gray-300">
-                This terminal gives full shell access inside the server container. Misuse can
-                break the game server, delete files, or expose sensitive data. Use with caution.
-              </p>
+              <p className="text-sm text-gray-300">Full shell access. Commands can delete files and change the server.</p>
               <div className="mt-4 flex flex-wrap gap-3">
                 <AppButton
                   tone="primary"

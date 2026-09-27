@@ -12,6 +12,7 @@ test('display revisions remain separate from technical package versions', () => 
 });
 
 test.beforeEach(async ({ page }) => {
+  await page.route('**/api/signed-webhooks', route => route.fulfill({ json: { revision: 0, enabled: false, url: '', secretConfigured: false, recent: [] } }));
   await page.route('**/api/system/notifications', route => route.fulfill({ json: { revision: 0, enabled: false, webhookConfigured: false, categories: ['game','node','backup','schedule','recovery'], recent: [] } }));
 });
 
@@ -218,7 +219,7 @@ test('system login theme follows OS changes, while light overrides a dark panel 
 test('global settings only edits appearance and preserves Local allocations', async ({ page }) => {
   const state = await mock(page);
   await page.goto('/test/settings.fixture.html');
-  await expect(page.locator('aside nav button')).toHaveText([
+  await expect(page.locator('aside nav a')).toHaveText([
     'Game Servers',
     'User Administration',
     'Nodes',
@@ -226,7 +227,7 @@ test('global settings only edits appearance and preserves Local allocations', as
     'Panel Settings',
     'Host Status',
   ]);
-  await expect(page.getByRole('button', { name: 'Panel Settings', exact: true })).toHaveAttribute(
+  await expect(page.getByRole('link', { name: 'Panel Settings', exact: true })).toHaveAttribute(
     'aria-current',
     'page'
   );
@@ -245,8 +246,8 @@ test('global settings only edits appearance and preserves Local allocations', as
   const revision = page.getByTestId('panel-revision');
   await expect(footerName).toBeVisible();
   await expect(revision).toHaveText(formatDisplayVersion(packageInfo.version));
-  const upstream = page.getByRole('link', { name: 'Based on OVHcloud Game Panel' });
-  await expect(upstream).toHaveAttribute('href', 'https://github.com/ovh/game-panel');
+  const upstream = page.getByRole('link', { name: 'GitHub', exact: true });
+  await expect(upstream).toHaveAttribute('href', 'https://github.com/Skoczi/game-panel-skoczi');
   await expect(upstream).toHaveAttribute('rel', 'noopener noreferrer');
   await expect(revision.locator('..')).toHaveAttribute(
     'title',
@@ -273,6 +274,7 @@ test('node allocation editor saves only the selected node, not panel appearance'
   await page.goto('/test/settings.fixture.html?node=local');
   await expect(page.getByLabel('Show Follow Us')).toHaveCount(0);
   await expect(page.getByRole('button', { name: 'Remove 192.0.2.10' })).toBeDisabled();
+  await page.getByRole('button', { name: 'Add allocation', exact: true }).click();
   await page.getByLabel('IP address', { exact: true }).fill('192.0.2.11');
   await page.getByLabel('Alias (optional)').fill('Second address');
   await page.getByLabel('TCP ports', { exact: true }).fill('28015-28020');
@@ -327,11 +329,11 @@ test('conflicting save preserves edits and offers reload', async ({ page }) => {
 test('non-root menu has no global Settings entry', async ({ page }) => {
   await mock(page);
   await page.goto('/test/settings.fixture.html?nonroot');
-  await expect(page.getByRole('button', { name: 'Panel Settings', exact: true })).toHaveCount(0);
+  await expect(page.getByRole('link', { name: 'Panel Settings', exact: true })).toHaveCount(0);
   await expect(page.getByTestId('panel-revision')).toHaveText(
     formatDisplayVersion(packageInfo.version)
   );
-  await expect(page.getByRole('link', { name: 'Based on OVHcloud Game Panel' })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'GitHub', exact: true })).toBeVisible();
 });
 
 test('settings stays within a narrow viewport', async ({ page }) => {

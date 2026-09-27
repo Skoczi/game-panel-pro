@@ -77,13 +77,13 @@ test('global scope defaults to All, filters by identity and survives changing pa
   await choose(page, 'WAW2');
   await expect(page.getByText('Arena 1', { exact: true })).toHaveCount(0);
   await expect(page.getByText('Arena 2', { exact: true })).toBeVisible();
-  await page.getByRole('button', { name: /Host Status$/ }).click();
+  await page.getByRole('link', { name: /Host Status$/ }).click();
   await expect(page.getByRole('region', { name: 'WAW2 metrics' })).toContainText('33%');
   await expect(page.getByText('CPU History', { exact: true })).toBeVisible();
-  await page.getByRole('button', { name: 'Panel Settings', exact: true }).click();
+  await page.getByRole('link', { name: 'Panel Settings', exact: true }).click();
   await expect(page.getByRole('combobox', { name: 'Node scope WAW2' })).toBeVisible();
   await choose(page, 'All nodes');
-  await page.getByRole('button', { name: /Game Servers$/ }).click();
+  await page.getByRole('link', { name: /Game Servers$/ }).click();
   await expect(page.getByText('Arena 1', { exact: true })).toBeVisible();
   expect(await page.evaluate(() => sessionStorage.getItem('gamepanel_active_node'))).toBeNull();
   expect(await page.evaluate(() => sessionStorage.getItem('gamepanel_admin_runtime'))).toBeNull();
@@ -93,7 +93,7 @@ test('All hosts have isolated metrics; details replace streams and ignore old ca
 }) => {
   await page.setViewportSize({ width: 1440, height: 1000 });
   await page.goto('/test/node-scope.fixture.html');
-  await page.getByRole('button', { name: /Host Status$/ }).click();
+  await page.getByRole('link', { name: /Host Status$/ }).click();
   await expect(page.getByRole('region', { name: 'FR1 metrics' })).toContainText('11%');
   await expect(page.getByRole('region', { name: 'WAW1 metrics' })).toContainText('22%');
   await expect(page.getByRole('region', { name: 'WAW2 metrics' })).toContainText('33%');
@@ -130,7 +130,7 @@ test('broken or silent host never displays zero or cached metrics and can retry 
     });
   });
   await page.goto('/test/node-scope.fixture.html');
-  await page.getByRole('button', { name: /Host Status$/ }).click();
+  await page.getByRole('link', { name: /Host Status$/ }).click();
   const unavailable = page.getByRole('region', { name: 'WAW2 metrics' });
   await expect(unavailable).toContainText('Loading host metrics');
   await expect(unavailable.getByText('0%', { exact: true })).toHaveCount(0);
@@ -154,4 +154,14 @@ test('ordinary users do not get the infrastructure selector or node registry', a
   await expect(page.getByText('Arena 1', { exact: true })).toBeVisible();
   await expect(page.getByRole('combobox', { name: /^Node scope/ })).toHaveCount(0);
   expect(requests).toBe(0);
+});
+
+
+test('operational checks belong to Host Status rather than Game Servers', async ({ page }) => {
+  await page.goto('/test/node-scope.fixture.html');
+  await expect(page.getByRole('region', { name: 'Operational health' })).toHaveCount(0);
+  await page.getByRole('link', { name: /Host Status$/ }).click();
+  await expect(page.getByRole('region', { name: 'Operational health' })).toBeVisible();
+  await page.getByRole('link', { name: /Game Servers$/ }).click();
+  await expect(page.getByRole('region', { name: 'Operational health' })).toHaveCount(0);
 });

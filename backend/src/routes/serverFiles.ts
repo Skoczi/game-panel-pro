@@ -152,6 +152,7 @@ router.post(
                 return res.status(409).json({ error: 'Server identity unavailable' });
 
             const { token, expiresInMs } = createDownloadToken({
+                sessionId: req.user!.sessionId,
                 serverId,
                 userId: req.user?.userId ?? 0,
                 tokenVersion: req.user!.tokenVersion,

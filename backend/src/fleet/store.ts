@@ -59,9 +59,32 @@ export class FleetStore {
                 INSERT INTO fleet_server_numbers(server_id)
                     SELECT NEW.id WHERE NOT EXISTS
                     (SELECT 1 FROM fleet_server_numbers WHERE server_id=NEW.id);
-            END;`);
+            END;
+        CREATE TABLE IF NOT EXISTS fleet_identity_reservations (
+            node_id TEXT NOT NULL, runtime_key TEXT NOT NULL, fleet_id TEXT NOT NULL UNIQUE,
+            PRIMARY KEY(node_id,runtime_key)
+        );
+        CREATE TRIGGER IF NOT EXISTS fleet_reserve_server_number
+            AFTER INSERT ON fleet_identity_reservations BEGIN
+                INSERT INTO fleet_server_numbers(server_id)
+                    SELECT NEW.fleet_id WHERE NOT EXISTS
+                    (SELECT 1 FROM fleet_server_numbers WHERE server_id=NEW.fleet_id);
+            END;
+        INSERT INTO sqlite_sequence(name,seq) SELECT 'fleet_server_numbers',100
+            WHERE NOT EXISTS (SELECT 1 FROM sqlite_sequence WHERE name='fleet_server_numbers');
+        UPDATE sqlite_sequence SET seq=MAX(seq,100) WHERE name='fleet_server_numbers';`);
     }
-    async observe(node: string, inventory: InventoryItem[], requireEnabledNode = false) {
+    async reserve(node: string, runtimeKey: string): Promise<{ id: number; runtimeKey: string }> {
+        if ((node !== 'local' && !/^[a-f0-9-]{36}$/.test(node)) || !/^[a-f0-9]{32}$/.test(runtimeKey))
+            throw new Error('Invalid server identity reservation');
+        await this.db.run(`INSERT INTO fleet_identity_reservations(node_id,runtime_key,fleet_id)
+            VALUES(?,?,?) ON CONFLICT(node_id,runtime_key) DO NOTHING`, node, runtimeKey, randomUUID());
+        const result = await this.db.get<{ number: number }>(`SELECT n.number FROM fleet_identity_reservations r
+            JOIN fleet_server_numbers n ON n.server_id=r.fleet_id WHERE r.node_id=? AND r.runtime_key=?`, node, runtimeKey);
+        if (!result) throw new Error('Central server identity unavailable');
+        return { id: result.number, runtimeKey };
+    }
+    async observe(node: string, inventory: InventoryItem[], requireEnabledNode = false, completeSnapshot = true) {
         // Validate the complete snapshot before changing any state; a failed/partial read never marks servers missing.
         if (
             !Array.isArray(inventory) ||
@@ -85,6 +108,14 @@ export class FleetStore {
         )
             throw new Error('Invalid node inventory');
         const now = Date.now();
+        const reservations = await this.db.all<{ runtime_key: string; fleet_id: string; number: number }[]>(
+            `SELECT r.runtime_key,r.fleet_id,n.number FROM fleet_identity_reservations r
+             JOIN fleet_server_numbers n ON n.server_id=r.fleet_id WHERE r.node_id=?`, node);
+        const reserved = new Map(reservations.map(r => [r.runtime_key, r]));
+        for (const s of inventory) {
+            if (reserved.has(s.runtimeKey) && reserved.get(s.runtimeKey)!.number !== s.id)
+                throw new Error('Runtime ID differs from central reservation');
+        }
         for (const s of inventory)
             await this.db.run(
                 `INSERT INTO fleet_servers
@@ -92,7 +123,7 @@ export class FleetStore {
             SELECT ?,?,?,?,?,?,?,?,? WHERE ${requireEnabledNode ? 'EXISTS (SELECT 1 FROM execution_nodes WHERE id=? AND enabled=1)' : '1'}
             ON CONFLICT(node_id,runtime_key) DO UPDATE SET runtime_id=excluded.runtime_id,name=excluded.name,provider=excluded.provider,
             status=excluded.status,observed_at=excluded.observed_at,missing=0,catalog_id=excluded.catalog_id`,
-                randomUUID(),
+                reserved.get(s.runtimeKey)?.fleet_id ?? randomUUID(),
                 node,
                 s.id,
                 s.runtimeKey,
@@ -104,7 +135,7 @@ export class FleetStore {
                 ...(requireEnabledNode ? [node] : []),
             );
         const ids = new Set(inventory.map((s) => s.runtimeKey));
-        for (const row of await this.list())
+        if (completeSnapshot) for (const row of await this.list())
             if (row.node_id === node && !ids.has(row.runtime_key))
                 await this.db.run('UPDATE fleet_servers SET missing=1 WHERE id=?', row.id);
     }

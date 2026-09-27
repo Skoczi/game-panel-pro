@@ -292,9 +292,7 @@ export function CS2FrameworksSection({
         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
           <div className="space-y-1.5 min-w-0">
             <h4 className={`text-sm font-semibold ${textPrimary}`}>MetaMod:Source</h4>
-            <p className={`text-xs ${textSecondary}`}>
-              A widely used plugin framework that provides the foundation for loading and managing server extensions on Counter-Strike 2 servers.
-            </p>
+            <p className={`text-xs ${textSecondary}`}>Plugin loader for Counter-Strike 2.</p>
             <div className="flex flex-wrap gap-1.5 pt-0.5">
               <StatusBadge label="Installed" active={status?.metamodInstalled ?? false} />
             </div>
@@ -340,9 +338,7 @@ export function CS2FrameworksSection({
         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
           <div className="space-y-1.5 min-w-0">
             <h4 className={`text-sm font-semibold ${textPrimary}`}>CounterStrikeSharp</h4>
-            <p className={`text-xs ${textSecondary}`}>
-              A modern plugin framework that enables the development and execution of custom Counter-Strike 2 server plugins using C# and .NET.
-            </p>
+            <p className={`text-xs ${textSecondary}`}>C# / .NET plugins for Counter-Strike 2.</p>
             <div className="flex flex-wrap gap-1.5 pt-0.5">
               <StatusBadge label="Installed" active={status?.counterStrikeSharpInstalled ?? false} />
             </div>

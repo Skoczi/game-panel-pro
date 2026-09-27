@@ -1,4 +1,5 @@
 import { normalizeRehldsStartup } from '../../backend/src/templates/rehldsStartup';
+import { TemplateSharedMount } from './TemplateSharedMount';
 import { TemplateIconEditor } from './TemplateIconEditor';
 import { TemplateGameConfigEditor } from './TemplateGameConfigEditor';
 import { TemplateMonitoringEditor } from './TemplateMonitoringEditor';
@@ -564,7 +565,7 @@ export function GameTemplates() {
                 </div>
                 <p className="text-sm text-slate-500">
                   {draft.schemaVersion === 2
-                    ? 'Installation and startup use the commands in Lifecycle. The node must have the reviewed image loaded locally; its exact image ID is pinned at installation.'
+                    ? 'Uses Lifecycle commands. The image must exist on the node and is pinned at installation.'
                     : 'Installation, start and stop use the selected provider/image. Use the Lifecycle tab to create a native recipe instead.'}
                 </p>
               </>
@@ -575,10 +576,7 @@ export function GameTemplates() {
             {tab === 'lifecycle' && <NativeLifecycleEditor draft={draft} change={change} />}
             {tab === 'network' && (
               <>
-                <p className="text-sm text-slate-500">
-                  One row per container port/protocol. IP addresses belong to nodes, not templates.
-                  Labels can combine roles such as Game / Query / RCON.
-                </p>
+                <p className="text-sm text-slate-500">One row per port and protocol. Assign IPs in node settings.</p>
                 {draft.ports.map((p, i) => {
                   const patch = (v: Partial<typeof p>) =>
                     change({ ports: draft.ports.map((x, n) => (n === i ? { ...x, ...v } : x)) });
@@ -744,10 +742,6 @@ export function GameTemplates() {
             )}
             {tab === 'storage' && (
               <>
-                <p className="text-sm text-slate-500">
-                  Named server-owned directories only. No host paths or Docker socket mounts. OVH
-                  adapters may supply their own required mounts.
-                </p>
                 {draft.mounts.map((m, i) => (
                   <div key={i} className="grid gap-4 md:grid-cols-3">
                     <Field
@@ -776,6 +770,7 @@ export function GameTemplates() {
                     >
                       Remove directory
                     </button>
+                    {m.shared && <div className="rounded-xl border border-cyan-500/20 bg-cyan-500/5 p-3 text-sm md:col-span-3"><span className="font-medium text-cyan-500">Shared · Read only</span><p className="mt-1 break-all">{m.shared.package} / {m.shared.path}</p><code className="mt-1 block break-all text-xs text-slate-500">SHA256 {m.shared.sha256}</code></div>}
                   </div>
                 ))}
                 <button
@@ -791,14 +786,12 @@ export function GameTemplates() {
                 >
                   Add directory
                 </button>
+                {draft.schemaVersion === 2 && <TemplateSharedMount mounts={draft.mounts} onChange={mounts=>change({mounts})} />}
               </>
             )}
             {tab === 'versions' && (
               <>
-                <p className="text-sm text-slate-500">
-                  Select a version to inspect its definition. Older published versions remain
-                  available until disabled.
-                </p>
+                <p className="text-sm text-slate-500">Published versions remain available until disabled.</p>
                 {rows
                   .filter((r) => r.id === selected?.id)
                   .map((r) => (
@@ -874,10 +867,7 @@ export function GameTemplates() {
             )}
             {tab === 'json' && (
               <>
-                <p className="text-sm text-slate-500">
-                  Game Templates schema v1/v2. Imported documents are validated and saved as drafts.
-                  Do not put infrastructure addresses or credentials in descriptions/default values.
-                </p>
+                <p className="text-sm text-slate-500">Imports create drafts. Keep credentials out of template defaults.</p>
                 <textarea
                   aria-label="Template JSON"
                   className={`${input} font-mono text-xs`}
@@ -977,14 +967,9 @@ export function GameTemplates() {
               ))}
           </div>
           {!busy && !latest.length && (
-            <p className={card}>
-              No templates yet. Create a definition or import a reviewed JSON document.
-            </p>
+            <p className={card}>No templates yet.</p>
           )}
-          <p className="text-sm text-slate-500">
-            Legacy installation remains available. Adding or publishing templates does not migrate
-            existing servers.
-          </p>
+
         </>
       )}
     </section>
@@ -1007,8 +992,8 @@ export function TemplateInstall({ row, onClose, fixedNodeId, initialNodeId, onIn
   const [portValidation, setPortValidation] = useState({ signature: '', valid: false });
   const [variables, setVariables] = useState<Record<string, string>>({});
   const [name, setName] = useState(row.document.name);
-  const [memory, setMemory] = useState('1024');
-  const [cpu, setCpu] = useState('1');
+  const [memory, setMemory] = useState(row.document.runtime.catalogId === 'cs2' ? '8192' : row.document.runtime.catalogId === 'csgo' ? '4096' : row.document.runtime.catalogId === 'hltv' ? '256' : '1024');
+  const [cpu, setCpu] = useState(['cs2','csgo'].includes(row.document.runtime.catalogId) ? '2' : '1');
   const [cpuSet, setCpuSet] = useState<number[]>([]);
   useEffect(() => { setCpuSet([]); }, [nodeId]);
   const [busy, setBusy] = useState(false);
@@ -1108,7 +1093,7 @@ export function TemplateInstall({ row, onClose, fixedNodeId, initialNodeId, onIn
         nativeRuntimeProtocol?: number;
         templateScriptsProtocol?: number;
         nativeSettingsProtocol?: number;
-        capabilities?: {fastDownload?:number;gameMonitoring?:number;templateIcons?:number;gameConfigEditor?:number};
+        capabilities?: {sharedFiles?:number;templateLinkedPorts?:number;fastDownload?:number;gameMonitoring?:number;templateIcons?:number;gameConfigEditor?:number};
       }>(`${base}/api/health`);
       if (health.templatesProtocol !== 1)
         throw new Error(
@@ -1122,6 +1107,8 @@ export function TemplateInstall({ row, onClose, fixedNodeId, initialNodeId, onIn
       if(row.document.icon && health.capabilities?.templateIcons !== 1) throw new Error('Update this node to support template game icons. No installation was sent.');
       if(row.document.monitoring && health.capabilities?.gameMonitoring !== 1) throw new Error('Update this node to support game monitoring templates.');
       if(row.document.fastDownload?.enabled && health.capabilities?.fastDownload !== 1) throw new Error('Update this node to support FastDownload templates.');
+      if(row.document.mounts.some(m => m.shared) && health.capabilities?.sharedFiles !== 1) throw new Error('Update this node to support shared packages.');
+      if(row.document.ports.some(p => p.sameAs) && health.capabilities?.templateLinkedPorts !== 1) throw new Error('Update this node to support shared Game/RCON ports.');
       const lifecycle = row.document.lifecycle;
       if (row.document.configFiles !== undefined && health.nativeSettingsProtocol !== 1)
         throw new Error('This node needs the native settings update before using template configuration links. No installation was sent.');
@@ -1210,7 +1197,7 @@ export function TemplateInstall({ row, onClose, fixedNodeId, initialNodeId, onIn
         <fieldset disabled={busy || uncertain} className="space-y-5">
           <div>
             <Field label="Panel server name" value={name} onChange={setName} />
-            <p className="mt-1 text-xs text-slate-500">Name used to identify this server in the panel.</p>
+
           </div>
           <div className="grid gap-4 md:grid-cols-2">
             <Field
@@ -1282,10 +1269,7 @@ export function TemplateInstall({ row, onClose, fixedNodeId, initialNodeId, onIn
         </fieldset>
       {uncertain && (
         <div role="alert" className="space-y-3">
-          <p>
-            The response was not confirmed. Check this node’s server list before retrying to avoid
-            duplicate installations.
-          </p>
+          <p>Installation not confirmed. Check the server list before retrying.</p>
           <button className={button} onClick={() => selectNode(nodeId)}>
             Check node servers
           </button>

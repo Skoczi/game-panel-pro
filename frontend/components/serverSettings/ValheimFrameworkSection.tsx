@@ -159,10 +159,7 @@ export function ValheimFrameworkSection({
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
         <div className="space-y-1.5 min-w-0">
           <h4 className={`text-sm font-semibold ${textPrimary}`}>BepInEx</h4>
-          <p className={`text-xs ${textSecondary}`}>
-            The mod loader for Valheim. Installing BepInEx lets you load and manage mods that extend your server.
-            Mods usually have to be installed on the players’ clients too.
-          </p>
+          <p className={`text-xs ${textSecondary}`}>Mod loader for Valheim. Players may need the same mods.</p>
           <div className="flex flex-wrap gap-1.5 pt-0.5">
             <span
               className={`inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full ${
@@ -218,9 +215,7 @@ export function ValheimFrameworkSection({
       )}
       <LogOutput result={result} />
       {result?.ok && (
-        <p className={`mt-2 text-xs ${textSecondary}`}>
-          Start the server to load the mod loader — the panel does not restart it for you.
-        </p>
+        <p className={`mt-2 text-xs ${textSecondary}`}>Start the server to load mods.</p>
       )}
     </div>
   );

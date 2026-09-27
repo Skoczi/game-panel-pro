@@ -1,3 +1,7 @@
+import path from 'node:path';
+import { nativeServerTemplate } from './nativeBackups.js';
+import { readNativeBackupRecord } from './nativeProtection.js';
+import { resolveServerPath } from './fileExplorer.js';
 import { getServerOrThrow } from './servers.js';
 import { listServerFiles } from './fileExplorer.js';
 import { getBackupKind, getBackupFileLocation, listBackupDirectories, getBackupFilePair, getSupportedBackupExtensions } from './serverBackups.js';
@@ -35,6 +39,13 @@ export async function listServerBackups(serverId: number) {
         result.entries = result.entries.filter((e: any) => (
             e.type === 'file' && extensions.some((extension) => e.name.endsWith(extension))
         ));
+    }
+    if (nativeServerTemplate(server)) {
+        for (const entry of result.entries) {
+            const file = await resolveServerPath({ serverId, root: location.root, path: path.posix.join(location.basePath, entry.name) });
+            const record = await readNativeBackupRecord(file.absPath);
+            Object.assign(entry, { verification: record ? { mode: record.mode, createdAt: record.createdAt, validatedAt: record.validatedAt } : null });
+        }
     }
     result.path = '/';
 

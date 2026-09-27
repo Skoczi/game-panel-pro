@@ -68,7 +68,7 @@ test('upgrading .3 adds branding once without changing policies or prior switche
 });
 test('edition defaults do not overwrite existing branding or allocations', async () => {
     assert.equal(DEFAULT_APPEARANCE.siteSubtitle, 'Server management');
-    assert.match(DEFAULT_APPEARANCE.loginFooter, /Based on OVHcloud Game Panel/);
+    assert.match(DEFAULT_APPEARANCE.loginFooter, /Game Panel PRO/);
     const { native, db } = database();
     try {
         native.exec('CREATE TABLE panel_settings(id INTEGER PRIMARY KEY, revision INTEGER, settings_json TEXT)');

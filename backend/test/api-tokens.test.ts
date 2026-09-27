@@ -70,3 +70,20 @@ test('API scopes intersect fresh membership and do not grant root-like capabilit
         assert(!tokenAllows(token, server, 'backups.create', owner, token.expiresAt));
     } finally { db.close(); }
 });
+
+
+test('provisioning credentials persist explicit policy and grant only a confirmed created server', async () => {
+    const { db, store, input } = await fixture();
+    try {
+        const policy = { nodeIds: ['local'], templateIds: ['cs16'], maxServers: 3, maxCpu: 2, maxMemoryMb: 2048 };
+        const issued = await store.create(1, { ...input, serverIds: [], scopes: ['servers.read','servers.create','operations.read'], provisioning: policy });
+        assert.deepEqual((await store.authenticate(issued.secret))!.provisioning, policy);
+        await store.attachServer(issued.token.id, '11111111-1111-4111-8111-111111111111');
+        await store.attachServer(issued.token.id, '11111111-1111-4111-8111-111111111111');
+        assert.deepEqual((await store.authenticate(issued.secret))!.serverIds, ['11111111-1111-4111-8111-111111111111']);
+        await assert.rejects(store.create(1,{ ...input, scopes: ['servers.create'] }));
+        await assert.rejects(store.create(1,{ ...input, scopes: ['servers.create'], provisioning: { ...policy, maxServers: 0 } }));
+        db.prepare("UPDATE api_tokens SET provisioning='{}' WHERE id=?").run(issued.token.id);
+        assert.equal(await store.authenticate(issued.secret),null);
+    } finally { db.close(); }
+});

@@ -14,6 +14,7 @@ import '@ovhcloud/ods-themes/default/fonts';
 import '../src/ui/theme/ods-dark.css';
 import '../src/ui/theme/ods-light.css';
 import '../styles/globals.css';
+apiClient.setAuthToken('fixture-token');
 const admin = sessionStorage.getItem('test-admin') === '1';
 function SessionProbe() {
   const session = useAuthSession();

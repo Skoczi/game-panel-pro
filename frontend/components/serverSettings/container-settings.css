@@ -10,3 +10,8 @@
 .gp-settings-infrastructure>.gp-settings-card{min-width:0}
 .gp-settings-infrastructure .gp-settings-port{grid-template-columns:repeat(2,minmax(0,1fr))}
 .gp-settings-infrastructure .gp-settings-address,.gp-settings-infrastructure .gp-settings-port-name{grid-column:1/-1}
+
+.gp-settings .gp-app-select { width: 100%; min-width: 0; padding: 0; border: 0; background: transparent; }
+.gp-settings .gp-app-select-control[data-ods='select-control'] { min-height: 42px; border: 1px solid #334258; border-radius: 9px; background: #111e30; color: #edf2f8; font-size: 14px; box-shadow: none; }
+.gp-settings .gp-app-select-control[data-ods='select-control']:focus-visible { outline: 2px solid #22d3ee; outline-offset: 2px; }
+html:not(.dark) .gp-settings .gp-app-select-control[data-ods='select-control'] { background: #f7f9fc; border-color: #cbd5e1; color: #172436; }

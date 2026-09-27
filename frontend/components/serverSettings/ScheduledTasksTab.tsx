@@ -24,6 +24,7 @@ interface ScheduledTask {
   schedule: string;
   enabled: boolean;
   payload: {
+    maintenance?: { version: 1; update: boolean; saveCommand?: string; healthTimeoutSeconds: number };
     pre?: PrePostStep[];
     post?: PrePostStep[];
     cleanup?: PrePostStep[];
@@ -41,6 +42,9 @@ interface ScheduledTask {
 }
 
 interface TaskForm {
+  maintenance: boolean;
+  updateGame: boolean;
+  saveCommand: string;
   type: 'restart' | 'backup' | 'custom' | 'game_command';
   schedule: string;
   enabled: boolean;
@@ -53,6 +57,7 @@ interface TaskForm {
 }
 
 const DEFAULT_FORM: TaskForm = {
+  maintenance: false, updateGame: false, saveCommand: '',
   type: 'restart',
   schedule: '0 5 * * *',
   enabled: true,
@@ -111,6 +116,7 @@ function formatRelative(iso: string | null): string {
 
 function taskFormToPayload(form: TaskForm, showPrePost: boolean, showIncludeServerArtifact: boolean): Record<string, unknown> {
   const base: Record<string, unknown> = {};
+  if (form.type === 'restart' && form.maintenance) return { maintenance: { version: 1, update: form.updateGame, healthTimeoutSeconds: 120, ...(form.saveCommand.trim() ? { saveCommand: form.saveCommand.trim() } : {}) } };
   if (showPrePost) {
     if (form.pre.length) base.pre = form.pre;
     if (form.post.length) base.post = form.post;
@@ -126,6 +132,7 @@ function taskFormToPayload(form: TaskForm, showPrePost: boolean, showIncludeServ
 
 function taskToForm(task: ScheduledTask): TaskForm {
   return {
+    maintenance: Boolean(task.payload.maintenance), updateGame: task.payload.maintenance?.update || false, saveCommand: task.payload.maintenance?.saveCommand || '',
     type: task.type,
     schedule: task.schedule,
     enabled: task.enabled,
@@ -306,6 +313,8 @@ interface ScheduledTasksTabProps {
   serverGame?: string;
   canRead: boolean;
   canWrite: boolean;
+  permissions?: string[];
+  administrator?: boolean;
   contentBg: string;
   borderColor: string;
   textPrimary: string;
@@ -322,6 +331,8 @@ export function ScheduledTasksTab({
   serverGame = '',
   canRead,
   canWrite,
+  permissions = [],
+  administrator = false,
   contentBg,
   borderColor,
   textPrimary,
@@ -333,12 +344,26 @@ export function ScheduledTasksTab({
   const formId = useId();
   const [togglingId, setTogglingId] = useState<number | null>(null);
   const isExternal = serverProvider === 'external';
-  const showPrePost = !isExternal;
+  const allowed = (permission: string) => administrator || permissions.includes('*') || permissions.includes(permission);
+  const canShell = allowed('container.terminal');
+  const canCommand = allowed('server.command.send');
+  const canPower = allowed('server.power');
+  const canBackup = allowed('backups.create');
+  const canEditTask = (task: ScheduledTask) => canWrite
+    && (task.type !== 'custom' || canShell)
+    && (task.type !== 'game_command' || canCommand)
+    && (task.type !== 'restart' || canPower)
+    && (task.type !== 'backup' || canBackup)
+    && (!task.payload.maintenance || (canBackup && (!task.payload.maintenance.update || administrator) && (!task.payload.maintenance.saveCommand || canCommand)))
+    && (canCommand || ![task.payload.pre, task.payload.post, task.payload.cleanup].some(steps => steps?.some(step => step.type === 'game_command')));
+  const showPrePost = !isExternal && canCommand;
   const showIncludeServerArtifact =
     serverProvider === 'ovhcloud' &&
     serverBackupSupported &&
     serverGame.toLowerCase().includes('minecraft');
 
+  const [workflowSupported, setWorkflowSupported] = useState(false);
+  const [maintenanceRuns, setMaintenanceRuns] = useState<NonNullable<Awaited<ReturnType<typeof apiClient.getScheduledTasks>>['maintenanceRuns']>>([]);
   const [tasks, setTasks] = useState<ScheduledTask[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -362,6 +387,8 @@ export function ScheduledTasksTab({
     try {
       const res = await apiClient.getScheduledTasks(serverId);
       if (sequence !== loadSequence.current) return;
+      setWorkflowSupported(Boolean(res.maintenanceWorkflow));
+      setMaintenanceRuns(res.maintenanceRuns || []);
       setTasks((res.tasks ?? []) as ScheduledTask[]);
       setError(null);
     } catch (err: any) {
@@ -393,13 +420,15 @@ export function ScheduledTasksTab({
   }, [load]);
 
   const openNew = () => {
-    const defaultType = 'restart';
+    const defaultType = availableTypes[0]?.value;
+    if (!defaultType) return;
     setForm({ ...DEFAULT_FORM, type: defaultType });
     setFormError(null);
     setEditingId(-1);
   };
 
   const openEdit = (task: ScheduledTask) => {
+    if (!canEditTask(task)) return;
     setForm(taskToForm(task));
     setFormError(null);
     setEditingId(task.id);
@@ -462,7 +491,7 @@ export function ScheduledTasksTab({
   };
 
   const handleToggleEnabled = async (task: ScheduledTask) => {
-    if (!serverId || !canWrite || togglingId !== null) return;
+    if (!serverId || !canEditTask(task) || togglingId !== null) return;
     setTogglingId(task.id);
     setError(null);
     try {
@@ -476,10 +505,10 @@ export function ScheduledTasksTab({
   const inputCls = `w-full rounded-lg bg-white dark:bg-[#0f1723]/60 border ${inputBorder} ${textPrimary} text-sm px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[var(--gp-ods-accent-primary)] focus:border-transparent transition-all`;
 
   const availableTypes: Array<{ value: TaskForm['type']; label: string }> = [
-    { value: 'restart', label: 'Restart' },
-    ...(serverBackupSupported ? [{ value: 'backup' as const, label: 'Backup' }] : []),
-    ...(!isExternal ? [{ value: 'game_command' as const, label: 'Game console command' }] : []),
-    { value: 'custom', label: 'Container shell command' },
+    ...(canPower ? [{ value: 'restart' as const, label: 'Restart' }] : []),
+    ...(serverBackupSupported && canBackup ? [{ value: 'backup' as const, label: 'Backup' }] : []),
+    ...(!isExternal && canCommand ? [{ value: 'game_command' as const, label: 'Game console command' }] : []),
+    ...(canShell ? [{ value: 'custom' as const, label: 'Container shell command' }] : []),
   ];
 
   return (
@@ -508,7 +537,7 @@ export function ScheduledTasksTab({
             >
               <RefreshCw className="w-4 h-4" />
             </AppButton>
-            {canWrite && (
+            {canWrite && availableTypes.length > 0 && (
               <AppButton
                 tone={editingId === null ? "primary" : "neutral"}
                 disabled={saving}
@@ -579,6 +608,15 @@ export function ScheduledTasksTab({
               />
             </div>
 
+            {form.type === 'restart' && workflowSupported && canBackup && (isExternal || serverProvider === 'native') && serverBackupSupported && <div className="space-y-3 rounded border p-3">
+              <label className="flex items-center gap-2"><input type="checkbox" checked={form.maintenance} onChange={e => setF('maintenance', e.target.checked)} />Maintenance workflow</label>
+              {form.maintenance && <>
+                <p className="text-sm">Save command (optional) → stop → verified backup → update (optional) → start → A2S health check. Requires game query monitoring. Failure stops the game and disables this schedule; review the backup before retrying.</p>
+                <label className="block">Optional game save command<AppInput aria-label="Optional game save command" disabled={!canCommand} value={form.saveCommand} onChange={e => setF('saveCommand', e.target.value)} /></label>
+                <label className="flex items-center gap-2"><input type="checkbox" disabled={!administrator} checked={form.updateGame} onChange={e => setF('updateGame', e.target.checked)} />Run the template update recipe</label>
+                <p className="text-sm">The health check waits up to 120 seconds. Existing separate pre/post/cleanup steps are not used by this workflow.</p>
+              </>}
+            </div>}
             {form.type === 'backup' && showIncludeServerArtifact && (
               <div className={`flex items-center justify-between p-3 rounded-lg border ${borderColor} bg-gray-50 dark:bg-gray-900/30`}>
                 <div>
@@ -627,9 +665,9 @@ export function ScheduledTasksTab({
               </div>
             )}
 
-            {showPrePost && (
+            {showPrePost && !(form.type === 'restart' && form.maintenance) && (
               <div className="space-y-5">
-                <p className={`text-xs ${textSecondary}`}>Pre, post and cleanup commands run in the game console. Use any command supported by your game.</p>
+                <p className={`text-xs ${textSecondary}`}>Commands run in the game console.</p>
                 <StepsEditor
                   label="Pre-commands"
                   steps={form.pre}
@@ -647,7 +685,7 @@ export function ScheduledTasksTab({
                   borderColor={borderColor}
                 />
                 <StepsEditor label="Cleanup (also after failure)" steps={form.cleanup} onChange={(v) => setF('cleanup', v)} textPrimary={textPrimary} textSecondary={textSecondary} borderColor={borderColor} />
-                <p className={`text-xs ${textSecondary}`}>Use cleanup to re-enable saving after a live backup. Cleanup runs after errors while the agent remains available.</p>
+                <p className={`text-xs ${textSecondary}`}>Cleanup also runs after errors while the agent is available.</p>
               </div>
             )}
 
@@ -685,7 +723,7 @@ export function ScheduledTasksTab({
           <div className={`${contentBg} border ${borderColor} rounded-lg p-8 flex flex-col items-center gap-3`}>
             <Clock className="w-8 h-8 text-gray-400" />
             <p className={`text-sm ${textSecondary}`}>No scheduled tasks yet.</p>
-            {canWrite && editingId === null && (
+            {canWrite && availableTypes.length > 0 && editingId === null && (
               <AppButton
                 tone="neutral"
                 onClick={openNew}
@@ -708,7 +746,7 @@ export function ScheduledTasksTab({
                 >
                   <div className="flex flex-col gap-1.5 min-w-0 flex-1">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <TypeBadge type={task.type} />
+                      <TypeBadge type={task.type} />{task.payload.maintenance && <span className="text-xs">Maintenance workflow</span>}
                       <span className={`text-xs ${textSecondary}`}>{desc}</span>
                     </div>
                     <div className="flex items-center gap-4 flex-wrap">
@@ -725,6 +763,7 @@ export function ScheduledTasksTab({
                       )}
                     </div>
                     {task.enabled && task.nextRuns && <details className={`text-xs ${textSecondary}`}><summary>Next 3 runs · {task.timeZone}</summary>{task.nextRuns.map(date => <div key={date}>{new Date(date).toLocaleString(undefined, { timeZone: task.timeZone, timeZoneName: 'short' })}</div>)}</details>}
+                    {maintenanceRuns.filter(run => run.taskId === task.id).map(run => <details key={run.taskId} className="text-sm"><summary>Workflow steps · {run.status}</summary><ol className="list-decimal pl-5">{run.steps.map(step => <li key={step.name} className="break-words">{step.name}: {step.status}{step.detail && <p className="text-xs break-all">{step.detail}</p>}</li>)}</ol>{run.backup && <p className="break-all">Rollback backup: {run.backup}</p>}</details>)}
                     {!task.lockedAt && ['failed', 'interrupted'].includes(task.lastStatus || '') && task.lastError && (
                       <p className="text-xs text-red-400 truncate">{task.lastError}</p>
                     )}
@@ -734,7 +773,7 @@ export function ScheduledTasksTab({
                     <AppToggle
                       ariaLabel="Task enabled"
                       checked={task.enabled}
-                      disabled={!canWrite || togglingId !== null || !!task.lockedAt}
+                      disabled={!canEditTask(task) || togglingId !== null || !!task.lockedAt}
                       size="standard"
                       onChange={() => handleToggleEnabled(task)}
                     />
@@ -743,7 +782,7 @@ export function ScheduledTasksTab({
                         <AppButton
                           tone="ghost"
                           aria-label={`Edit ${task.type} task`}
-                          disabled={!!task.lockedAt}
+                          disabled={!!task.lockedAt || !canEditTask(task)}
                           onClick={() => editingId === task.id ? closeForm() : openEdit(task)}
                           className={`p-2 rounded ${textSecondary} hover:text-[var(--gp-ods-accent-primary)] hover:bg-gray-100 dark:hover:bg-white/10`}
                         >

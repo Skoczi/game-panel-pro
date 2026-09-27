@@ -17,6 +17,7 @@ import {
   SortableContext,
   useSortable,
   rectSortingStrategy,
+  verticalListSortingStrategy,
   sortableKeyboardCoordinates,
   arrayMove,
 } from '@dnd-kit/sortable';
@@ -25,6 +26,7 @@ import {
   defaultFleetLayout,
   readFleetLayout,
   fleetLayoutKey,
+  compareFleetAddresses,
   fleetGame,
   type FleetLayout,
 } from '../utils/fleetLayout';
@@ -67,6 +69,7 @@ import {
 } from '../utils/fleetRuntime';
 
 type FleetServer = {
+  runtimeId?: number;
   displayId?: string;
   id: string;
   name: string;
@@ -230,6 +233,11 @@ export function FleetWorkspace({
   );
   const ranks = new Map(layout.order.map((id, index) => [id, index]));
   const ordered = [...servers].sort((a, b) => {
+    if (layout.sort === 'address') {
+      const left = runtimes[a.id]?.address, right = runtimes[b.id]?.address;
+      if (!left || !right) return compareFleetAddresses(left, right) || a.id.localeCompare(b.id);
+      return (compareFleetAddresses(left, right) || a.id.localeCompare(b.id)) * (layout.direction === 'desc' ? -1 : 1);
+    }
     if (layout.sort === 'custom')
       return (
         (ranks.get(a.id) ?? Infinity) - (ranks.get(b.id) ?? Infinity) ||
@@ -250,7 +258,7 @@ export function FleetWorkspace({
         a.id.localeCompare(b.id)) * (layout.direction === 'desc' ? -1 : 1)
     );
   });
-  const sortHeader = (sort: 'name' | 'type' | 'status', label: string) => (
+  const sortHeader = (sort: 'address' | 'name' | 'type' | 'status', label: string) => (
     <th
       aria-sort={
         layout.sort === sort ? (layout.direction === 'desc' ? 'descending' : 'ascending') : 'none'
@@ -306,12 +314,12 @@ export function FleetWorkspace({
           .map(([key, label]) => [label, filtered.filter((s) => game(s).key === key)] as const)
           .filter(([, items]) => items.length);
   const reorder = ({ active, over }: DragEndEvent) => {
-    if (!over || active.id === over.id || layout.sort !== 'custom') return;
+    if (!over || active.id === over.id) return;
     const from = filtered.find((s) => s.id === active.id),
       to = filtered.find((s) => s.id === over.id);
     if (!from || !to || (layout.group === 'type' && game(from).key !== game(to).key)) return;
     const ids = ordered.map((s) => s.id);
-    changeLayout({ ...layout, order: arrayMove(ids, ids.indexOf(from.id), ids.indexOf(to.id)) });
+    changeLayout({ ...layout, sort: 'custom', direction: 'asc', order: arrayMove(ids, ids.indexOf(from.id), ids.indexOf(to.id)) });
   };
   if (installOpen && administrator) return <Suspense fallback={<p role="status">Loading games…</p>}>
     <FleetInstaller initialNodeId={scope === 'all' ? undefined : scope} onClose={() => { setInstallOpen(false); void load(); }} />
@@ -334,7 +342,9 @@ export function FleetWorkspace({
             }
           />
           <button
-            className={button}
+            className={`${button} fleet-refresh`}
+            aria-label="Refresh"
+            title="Refresh"
             disabled={busy}
             onClick={() =>
               void run(async () => {
@@ -344,12 +354,12 @@ export function FleetWorkspace({
             }
           >
             <RefreshCw size={16} />
-            Refresh
+            <span className="fleet-mobile-action-label">Refresh</span>
           </button>
           {administrator && (
-            <button className={`${button} gp-fleet-primary`} onClick={() => setInstallOpen(true)}>
+            <button className={`${button} gp-fleet-primary`} aria-label="Add Game Server" onClick={() => setInstallOpen(true)}>
               <Plus size={16} />
-              Add Game Server
+              <span className="fleet-add-desktop-label">Add Game Server</span><span className="fleet-add-mobile-label">Add server</span>
             </button>
           )}
         </div>
@@ -417,6 +427,7 @@ export function FleetWorkspace({
             changeLayout({ ...layout, sort: sort as FleetLayout['sort'], direction: 'asc' })
           }
           options={[
+            { value: 'address', label: 'IP:Port' },
             { value: 'custom', label: 'My order' },
             { value: 'name', label: 'Name A–Z' },
             { value: 'type', label: 'Game / type' },
@@ -454,6 +465,23 @@ export function FleetWorkspace({
           {error}
         </p>
       )}
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragEnd={reorder}
+            accessibility={{
+              announcements: {
+                onDragStart: ({ active }) =>
+                  `Picked up ${servers.find((s) => s.id === active.id)?.name || 'server'}.`,
+                onDragOver: ({ over }) =>
+                  over
+                    ? `Over server ${servers.find((s) => s.id === over.id)?.name || ''}.`
+                    : 'Outside a reorder target.',
+                onDragEnd: () => 'Reordering finished.',
+                onDragCancel: () => 'Reordering cancelled.',
+              },
+            }}
+          >
       {loading ? (
         <p role="status" className="gp-fleet-empty">
           Loading your servers…
@@ -485,22 +513,22 @@ export function FleetWorkspace({
                   <thead>
                     <tr>
                       {sortHeader('name', 'Server name')}
-                      <th>Server IP</th>
+                      {sortHeader('address', 'Server IP')}
                       {sortHeader('status', 'Server status')}
                       <th>Server metrics</th>
                       <th>Power</th>
                       <th>Management</th>
                     </tr>
                   </thead>
+                  <SortableContext items={items.map((s) => s.id)} strategy={verticalListSortingStrategy}>
                   <tbody>
                     {items.map((server) => (
-                      <tr key={server.id}>
-                        <td>
+                      <SortableRow key={server.id} server={server} nameContent={
                           <div className="gp-list-server-name">
                             <GameIcon game={game(server).label} icon={runtimes[server.id]?.server.gameIcon} />
                             {serverName(server)}
                           </div>
-                        </td>
+                        }>
                         <td>{connection(server)}</td>
                         <td>
                           <ServerListStatus
@@ -519,9 +547,10 @@ export function FleetWorkspace({
                         <td>{metrics(server, true)}</td>
                         <td>{powerButtons(server, true)}</td>
                         <td>{management(server)}</td>
-                      </tr>
+                      </SortableRow>
                     ))}
                   </tbody>
+                  </SortableContext>
                 </table>
               </div>
             </section>
@@ -529,23 +558,6 @@ export function FleetWorkspace({
         </div>
       ) : (
         <div className="fleet-node-cards">
-          <DndContext
-            sensors={sensors}
-            collisionDetection={closestCenter}
-            onDragEnd={reorder}
-            accessibility={{
-              announcements: {
-                onDragStart: ({ active }) =>
-                  `Picked up ${servers.find((s) => s.id === active.id)?.name || 'server'}.`,
-                onDragOver: ({ over }) =>
-                  over
-                    ? `Over server ${servers.find((s) => s.id === over.id)?.name || ''}.`
-                    : 'Outside a reorder target.',
-                onDragEnd: () => 'Reordering finished.',
-                onDragCancel: () => 'Reordering cancelled.',
-              },
-            }}
-          >
             {groups.map(([label, items]) => (
               <section
                 key={layout.group === 'none' ? 'all' : game(items[0]).key}
@@ -564,7 +576,7 @@ export function FleetWorkspace({
                       <SortableCard
                         key={server.id}
                         server={server}
-                        disabled={layout.sort !== 'custom'}
+                        disabled={false}
                       >
                         <div className="fleet-node-card-heading">
                           <div>
@@ -590,8 +602,10 @@ export function FleetWorkspace({
                         </div>
                         {connection(server)}
                         {metrics(server)}
-                        {powerButtons(server)}
-                        {management(server)}
+                        <div className="fleet-card-actions">
+                          {powerButtons(server)}
+                          {management(server)}
+                        </div>
                         {!server.available && (
                           <p className="gp-fleet-notice">
                             Node unavailable. Last observed{' '}
@@ -605,9 +619,9 @@ export function FleetWorkspace({
                 </SortableContext>
               </section>
             ))}
-          </DndContext>
         </div>
       )}
+      </DndContext>
       {metricSelection && (
         <FleetMetricsModal
           key={metricSelection.server.id}
@@ -639,9 +653,9 @@ export function FleetWorkspace({
       {power && (
         <ConfirmationModal
           isOpen
-          title={`${power.action} ${power.server.name}?`}
-          message={`This will ${power.action} ${power.server.displayId || power.server.name}. Connected players may be disconnected.`}
-          confirmText={power.action}
+          title={`${{ start: 'Start', stop: 'Stop', restart: 'Restart' }[power.action]} ${power.server.name}?`}
+          message={`This will ${power.action} ${power.server.displayId || power.server.name}.${power.action === 'start' ? '' : ' Connected players may be disconnected.'}`}
+          confirmText={{ start: 'Start', stop: 'Stop', restart: 'Restart' }[power.action]}
           onClose={() => setPower(null)}
           onConfirm={async () => {
             const context = await fleetContext(power.server.id);
@@ -653,6 +667,29 @@ export function FleetWorkspace({
         />
       )}
     </section>
+  );
+}
+
+function SortableRow({ server, nameContent, children }: {
+  server: FleetServer;
+  nameContent: ReactNode;
+  children: ReactNode;
+}) {
+  const { attributes, listeners, setNodeRef, setActivatorNodeRef, transform, transition, isDragging } = useSortable({ id: server.id });
+  return (
+    <tr ref={setNodeRef} className={isDragging ? 'is-dragging' : undefined}
+      style={{ transform: CSS.Transform.toString(transform), transition, position: 'relative', zIndex: isDragging ? 1 : undefined }}>
+      <td>
+        <div className="fleet-row-name">
+          <button ref={setActivatorNodeRef} className="fleet-row-drag" {...attributes} {...listeners}
+            aria-label={`Reorder ${server.name}`} title="Drag or use Space and arrow keys">
+            <GripVertical size={18} />
+          </button>
+          {nameContent}
+        </div>
+      </td>
+      {children}
+    </tr>
   );
 }
 
@@ -838,9 +875,7 @@ export function FleetAccess({
                 }))}
               />
             </div>
-            <p className="gp-fleet-muted">
-              Permissions apply only to this server. Assigned users can see status and metrics.
-            </p>
+            <p className="gp-fleet-muted">Server-specific access. Status and metrics are always visible.</p>
             <div className="gp-fleet-actions">
               {Object.entries(profiles).map(([name, values]) => (
                 <button

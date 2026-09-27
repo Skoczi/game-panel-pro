@@ -1,6 +1,7 @@
 import type { GameServerRow } from '../types/gameServer.js';
 import type { NormalizedHealthcheck } from '../utils/healthcheck.js';
 import { parseJsonArray, parseJsonObject } from '../utils/json.js';
+import { sharedReference } from '../services/sharedFiles.js';
 import type { NormalizedMount } from '../utils/mounts.js';
 import type { NormalizedPorts } from '../utils/ports.js';
 import { parseStoredResourceLimits as parseStoredResourceLimitsFromJson, type NormalizedResourceLimits } from '../utils/resourceLimits.js';
@@ -17,6 +18,7 @@ export function parseStoredMounts(server: GameServerRow): NormalizedMount[] {
         .map((mount) => ({
             key: String(mount.key),
             containerPath: String(mount.containerPath),
+            ...(mount.shared ? { shared: sharedReference(mount.shared) } : {}),
         }));
 }
 

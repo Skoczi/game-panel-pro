@@ -11,7 +11,7 @@ import { generateToken, verifyToken, extractTokenFromHeader } from '../utils/aut
 import { delegatedPath } from '../nodes/delegation.js';
 import { getDatabase } from '../database/init.js';
 import { getAppVersion, getRuntimeBuild } from '../utils/appInfo.js';
-import { OperationJournal } from './journal.js';
+import { OperationJournal, journalResponse } from './journal.js';
 import { serverRepository } from '../database/index.js';
 
 const verifier = new RequestVerifier();
@@ -159,7 +159,8 @@ export async function agentIdempotency(req: Request, res: Response, next: NextFu
             saving = true;
             let encoded: string;
             try {
-                encoded = JSON.stringify(body);
+                // Mounted routers rewrite req.path; originalUrl retains the SFTP route.
+                encoded = journalResponse(req.method, req.originalUrl.split('?')[0], body);
             } catch {
                 void journal.uncertain(key).catch(() => {});
                 res.status(503);

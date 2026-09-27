@@ -1,3 +1,8 @@
+import { apiProvisionRuntimeRoutes } from './routes/apiProvisionRuntime.js';
+import { signedWebhookRoutes } from './routes/signedWebhooks.js';
+import { startSignedWebhookWorker } from './services/signedWebhooks.js';
+import { fleetCloneRoutes } from './routes/fleetClone.js';
+import { startOperationalHealthWorker } from './services/operationalHealth.js';
 import { recoverRestartAttempts } from './services/monitoringRecovery.js';
 import { startAlertWorker } from './services/alerts.js';
 import { startGameMonitoringWorker } from './services/gameMonitoring.js';
@@ -11,6 +16,7 @@ import { publicApiErrorHandler } from './routes/publicApi.js';
 import { requestContext } from './middleware/requestContext.js';
 import { recoverRestoreTransactions } from './services/nativeRestoreRecovery.js';
 import { getConfig } from './config.js';
+import { loginSessions } from './services/loginSessions.js';
 import { initializeTemplates, templateRoutes } from './templates/routes.js';
 import { recoverNativeOperations } from './services/nativeRuntime.js';
 import cors, { type CorsOptions } from 'cors';
@@ -33,6 +39,7 @@ import { ensureRootUserExists } from './database/bootstrap.js';
 import { initializeGlobalSettings } from './services/globalSettings.js';
 import { authMiddleware, errorHandler } from './middleware/auth.js';
 import authRoutes from './routes/auth.js';
+import accountSecurityRoutes from './routes/accountSecurity.js';
 import userRoutes from './routes/users.js';
 import serverMembersRoutes from './routes/serverMembers.js';
 import serverRoutes from './routes/servers.js';
@@ -99,6 +106,8 @@ let periodicHealthReconcile: { stop: () => void } | null = null;
 let linuxGsmRefreshJob: { stop: () => void } | null = null;
 let fileTransferCleanupJob: { stop: () => void } | null = null;
 let downloadTokenCleanupJob: { stop: () => void } | null = null;
+let operationalWorker: ReturnType<typeof startOperationalHealthWorker> | undefined;
+let signedWebhookWorker: ReturnType<typeof startSignedWebhookWorker> | undefined;
 let alertWorker: ReturnType<typeof startAlertWorker> | undefined;
 let gameMonitoringWorker: { stop: () => void } | null = null;
 let fastDownloadWorker: { stop: () => void } | null = null;
@@ -118,7 +127,7 @@ const corsOptions: CorsOptions = {
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'Idempotency-Key'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'Idempotency-Key', 'X-GP-Session'],
   exposedHeaders: ['ETag', 'X-Request-ID', 'Retry-After', 'Location', 'Idempotency-Replayed'],
 };
 
@@ -157,10 +166,13 @@ if (isAgent())
 
 // /api/auth
 app.use('/api/auth', authRoutes);
+if (!isAgent()) app.use('/api/auth/security', accountSecurityRoutes);
 if (!isAgent()) {
   app.use('/api/v1', publicApiRoutes);
   app.use('/api/v1', publicApiErrorHandler);
+  app.use('/api/signed-webhooks', authMiddleware, signedWebhookRoutes);
   app.use('/api/api-tokens', authMiddleware, apiTokenRoutes);
+  app.use('/api/fleet', authMiddleware, fleetCloneRoutes);
 }
 app.use('/api/branding', brandingRoutes);
 // /api/download/:token
@@ -176,6 +188,7 @@ app.use(
   serverRoutes,
 );
 // /api/catalog
+app.use('/api/runtime-provisioning', authMiddleware, apiProvisionRuntimeRoutes);
 app.use('/api/catalog', authMiddleware, catalogRoutes);
 if (!isAgent()) app.use('/api/game-templates', authMiddleware, templateRoutes);
 // /api/system
@@ -221,6 +234,7 @@ async function startServer(): Promise<void> {
       await initializeTemplates();
       await initializeFleet();
       await initializePublicApi();
+      await loginSessions();
     }
     logInfo('APP', 'Database initialized');
 
@@ -250,6 +264,8 @@ async function startServer(): Promise<void> {
     await recoverRestartAttempts();
     gameMonitoringWorker = startGameMonitoringWorker();
     alertWorker = startAlertWorker();
+    if (!isAgent()) signedWebhookWorker = startSignedWebhookWorker();
+    operationalWorker = startOperationalHealthWorker();
 
     httpServer.listen(port, () => {
       logInfo('APP', 'Game Panel backend listening on port ' + port);
@@ -281,6 +297,8 @@ function setupGracefulShutdown(): void {
       fastDownloadWorker?.stop();
       gameMonitoringWorker?.stop();
       alertWorker?.stop();
+      signedWebhookWorker?.stop();
+      operationalWorker?.stop();
       agentHeartbeat?.stop();
       closeNodeSockets();
 

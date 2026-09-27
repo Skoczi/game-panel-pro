@@ -1,5 +1,7 @@
-import { Terminal, Trash2, X, Copy, ArrowDown, CornerDownLeft, Maximize2, Minimize2 } from 'lucide-react';
-import { memo, useState, useRef, useEffect, useLayoutEffect, useMemo, Fragment } from 'react';
+import { AppOptionSelect } from '../src/ui/components/AppOptionSelect';
+import { consoleView } from '../utils/consoleView';
+import { Terminal, Trash2, X, Copy, Search, ArrowDown, CornerDownLeft, Maximize2, Minimize2 } from 'lucide-react';
+import { memo, useId, useState, useRef, useEffect, useLayoutEffect, useMemo, Fragment } from 'react';
 import { AppButton, AppToggle } from '../src/ui/components';
 import { useBodyScrollLock } from '../src/ui/utils/useBodyScrollLock';
 import { ansiToHtml, stripAnsi } from '../utils/ansi';
@@ -66,9 +68,10 @@ const getLogColor = (type: LogEntry['type']) => {
   }
 };
 
-const ServerLogLine = memo(function ServerLogLine({ log }: { log: LogEntry }) {
+const ServerLogLine = memo(function ServerLogLine({ log }: { log: LogEntry & { repeats?: number } }) {
   const panelMessage = log.message.startsWith('[GamePanel] ');
   return <div className="mb-1 flex items-start gap-2 rounded px-1 leading-5 hover:bg-white/5">
+    {log.repeats && log.repeats > 1 ? <span className="shrink-0 rounded bg-gray-700 px-1 text-cyan-300" aria-label={`${log.repeats} repeats`}>×{log.repeats}</span> : null}
     <span className="gp-log-time shrink-0 text-gray-500">[{log.displayTime ?? formatLogDisplayTime(log.timestamp)}]</span>
     <AnsiLine className={`m-0 inline-block min-w-max flex-none whitespace-pre font-mono text-sm ${panelMessage ? 'text-cyan-400 font-semibold' : getLogColor(log.type)}`} message={log.message} />
   </div>;
@@ -105,6 +108,22 @@ export function ServerConsoleTabs({
   canSendCommandByServer,
   onSendCommand,
 }: ServerConsoleTabsProps) {
+  const tabStripRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const strip = tabStripRef.current;
+    if (!strip) return;
+    const reveal = () => {
+      const selected = strip.querySelector<HTMLElement>('[data-active="true"]');
+      if (!selected) return;
+      const outer = strip.getBoundingClientRect(), inner = selected.getBoundingClientRect();
+      if (inner.left < outer.left) strip.scrollLeft += inner.left - outer.left;
+      else if (inner.right > outer.right) strip.scrollLeft += Math.min(inner.right - outer.right, inner.left - outer.left);
+    };
+    reveal();
+    const observer = new ResizeObserver(reveal);
+    observer.observe(strip);
+    return () => observer.disconnect();
+  }, [activeTab, openTabs.length]);
   const heightStorageKey = singleServer ? 'gp_server_console_height' : CONSOLE_HEIGHT_STORAGE_KEY;
   const [isMinimized] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -115,7 +134,7 @@ export function ServerConsoleTabs({
       if (Number.isFinite(raw) && raw > 0) stored = singleServer && raw === 360 ? 450 : raw;
     } catch { /* ignore */ }
     const max = typeof window !== 'undefined'
-      ? Math.max(MIN_CONSOLE_HEIGHT, Math.round(window.innerHeight * 0.85))
+      ? Math.max(MIN_CONSOLE_HEIGHT, Math.round(window.innerHeight * 2))
       : Number.POSITIVE_INFINITY;
     return Math.min(max, Math.max(MIN_CONSOLE_HEIGHT, stored));
   });
@@ -147,6 +166,12 @@ export function ServerConsoleTabs({
     return () => window.clearTimeout(timer);
   }, [autoScrollServer]);
   const [showTimestamps, setShowTimestamps] = useState(false);
+  const searchId = useId();
+  const [searchOpen, setSearchOpen] = useState(false);
+  const closeSearch = () => { setSearchOpen(false); setLogSearch(''); setLogLevel('all'); setGroupLogs(false); };
+  const [logSearch, setLogSearch] = useState('');
+  const [logLevel, setLogLevel] = useState('all');
+  const [groupLogs, setGroupLogs] = useState(false);
   const cliContainerRef = useRef<HTMLDivElement>(null);
   const serverContainerRef = useRef<HTMLDivElement>(null);
   const isProgrammaticCliScrollRef = useRef(false);
@@ -160,6 +185,13 @@ export function ServerConsoleTabs({
     const entries = activeTab && activeTab !== 'cli-console' ? logs[activeTab] || [] : [];
     return entries.filter(log => stripAnsi(log.message).trim() !== STEAM_CLIENT_PROBE);
   }, [activeTab, logs]);
+  const displayedLogs = useMemo(() => consoleView(activeLogs, logSearch, logLevel, groupLogs), [activeLogs, logSearch, logLevel, groupLogs]);
+  const downloadRaw = () => {
+    const raw = activeTab ? logs[activeTab] || [] : [];
+    const blob = new Blob([raw.map(log => `[${log.timestamp}] ${log.message}`).join('\n')], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob), link = document.createElement('a');
+    link.href = url; link.download = 'console-buffer.log'; link.click(); setTimeout(() => URL.revokeObjectURL(url), 1000);
+  };
   const cliTail = cliMessages[cliMessages.length - 1]?.id;
   const serverTail = activeLogs[activeLogs.length - 1]?.id;
   const openTabServers = servers.filter((server) => openTabs.includes(server.id));
@@ -542,7 +574,7 @@ export function ServerConsoleTabs({
   useEffect(() => () => cancelAnimationFrame(resizeAutoScrollRef.current), []);
 
   function clampConsoleHeight(height: number): number {
-    const max = Math.max(MIN_CONSOLE_HEIGHT, Math.round(window.innerHeight * 0.85));
+    const max = Math.max(MIN_CONSOLE_HEIGHT, Math.round(window.innerHeight * 2));
     return Math.min(max, Math.max(MIN_CONSOLE_HEIGHT, height));
   }
 
@@ -602,9 +634,9 @@ export function ServerConsoleTabs({
       }`}
     >
       <div
-        className={`flex min-h-[44px] shrink-0 items-stretch justify-between border-b ${borderColor} ${isFullscreen ? '' : 'rounded-t-lg'} overflow-hidden bg-gp-surface-input`}
+        className={`gp-console-toolbar flex min-h-[44px] shrink-0 items-stretch justify-between border-b ${borderColor} ${isFullscreen ? '' : 'rounded-t-lg'} overflow-hidden bg-gp-surface-input`}
       >
-        <div className="flex min-w-0 flex-1 items-stretch overflow-x-auto hide-scrollbar">
+        <div ref={tabStripRef} className="gp-console-tab-strip flex min-w-0 flex-1 items-stretch overflow-x-auto hide-scrollbar">
           {!singleServer && !hideActivity && <div
             className={`flex h-full shrink-0 items-center gap-2 border-l px-4 transition-colors cursor-pointer select-none ${
               activeTab === 'cli-console'
@@ -640,6 +672,7 @@ export function ServerConsoleTabs({
               return (
                 <div
                   key={server.id}
+                  data-active={isActiveServerTab}
                   onClick={() => onSetActiveTab(server.id)}
                   className={`relative flex h-full shrink-0 items-center gap-2 px-4 transition-colors group cursor-pointer select-none ${
                     isActiveServerTab
@@ -670,7 +703,7 @@ export function ServerConsoleTabs({
               );
             })}
         </div>
-        <div className="flex min-h-full self-stretch flex-shrink-0 items-center gap-1 sm:gap-2 bg-gp-surface-input px-2 sm:px-4 py-0">
+        <div className="gp-console-tools flex min-h-full self-stretch flex-shrink-0 items-center gap-1 sm:gap-2 bg-gp-surface-input px-2 sm:px-4 py-0">
           <div className="flex h-full items-center justify-center gap-2">
             <span className={`gp-console-tool-label hidden sm:inline text-xs ${textSecondary}`}>Date/Time</span>
             <AppToggle
@@ -680,6 +713,15 @@ export function ServerConsoleTabs({
               size="compact"
             />
           </div>
+          {!isCLIConsoleActive && activeServer && <AppButton
+            id={`${searchId}-toggle`}
+            tone="ghost"
+            aria-label="Search console logs"
+            aria-expanded={searchOpen}
+            aria-controls={`${searchId}-filters`}
+            onClick={() => searchOpen ? closeSearch() : setSearchOpen(true)}
+            className={`inline-flex h-8 items-center gap-2 px-2 sm:px-3 rounded ${tabHoverBg} transition-colors ${searchOpen ? 'text-cyan-400' : textSecondary} text-sm`}
+          ><Search className="w-3 h-3" /><span className="gp-console-tool-label hidden sm:inline">Search</span></AppButton>}
           <AppButton
             tone="ghost"
             onClick={handleCopyActiveLogs}
@@ -710,9 +752,18 @@ export function ServerConsoleTabs({
         </div>
       </div>
 
+      {!isCLIConsoleActive && activeServer && searchOpen && <div id={`${searchId}-filters`} onKeyDown={event => { if (event.key === 'Escape') { event.stopPropagation(); closeSearch(); document.getElementById(`${searchId}-toggle`)?.focus(); } }} className="gp-console-filters shrink-0 flex flex-wrap items-center gap-2 border-b border-gray-700 bg-gp-surface-input p-2 text-sm text-gray-700 dark:text-gray-200">
+        <input autoFocus aria-label="Search console logs" placeholder="Search logs…" value={logSearch} onChange={e => setLogSearch(e.target.value)} className="min-w-0 flex-1 rounded border border-gray-600 bg-gray-800 px-2 py-1" />
+        <AppOptionSelect aria-label="Console log level" value={logLevel} onChange={setLogLevel} className="min-w-[130px]">
+          <option value="all">All levels</option>{['info', 'warning', 'error', 'success', 'command', 'action'].map(level => <option key={level} value={level}>{level}</option>)}
+        </AppOptionSelect>
+        <label className="flex items-center gap-1"><input type="checkbox" checked={groupLogs} onChange={e => setGroupLogs(e.target.checked)} />Group repeats</label>
+        <button type="button" onClick={downloadRaw} className="rounded border border-gray-600 px-2 py-1">Download raw buffer</button>
+        <span className="text-gray-600 dark:text-gray-400">{displayedLogs.length}/{activeLogs.length} lines</span>
+      </div>}
       {!isMinimized && activeTab && (
         <div
-          className={`flex flex-col min-h-0 ${isFullscreen ? 'flex-1' : ''}`}
+          className={`gp-console-body flex flex-col min-h-0 ${isFullscreen ? 'flex-1' : ''}`}
           style={isFullscreen ? undefined : { height: panelHeight }}
         >
           {isCLIConsoleActive && (
@@ -797,14 +848,14 @@ export function ServerConsoleTabs({
                   onScroll={handleServerScroll}
                   className={`gp-console-terminal h-full ${terminalBg} p-2 overflow-y-auto overflow-x-auto hide-scrollbar font-mono text-sm ${showTimestamps ? '' : 'gp-console-hide-time'}`}
                 >
-                  {activeLogs.length === 0 ? (
+                  {displayedLogs.length === 0 ? (
                     <div className="py-8 text-center text-gray-500">
                       <Terminal className="mx-auto mb-2 h-12 w-12 opacity-50" />
-                      <p>No logs yet. Execute an action to see logs.</p>
+                      <p>{activeLogs.length ? 'No logs match these filters.' : 'No logs yet. Execute an action to see logs.'}</p>
                     </div>
                   ) : (
                     <Fragment key={activeTab}>
-                      {activeLogs.map(log => <ServerLogLine key={log.id} log={log} />)}
+                      {displayedLogs.map(log => <ServerLogLine key={log.id} log={log} />)}
                     </Fragment>
                   )}
                 </div>
@@ -892,6 +943,17 @@ export function ServerConsoleTabs({
           onPointerMove={handleResizePointerMove}
           onPointerUp={handleResizePointerUp}
           onPointerCancel={handleResizePointerUp}
+          onLostPointerCapture={handleResizePointerUp}
+          tabIndex={0}
+          aria-valuemin={MIN_CONSOLE_HEIGHT}
+          aria-valuemax={Math.max(MIN_CONSOLE_HEIGHT, Math.round(window.innerHeight * 2))}
+          aria-valuenow={Math.round(panelHeight)}
+          onDoubleClick={() => setPanelHeight(singleServer ? 450 : DEFAULT_CONSOLE_HEIGHT)}
+          onKeyDown={event => {
+            if (event.key === 'ArrowUp' || event.key === 'ArrowDown') {
+              event.preventDefault(); setPanelHeight(height => clampConsoleHeight(height + (event.key === 'ArrowDown' ? 40 : -40)));
+            }
+          }}
           className="group flex h-2.5 w-full shrink-0 cursor-row-resize touch-none select-none items-center justify-center border-t border-gray-700 bg-gp-surface-input"
         >
           <div className="h-1 w-10 rounded-full bg-gray-600 transition-colors group-hover:bg-[var(--color-cyan-400)]" />

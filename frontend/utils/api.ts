@@ -1,4 +1,6 @@
+import type { BackupVerification } from './backupPresentation';
 import type { GameMonitoringConfig, GameMonitoringSettings } from '../../backend/src/templates/types';
+import type { SftpStatus } from '../components/serverSettings/SftpAccessCard';
 import type { FastDownloadStatus } from '../components/serverSettings/FastDownloadCard';
 import { nodesRequest } from './nodesApi';
 import type { CpuTopology } from '../components/resources/CpuBindingPicker';
@@ -37,7 +39,7 @@ import {
   CATALOG_BASE_URL,
   clearCookieValue,
   getStoredToken,
-  setCookieValue,
+  setMemoryToken,
 } from './api/runtime';
 
 export type {
@@ -104,7 +106,8 @@ export interface NativeProtectionSummary {
   warnings: string[];
 }
 export interface BackupJob {
-  id: string; kind: 'backup' | 'restore' | 'import'; status: 'running' | 'completed' | 'failed' | 'interrupted';
+  progress?: { stage: string; message: string; percent: number | null };
+  id: string; kind: 'backup' | 'restore' | 'import' | 'addon' | 'clone'; status: 'running' | 'completed' | 'failed' | 'interrupted';
   actor?: string;
   startedAt: string; completedAt?: string; error?: string;
   result?: { ok: boolean; exitCode: number; stdout?: string; stderr?: string };
@@ -131,6 +134,9 @@ export interface FileTransferJob {
 class ApiClient {
   private client: AxiosInstance;
   private token: string | null = null;
+  private sessionRefresh: Promise<string | null> | null = null;
+  private refreshTimer: ReturnType<typeof setTimeout> | undefined;
+  private authGeneration = 0;
   private readonly realtime: RealtimeGateway;
   private unauthorizedHandler: (() => void) | null = null;
 
@@ -202,13 +208,27 @@ class ApiClient {
   }
 
   setAuthToken(token: string) {
+    this.authGeneration++;
     this.token = token;
     this.client.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-    localStorage.setItem(AUTH_TOKEN_KEY, token);
-    setCookieValue(AUTH_TOKEN_KEY, token);
+    setMemoryToken(token);
+    localStorage.removeItem(AUTH_TOKEN_KEY);
+    clearCookieValue(AUTH_TOKEN_KEY);
+    clearTimeout(this.refreshTimer);
+    this.scheduleSessionRefresh(4 * 60 * 1000);
+  }
+
+  private scheduleSessionRefresh(delay: number) {
+    const generation = this.authGeneration;
+    this.refreshTimer = setTimeout(() => { void this.restoreSession().catch(() => {
+      if (generation === this.authGeneration && this.token) this.scheduleSessionRefresh(30000);
+    }); }, delay);
   }
 
   clearAuth() {
+    this.authGeneration++;
+    clearTimeout(this.refreshTimer);
+    setMemoryToken(null);
     clearEditorDrafts();
     this.token = null;
     delete this.client.defaults.headers.common['Authorization'];
@@ -222,8 +242,8 @@ class ApiClient {
     return this.token || getStoredToken();
   }
 
-  async login(username: string, password: string) {
-    const response = await this.client.post('/api/auth/login', { username, password });
+  async login(username: string, password: string, code?: string) {
+    const response = await this.client.post('/api/auth/login', { username, password, code });
     const data = response.data as {
       success: true;
       user: {
@@ -303,7 +323,28 @@ class ApiClient {
     return data;
   }
 
-  logout() {
+  async restoreSession(): Promise<string | null> {
+    if (this.sessionRefresh) return this.sessionRefresh;
+    const generation = this.authGeneration;
+    this.sessionRefresh = (async () => {
+      const response = await fetch('/api/auth/session', { method: 'POST', credentials: 'same-origin', signal: AbortSignal.timeout(15000),
+        headers: { 'Content-Type': 'application/json', 'X-GP-Session': '1' }, body: '{}' });
+      if (generation !== this.authGeneration) return null;
+      if (response.status === 401) { this.clearAuth(); this.unauthorizedHandler?.(); return null; }
+      if (!response.ok) throw new Error('Session refresh unavailable');
+      const data = await response.json();
+      if (typeof data.token !== 'string') throw new Error('Invalid session response');
+      if (generation !== this.authGeneration) return null;
+      this.setAuthToken(data.token);
+      return data.token;
+    })().finally(() => { this.sessionRefresh = null; });
+    return this.sessionRefresh;
+  }
+
+  async logout() {
+    const response = await fetch('/api/auth/logout', { method: 'POST', credentials: 'same-origin', signal: AbortSignal.timeout(15000),
+      headers: { 'Content-Type': 'application/json', 'X-GP-Session': '1' }, body: '{}' });
+    if (!response.ok) throw new Error('Sign-out could not be confirmed. Please retry.');
     this.clearAuth();
   }
 
@@ -460,6 +501,8 @@ class ApiClient {
 
   async getMonitoring(id: number): Promise<GameMonitoringSettings> { return (await this.client.get(`/api/servers/${id}/monitoring`)).data; }
   async updateMonitoring(id: number, config: GameMonitoringConfig): Promise<GameMonitoringSettings> { return (await this.client.patch(`/api/servers/${id}/monitoring`, config)).data; }
+  async getServerSftp(id: number): Promise<SftpStatus> { return (await this.client.get(`/api/servers/${id}/sftp`)).data; }
+  async updateServerSftp(id: number, action: 'enable' | 'disable' | 'rotate'): Promise<SftpStatus> { return (await this.client.post(`/api/servers/${id}/sftp`, { action })).data; }
   async getFastDownload(id: number): Promise<FastDownloadStatus> { return (await this.client.get(`/api/servers/${id}/fastdownload`)).data; }
   async updateFastDownload(id: number, patch: {enabled?:boolean;compression?:boolean}) { return (await this.client.patch(`/api/servers/${id}/fastdownload`,patch)).data; }
   async syncFastDownload(id: number) { return (await this.client.post(`/api/servers/${id}/fastdownload/sync`,{}, {timeout:300000})).data; }
@@ -535,6 +578,7 @@ class ApiClient {
     return response.data as {
       path: string;
       entries: Array<{
+        verification?: BackupVerification;
         name: string;
         type: 'file' | 'dir' | 'symlink';
         size: number;
@@ -585,6 +629,7 @@ class ApiClient {
     const url = URL.createObjectURL(response.data); const link=document.createElement('a'); link.href=url; link.download=name; link.click(); setTimeout(()=>URL.revokeObjectURL(url),1000);
   }
 
+  async readBackupJob(serverId: number, id: string): Promise<BackupJob> { return (await this.client.get(`/api/servers/${serverId}/backups/jobs/${encodeURIComponent(id)}`)).data.job; }
   async listBackupJobs(serverId: number): Promise<BackupJob[]> {
     const response = await this.client.get(`/api/servers/${serverId}/backups/jobs`);
     if (!Array.isArray(response.data.jobs)) throw new Error('Agent does not support persistent backup jobs');
@@ -803,6 +848,8 @@ class ApiClient {
   async getScheduledTasks(serverId: number) {
     const response = await this.client.get(`/api/servers/${serverId}/scheduled-tasks`);
     return response.data as {
+      maintenanceWorkflow?: boolean;
+      maintenanceRuns?: Array<{ taskId: number; status: string; backup?: string; steps: Array<{ name: string; status: string; detail?: string }> }>;
       tasks: Array<{
         id: number;
         serverId: number;
@@ -903,6 +950,34 @@ class ApiClient {
     return `${API_BASE_URL}${res.data.path as string}`;
   }
 
+  async startTransfer(fleetId: string, input: unknown) { return (await this.client.post(`/api/fleet/${fleetId}/transfer`, input)).data; }
+  async readTransfer(jobId: string) { return (await this.client.get(`/api/fleet/transfers/${jobId}`)).data.job; }
+  async previewClone(fleetId: string) { return (await this.client.get(`/api/fleet/${fleetId}/clone`)).data; }
+  async startClone(fleetId: string, input: unknown) { return (await this.client.post(`/api/fleet/${fleetId}/clone`, input)).data; }
+  async listAddonJobs(serverId: number): Promise<BackupJob[]> {
+    return (await this.client.get(`/api/servers/${serverId}/rehlds/addons/jobs`)).data.jobs;
+  }
+  async getRehldsContent(serverId: number, section: string) {
+    return (await this.client.get(`/api/servers/${serverId}/rehlds/${section}`)).data;
+  }
+  async saveRehldsContent(serverId: number, section: string, payload: { content?: string; version: string; restore?: string }) {
+    return (await this.client.put(`/api/servers/${serverId}/rehlds/${section}`, payload)).data;
+  }
+  async previewRehldsAddons(serverId: number, modules: string[], action: 'install' | 'uninstall' = 'install') {
+    return (await this.client.get(`/api/servers/${serverId}/rehlds/addons`, { params: { modules: modules.length ? modules.join(',') : undefined, action } })).data;
+  }
+  async sourceAddonPreview(serverId: number, module?: string, action: 'install' | 'uninstall' = 'install') {
+    return (await this.client.get(`/api/servers/${serverId}/source-addons`, { params: { module, action } })).data;
+  }
+  async changeSourceAddon(serverId: number, module: string, fingerprint: string, action: 'install' | 'uninstall') {
+    return (await this.client.post(`/api/servers/${serverId}/source-addons`, { module, fingerprint, action })).data;
+  }
+  async sourceAddonJobs(serverId: number): Promise<{ jobs: BackupJob[] }> {
+    return (await this.client.get(`/api/servers/${serverId}/source-addons/jobs`)).data;
+  }
+  async installRehldsAddons(serverId: number, modules: string[], fingerprint: string, action: 'install' | 'uninstall' = 'install') {
+    return (await this.client.post(`/api/servers/${serverId}/rehlds/addons`, { modules, fingerprint, action })).data;
+  }
   async getNativeGameConfig(serverId: number) {
     const response = await this.client.get(`/api/servers/${serverId}/game-config`);
     return response.data as { definition: import('../../backend/src/templates/types').GameConfigDefinition | null };
@@ -911,6 +986,10 @@ class ApiClient {
   async readServerFileSnapshot(serverId: number, path: string, root?: string) {
     const response = await this.client.get(`/api/servers/${serverId}/file`, { params: { path, ...(root ? { root } : {}) }, responseType: 'arraybuffer' });
     return { bytes: response.data as ArrayBuffer, version: response.headers.etag as string | undefined };
+  }
+
+  async copyServerFile(serverId: number, from: string, to: string, root: string, toRoot: string) {
+    return (await this.client.post(`/api/servers/${serverId}/file/copy`, { from, to, root, toRoot })).data;
   }
 
   async fileHistory(serverId: number, path: string, root: string): Promise<FileHistoryEntry[]> {
@@ -1170,6 +1249,9 @@ class ApiClient {
     return (await this.client.get('/api/system/appearance')).data;
   }
 
+  async getSignedWebhooks() { return (await this.client.get('/api/signed-webhooks')).data; }
+  async saveSignedWebhooks(settings: unknown) { return (await this.client.put('/api/signed-webhooks', settings)).data; }
+  async testSignedWebhooks() { return (await this.client.post('/api/signed-webhooks/test', {})).data; }
   async getNotifications() { return (await this.client.get('/api/system/notifications')).data; }
   async saveNotifications(settings: { revision: number; enabled: boolean; categories: string[]; webhook?: string }) { return (await this.client.put('/api/system/notifications', settings)).data; }
   async testNotifications() { return (await this.client.post('/api/system/notifications/test', {})).data; }

@@ -10,7 +10,7 @@ export const DEFAULT_APPEARANCE = {
     siteName: 'Game Panel PRO', siteSubtitle: 'Server management', logo: '', favicon: '',
     loginDescription: 'Sign in to manage your game servers',
     loginTheme: 'light' as LoginTheme,
-    showLoginFooter: true, loginFooter: 'Based on OVHcloud Game Panel · Developed by Skoczi',
+    showLoginFooter: true, loginFooter: 'Game Panel PRO · Developed by Skoczi',
 };
 export type GlobalSettings = {
     appearance: typeof DEFAULT_APPEARANCE;

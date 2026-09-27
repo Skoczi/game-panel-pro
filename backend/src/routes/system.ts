@@ -1,8 +1,11 @@
+import { operationalHealthStore } from '../services/operationalHealth.js';
+import { hostNetworkSnapshot, changeHostNetwork } from '../services/hostNetwork.js';
 import { alertStore } from '../services/alerts.js';
 // Modified by Skoczi: expose the configured IPv4 allowlist to authenticated UI clients.
 import { configuredBindAddresses } from '../utils/bindAddresses.js';
 import { configuredPortPolicy } from '../utils/portPolicy.js';
 import { globalSettings } from '../services/globalSettings.js';
+import { sharedFilesRoutes } from './sharedFiles.js';
 import { Router } from 'express';
 import { rootOnly, type AuthenticatedRequest } from '../middleware/auth.js';
 import { checkPanelUpdate, getPanelUpdateStatus, startPanelUpdate } from '../services/panelUpdates.js';
@@ -12,6 +15,24 @@ import { nowIso } from '../utils/time.js';
 import { isAgent } from '../agent/identity.js';
 
 const router = Router();
+router.use('/shared-files', sharedFilesRoutes);
+
+router.get('/host-network', rootOnly, async (_req, res) => {
+  res.setHeader('Cache-Control', 'no-store'); res.json(await hostNetworkSnapshot());
+});
+router.post('/host-network/preview', rootOnly, async (req, res) => {
+  try { res.json(await changeHostNetwork(req.body, true)); }
+  catch (error) { sendRouteError(res, error, { route: 'NETWORK:PREVIEW', fallbackMessage: 'Cannot preview network changes' }); }
+});
+router.put('/host-network', rootOnly, async (req, res) => {
+  try { res.json(await changeHostNetwork(req.body)); }
+  catch (error) { sendRouteError(res, error, { route: 'NETWORK:SAVE', fallbackMessage: 'Cannot save network changes' }); }
+});
+
+router.get('/operational-health', rootOnly, async (_req, res) => {
+  try { res.setHeader('Cache-Control', 'no-store'); res.json(await (await operationalHealthStore()).snapshot()); }
+  catch (error) { sendRouteError(res, error, { route: 'OPERATIONAL:READ', fallbackMessage: 'Cannot load operational health' }); }
+});
 
 router.get('/notifications', rootOnly, async (_req, res) => {
   try { res.setHeader('Cache-Control', 'no-store'); res.json(await (await alertStore()).view()); }

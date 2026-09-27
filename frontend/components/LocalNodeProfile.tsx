@@ -25,10 +25,7 @@ export function LocalRuntimeInfo({
         <dt>Last heartbeat</dt>
         <dd>{node?.last_seen ? new Date(node.last_seen).toLocaleString() : 'Not checked'}</dd>
       </dl>
-      <p className="mt-3 text-xs text-slate-500">
-        Local heartbeat is the last successful panel API response, not a separate agent or a
-        game-server health check.
-      </p>
+      <p className="mt-3 text-xs text-slate-500">Last successful panel API response.</p>
     </>
   );
 }
@@ -97,10 +94,7 @@ export function LocalNodeProfile({
           </label>
         ))}
       </div>
-      <p className="text-xs text-slate-500">
-        Display metadata only. An empty origin uses the panel address. Saving does not change
-        routing, allocations or running servers.
-      </p>
+      <p className="text-xs text-slate-500">Display only. Leave origin blank to use the panel address.</p>
       {error && (
         <p role="alert" className="text-red-500">
           {error}

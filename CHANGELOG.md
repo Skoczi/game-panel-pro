@@ -1,19 +1,32 @@
 # Game Panel PRO — Changelog
 
+## 2.1.0
+
+- Native provisioning API, rich fleet details, accounts, server memberships and AMXX administrator endpoints.
+- Source/CS:GO/CS2/HLTV templates, framework controls, Classic Offensive local packages and shared assets.
+- Dedicated-IP SFTP, persistent node networking and central server numbering.
+- User/operator roles, authenticator 2FA, revocable sessions and scoped server administration.
+- Browser-aware routing, refined mobile actions, contextual file operations, console search and live addon progress.
+- Reviewed cloning/transfers, maintenance workflows, monitoring alerts and signed API webhooks.
+- Independent product presentation, consolidated EN/PL documentation and API PDFs.
+- Stable 2.1.x updater support with full-version comparison; first upgrade from 2.0.x is manual.
+
+[Release notes](docs/pro/RELEASE-2.1.0.md) · [Upgrade](docs/pro/INSTALL.md#upgrade-to-210) · [Validation](docs/pro/RELEASE-2.1.0-VALIDATION.md).
+
 ## 2.0.59
 
 - Opt-in automatic retention and SHA-256-verified external Native backup copies.
 - Dedicated NFS/SMB storage, protected recovery data, explicit transfer failures and import without automatic restore.
 - Backup protection controls for local/remote copy counts and external inventory.
 
-[Full release notes](docs/pro/RELEASE-2.0.59.md). Panel and agent update required for remote features; no database migration. Policies remain disabled until configured.
+[Full release notes](docs/history/RELEASE-2.0.59.md). Panel and agent update required for remote features; no database migration. Policies remain disabled until configured.
 
 ## 2.0.57
 
 - Compact server list with game icons beside names and one monitoring-aware status column; card layouts unchanged.
 - Template icon library and portable custom image upload, with compatibility checks for older agents.
 
-[Full release notes](docs/pro/RELEASE-2.0.57.md). Panel and agent update; no new database migration.
+[Full release notes](docs/history/RELEASE-2.0.57.md). Panel and agent update; no new database migration.
 
 ## 2.0.54
 
@@ -70,7 +83,7 @@ First published Game Panel PRO release, based on the expanded OVHcloud Game Pane
 - Bundled 2.0.50 changelog, available offline; version checks use `Skoczi/game-panel-skoczi` only.
 - Expanded README, API/compatibility documentation, installation guide and reserved screenshot slots.
 
-[Full release notes](docs/pro/RELEASE-2.0.50.md) · [Install or migrate](docs/pro/INSTALL.md).
+[Full release notes](docs/history/RELEASE-2.0.50.md) · [Install or migrate](docs/pro/INSTALL.md).
 
 ## 2.0.49 — local release candidate
 
@@ -108,7 +121,7 @@ Agent update required. No Egg importer, new game, automatic retention or off-nod
 
 Revision 49 is the last audited deployed baseline. Revisions 11–49 added the multi-node fleet, Native runtime/templates, per-IP allocations, shared UI, server workspace, file editor and console work. The repository commit history is the authoritative detailed record; no reconstructed release dates or unverified release claims are assigned here.
 
-- [Complete fork commit history through Revision 49](docs/pro/REVISION-HISTORY.md)
-- [Earlier fork changelog](CHANGELOG-SKOCZI.md)
+- [Complete fork commit history through Revision 49](docs/README.md)
+- [Earlier fork changelog](docs/history/CHANGELOG-SKOCZI.md)
 - [Historical implementation notes](docs/skoczi/CHANGES.md)
-- [Original upstream changelog](docs/pro/UPSTREAM-CHANGELOG.md)
+- [Original upstream changelog](docs/history/UPSTREAM-CHANGELOG.md)

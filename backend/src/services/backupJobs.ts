@@ -1,3 +1,4 @@
+import type { OperationProgress, ReportProgress } from './operationProgress.js';
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import { randomUUID } from 'node:crypto';
@@ -7,9 +8,10 @@ import { syncDirectory } from './nativeRestoreJournal.js';
 import { actionsRepository } from '../database/index.js';
 export type BackupJob = {
   id: string;
-  kind: 'backup' | 'restore' | 'import';
+  kind: 'backup' | 'restore' | 'import' | 'addon' | 'clone';
   status: 'running' | 'completed' | 'failed' | 'interrupted';
   actor?: string;
+  progress?: OperationProgress;
   startedAt: string;
   completedAt?: string;
   error?: string;
@@ -61,6 +63,7 @@ export async function readBackupJob(serverId: number, id: string): Promise<Backu
 export async function recoverBackupJobs(serverId: number) {
   for (const job of await listBackupJobs(serverId))
     if (job.status === 'running') {
+      if (job.kind === 'addon') await actionsRepository.create(serverId, 'error', '[GamePanel] Addons: installation interrupted by agent restart. Check recovery before retrying.', job.actor || '');
       await save(serverId, {
         ...job,
         status: 'interrupted',
@@ -74,7 +77,7 @@ export async function startBackupJob(
   serverId: number,
   kind: BackupJob['kind'],
   actor: string,
-  run: () => Promise<NonNullable<BackupJob['result']>>
+  run: (report: ReportProgress) => Promise<NonNullable<BackupJob['result']>>
 ) {
   const release = acquireNativeOperation(serverId, true);
   const job: BackupJob = {
@@ -92,8 +95,19 @@ export async function startBackupJob(
   }
   void (async () => {
     try {
-      const result = await run();
+      let previous = '';
+      const report: ReportProgress = async progress => {
+        const normalized = { ...progress, percent: progress.percent === null ? null : Math.max(0, Math.min(100, Math.floor(progress.percent))) };
+        const signature = JSON.stringify(normalized);
+        if (signature === previous) return;
+        previous = signature;
+        job.progress = normalized;
+        await save(serverId, job);
+        await actionsRepository.create(serverId, 'info', `[GamePanel] Addons: ${normalized.message}${normalized.percent === null ? '' : ` - ${normalized.percent}%`}`, actor);
+      };
+      const result = await run(report);
       if (!result.ok) throw new Error(result.stderr || 'Backup operation failed');
+      if (kind === 'addon') await report({ stage: 'completed', message: result.stdout?.startsWith('Addon removed:') ? 'Addon removal completed. Server remains stopped.' : 'Installation completed. Server remains stopped.', percent: 100 });
       await save(serverId, {
         ...job,
         status: 'completed',
@@ -111,7 +125,7 @@ export async function startBackupJob(
         completedAt: new Date().toISOString(),
         error: message,
       });
-      await actionsRepository.create(serverId, 'error', `${kind} failed: ${message}`, actor);
+      await actionsRepository.create(serverId, 'error', `${kind === 'addon' ? '[GamePanel] Addons: ' : ''}${kind} failed: ${message}`, actor);
     } finally {
       release();
     }

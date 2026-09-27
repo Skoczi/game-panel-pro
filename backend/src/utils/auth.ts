@@ -3,7 +3,7 @@ import jwt from 'jsonwebtoken';
 import { getConfig } from '../config.js';
 import { validateDelegation, type Delegation } from '../nodes/delegation.js';
 
-const TOKEN_EXPIRY = '120h';
+const TOKEN_EXPIRY = '15m';
 const BCRYPT_SALT_ROUNDS = 10;
 
 function jwtSecret(): string {
@@ -15,6 +15,8 @@ export interface JWTPayload {
   username: string;
   isRoot: boolean;
   tokenVersion: number;
+  sessionId?: string;
+  exp?: number;
   delegation?: Delegation;
   /** Added only by the local fleet routing guard, never by the login issuer. */
   runtimeScope?: number;

@@ -1,3 +1,4 @@
+import { isPanelAdministrator } from '../utils/accountRole.js';
 import type { NextFunction, Request, Response } from 'express';
 import type { JWTPayload } from '../utils/auth.js';
 import { extractTokenFromHeader, verifyToken } from '../utils/auth.js';
@@ -6,6 +7,7 @@ import { parsePositiveIntId } from '../utils/ids.js';
 import { logError } from '../utils/logger.js';
 import { PERMISSIONS } from '../permissions.js';
 import { isAgent } from '../agent/identity.js';
+import { loginSessions } from '../services/loginSessions.js';
 import type { Delegation } from '../nodes/delegation.js';
 
 export interface AuthenticatedRequest extends Request {
@@ -51,7 +53,12 @@ export async function authMiddleware(
       return;
     }
 
-    req.user = { ...payload, isRoot: Boolean(user.is_root) };
+    if (!isAgent() && !await (await loginSessions()).active(payload.sessionId, user.id, user.token_version)) {
+      res.status(401).json({ error: 'Session expired or revoked' });
+      return;
+    }
+
+    req.user = { ...payload, isRoot: isPanelAdministrator(user) };
     next();
   } catch (err) {
     res.status(401).json({ error: 'Invalid token' });
