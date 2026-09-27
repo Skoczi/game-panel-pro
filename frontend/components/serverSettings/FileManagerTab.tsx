@@ -334,12 +334,13 @@ export function FileManagerTab({
   return (
     <div className="h-full flex flex-col" {...getRootProps()}>
       {editorSession && <EditorSessionView session={editorSession} embedded={embeddedEditor} />}
-      <AppModal open={mobileActionsOpen} onOpenChange={setMobileActionsOpen}>
-        <AppModalContent>
-          <AppModalHeader><AppModalTitle>File actions</AppModalTitle></AppModalHeader>
-          <AppModalBody>
+      <AppModal open={mobileActionsOpen} onOpenChange={setMobileActionsOpen} positionerStyle={{ alignItems: 'flex-end', padding: '12px' }}>
+        <AppModalContent className="gp-file-actions-sheet" dismissible={false}>
+          <div className="gp-file-actions-handle" aria-hidden="true" />
+          <div className="gp-file-actions-heading"><AppModalTitle>File actions</AppModalTitle><button aria-label="Close file actions" onClick={() => setMobileActionsOpen(false)}><X size={20} /></button></div>
+          <AppModalBody className="gp-file-actions-body">
             <div className="gp-mobile-file-options" onClick={event => { if ((event.target as HTMLElement).closest('button:not(:disabled)')) setMobileActionsOpen(false); }}>
-              <button onClick={() => { const next = fileView === 'list' ? 'grid' : 'list'; setFileView(next); try { localStorage.setItem('gp-file-view', next); } catch { /* Storage unavailable. */ } }}><LayoutGrid size={18} />{fileView === 'list' ? 'Tile view' : 'List view'}</button>
+              <button onClick={() => { const next = fileView === 'list' ? 'grid' : 'list'; setFileView(next); try { localStorage.setItem('gp-file-view', next); } catch { /* Storage unavailable. */ } }}>{fileView === 'list' ? <LayoutGrid size={20} /> : <List size={20} />}{fileView === 'list' ? 'Tile view' : 'List view'}</button>
               <button onClick={() => setShowHidden(v => !v)}><Eye size={18} />{showHidden ? 'Hide hidden files' : 'Show hidden files'}</button>
               <button disabled={!canWriteFiles} onClick={handleCreateFolder}><FolderPlus size={18} />New folder</button>
               <button disabled={!canWriteFiles} onClick={handleCreateFile}><FilePlus size={18} />New file</button>
@@ -347,7 +348,7 @@ export function FileManagerTab({
               <button onClick={handleCopyPath}><Copy size={18} />Copy path</button>
               {selectedItems.length > 0 && <>
                 <button onClick={handleDownloadSelected}><Download size={18} />Download selected ({selectedItems.length})</button>
-                <button disabled={!canWriteFiles} onClick={handleDeleteSelected}><Trash2 size={18} />Delete selected ({selectedItems.length})</button>
+                <button className="is-danger" disabled={!canWriteFiles} onClick={handleDeleteSelected}><Trash2 size={18} />Delete selected ({selectedItems.length})</button>
               </>}
             </div>
           </AppModalBody>

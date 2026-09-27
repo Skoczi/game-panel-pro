@@ -49,6 +49,10 @@ test('server header is a compact toolbar and wraps cleanly on mobile', async ({ 
   if (process.env.PLAYWRIGHT_SCREENSHOTS === '1') await page.screenshot({ path: 'test-results/file-toolbar-mobile.png', fullPage: true });
   await page.getByRole('button', { name: 'More file actions', exact: true }).click();
   await expect(page.getByRole('button', { name: 'New folder', exact: true })).toBeVisible();
+  if (process.env.PLAYWRIGHT_SCREENSHOTS === '1') {
+    await page.evaluate(() => Promise.all(document.getAnimations().filter(a => a.effect?.getComputedTiming().iterations !== Infinity).map(a => a.finished.catch(() => {}))));
+    await page.screenshot({ path: 'test-results/file-actions-sheet-mobile.png' });
+  }
   await page.getByRole('button', { name: 'Show hidden files', exact: true }).click();
   await expect(page.getByRole('dialog')).toHaveCount(0);
   await page.getByRole('button', { name: 'Actions for server.cfg', exact: true }).click();
