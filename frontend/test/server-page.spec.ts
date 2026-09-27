@@ -47,6 +47,13 @@ test('server header is a compact toolbar and wraps cleanly on mobile', async ({ 
   expect((await breadcrumb.boundingBox())!.width).toBeGreaterThan(250);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   if (process.env.PLAYWRIGHT_SCREENSHOTS === '1') await page.screenshot({ path: 'test-results/file-toolbar-mobile.png', fullPage: true });
+  await page.getByRole('button', { name: 'More file actions', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'New folder', exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Show hidden files', exact: true }).click();
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+  await page.getByRole('button', { name: 'Actions for server.cfg', exact: true }).click();
+  await expect(page.getByRole('menuitem', { name: 'Copy file', exact: true })).toBeVisible();
+  await page.keyboard.press('Escape');
   await back.click();
   await expect(page).not.toHaveURL(/servers\/7/);
 });

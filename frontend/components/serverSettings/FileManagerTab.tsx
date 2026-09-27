@@ -20,6 +20,7 @@ import {
   Loader2,
   LayoutGrid,
   List,
+  MoreHorizontal,
   RefreshCw,
   Save,
   Search,
@@ -247,6 +248,7 @@ export function FileManagerTab({
   const [dragSourceName, setDragSourceName] = useState<string | null>(null);
   const [dropTargetName, setDropTargetName] = useState<string | null>(null);
   const [showHidden, setShowHidden] = useState(false);
+  const [mobileActionsOpen, setMobileActionsOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [fileSearch, setFileSearch] = useState('');
   const searchRef = useRef<HTMLInputElement>(null);
@@ -332,6 +334,25 @@ export function FileManagerTab({
   return (
     <div className="h-full flex flex-col" {...getRootProps()}>
       {editorSession && <EditorSessionView session={editorSession} embedded={embeddedEditor} />}
+      <AppModal open={mobileActionsOpen} onOpenChange={setMobileActionsOpen}>
+        <AppModalContent>
+          <AppModalHeader><AppModalTitle>File actions</AppModalTitle></AppModalHeader>
+          <AppModalBody>
+            <div className="gp-mobile-file-options" onClick={event => { if ((event.target as HTMLElement).closest('button:not(:disabled)')) setMobileActionsOpen(false); }}>
+              <button onClick={() => { const next = fileView === 'list' ? 'grid' : 'list'; setFileView(next); try { localStorage.setItem('gp-file-view', next); } catch { /* Storage unavailable. */ } }}><LayoutGrid size={18} />{fileView === 'list' ? 'Tile view' : 'List view'}</button>
+              <button onClick={() => setShowHidden(v => !v)}><Eye size={18} />{showHidden ? 'Hide hidden files' : 'Show hidden files'}</button>
+              <button disabled={!canWriteFiles} onClick={handleCreateFolder}><FolderPlus size={18} />New folder</button>
+              <button disabled={!canWriteFiles} onClick={handleCreateFile}><FilePlus size={18} />New file</button>
+              {onUploadFiles && <button disabled={!canWriteFiles} onClick={() => folderInput.current?.click()}><Folder size={18} />Upload folder</button>}
+              <button onClick={handleCopyPath}><Copy size={18} />Copy path</button>
+              {selectedItems.length > 0 && <>
+                <button onClick={handleDownloadSelected}><Download size={18} />Download selected ({selectedItems.length})</button>
+                <button disabled={!canWriteFiles} onClick={handleDeleteSelected}><Trash2 size={18} />Delete selected ({selectedItems.length})</button>
+              </>}
+            </div>
+          </AppModalBody>
+        </AppModalContent>
+      </AppModal>
       {contextMenu && createPortal(<div ref={menuRef} role="menu" aria-label={`Actions for ${contextMenu.file.name}`} className="gp-file-context-menu"
         style={{ left: Math.min(contextMenu.x, Math.max(8, window.innerWidth - 232)), top: Math.min(contextMenu.y, Math.max(8, window.innerHeight - 270)) }}
         onKeyDown={event => {
@@ -482,6 +503,12 @@ export function FileManagerTab({
               })}
         </div>
 
+        <div className="gp-file-mobile-toolbar">
+          <button aria-label="Search files" onClick={() => { setSearchOpen(true); requestAnimationFrame(() => searchRef.current?.focus()); }}><Search size={18} /></button>
+          <button aria-label="Refresh files" onClick={() => loadFiles(currentPath)}><RefreshCw size={18} /></button>
+          {onUploadFiles && <button aria-label="Upload files" disabled={!canWriteFiles} onClick={() => open()}><Upload size={18} /></button>}
+          <button aria-label="More file actions" aria-haspopup="dialog" onClick={() => setMobileActionsOpen(true)}><MoreHorizontal size={20} />{selectedItems.length > 0 && <span>{selectedItems.length}</span>}</button>
+        </div>
         <div className="gp-file-toolbar-actions ml-1 flex items-center gap-0.5 flex-shrink-0">
           <AppButton
             tone="ghost"
@@ -808,6 +835,10 @@ export function FileManagerTab({
                         </AppButton>
                       </div>
 
+                      <button className="gp-file-mobile-more" aria-label={`Actions for ${file.name}`} aria-haspopup="menu" onClick={event => {
+                        event.stopPropagation(); const rect = event.currentTarget.getBoundingClientRect(); contextTarget.current = event.currentTarget;
+                        setContextMenu({ file, x: rect.right - 224, y: rect.bottom });
+                      }}><MoreHorizontal size={20} /></button>
                       {file.type === 'folder' && (
                         <ChevronRight className="w-3 h-3 text-gray-600 flex-shrink-0" />
                       )}
