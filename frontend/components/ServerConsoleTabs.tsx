@@ -1,3 +1,4 @@
+import { AppOptionSelect } from '../src/ui/components/AppOptionSelect';
 import { consoleView } from '../utils/consoleView';
 import { Terminal, Trash2, X, Copy, Search, ArrowDown, CornerDownLeft, Maximize2, Minimize2 } from 'lucide-react';
 import { memo, useId, useState, useRef, useEffect, useLayoutEffect, useMemo, Fragment } from 'react';
@@ -753,9 +754,9 @@ export function ServerConsoleTabs({
 
       {!isCLIConsoleActive && activeServer && searchOpen && <div id={`${searchId}-filters`} onKeyDown={event => { if (event.key === 'Escape') { event.stopPropagation(); closeSearch(); document.getElementById(`${searchId}-toggle`)?.focus(); } }} className="gp-console-filters shrink-0 flex flex-wrap items-center gap-2 border-b border-gray-700 bg-gp-surface-input p-2 text-sm text-gray-700 dark:text-gray-200">
         <input autoFocus aria-label="Search console logs" placeholder="Search logs…" value={logSearch} onChange={e => setLogSearch(e.target.value)} className="min-w-0 flex-1 rounded border border-gray-600 bg-gray-800 px-2 py-1" />
-        <select aria-label="Console log level" value={logLevel} onChange={e => setLogLevel(e.target.value)} className="rounded border border-gray-600 bg-gray-800 px-2 py-1">
+        <AppOptionSelect aria-label="Console log level" value={logLevel} onChange={setLogLevel} className="min-w-[130px]">
           <option value="all">All levels</option>{['info', 'warning', 'error', 'success', 'command', 'action'].map(level => <option key={level} value={level}>{level}</option>)}
-        </select>
+        </AppOptionSelect>
         <label className="flex items-center gap-1"><input type="checkbox" checked={groupLogs} onChange={e => setGroupLogs(e.target.checked)} />Group repeats</label>
         <button type="button" onClick={downloadRaw} className="rounded border border-gray-600 px-2 py-1">Download raw buffer</button>
         <span className="text-gray-600 dark:text-gray-400">{displayedLogs.length}/{activeLogs.length} lines</span>

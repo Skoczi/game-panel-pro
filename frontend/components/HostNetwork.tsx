@@ -1,3 +1,4 @@
+import { AppOptionSelect } from '../src/ui/components/AppOptionSelect';
 import { useEffect, useState } from 'react';
 import { Network, Plus, RefreshCw, Trash2, CheckCircle2 } from 'lucide-react';
 import { nodesRequest } from '../utils/nodesApi';
@@ -59,7 +60,7 @@ export function HostNetwork({ nodeId, onDirtyChange, onSnapshot }: { nodeId: str
       <form className="gp-host-network-form" onSubmit={e => { e.preventDefault(); add(); }}>
         <label>Additional IPv4<input value={draft.ip} placeholder="51.83.150.150" disabled={busy} onChange={e => setDraft({ ...draft, ip: e.target.value })} /></label>
         <label>Virtual MAC<input value={draft.mac} placeholder="02:00:00:00:00:00" disabled={busy} onChange={e => setDraft({ ...draft, mac: e.target.value })} /></label>
-        <label>Parent interface<select value={draft.parent} disabled={busy} onChange={e => setDraft({ ...draft, parent: e.target.value })}>{state.parents.map(p => <option key={p}>{p}</option>)}</select></label>
+        <label>Parent interface<AppOptionSelect controlLabel="Parent interface" value={draft.parent} disabled={busy} onChange={value => setDraft({ ...draft, parent: value })}>{state.parents.map(p => <option key={p}>{p}</option>)}</AppOptionSelect></label>
         <AppButton type="submit" disabled={busy || !draft.ip || !draft.mac || !draft.parent}><Plus size={16} /> Add to changes</AppButton>
       </form>
       {plan && <div className="gp-host-network-preview" role="region" aria-label="Network changes preview"><h3>Review network changes</h3><p>Add or import: {plan.add.map(e => e.ip).join(', ') || 'none'}</p><p>Remove: {plan.remove.map(e => e.ip).join(', ') || 'none'}</p><p>Unchanged: {plan.keep.length}</p><AppButton tone="primary" disabled={busy} onClick={() => void submit(false)}>Save on machine</AppButton><AppButton disabled={busy} onClick={() => setPlan(null)}>Cancel review</AppButton></div>}

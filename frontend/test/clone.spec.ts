@@ -36,7 +36,8 @@ test('transfer selects another node and restores durable progress after reload',
     return route.fulfill({ json: { name: 'Source', stopped: true, fingerprint: 'reviewed', ports: { tcp: [], udp: [] }, targets: [{ id: 'target-id', name: 'WAW1', location: 'Warsaw' }], changes: ['Source retained'], transfer: job } });
   });
   await page.goto('/test/clone.fixture.html');
-  await page.getByLabel('Destination node').selectOption('target-id');
+  await page.getByRole('combobox', { name: 'Destination node' }).click();
+  await page.getByRole('option').filter({ hasText: 'WAW1' }).click();
   await page.getByRole('button', { name: 'Review clone', exact: true }).click();
   await page.getByRole('button', { name: 'Create backup and transfer' }).click();
   await expect(page.getByRole('status')).toContainText('Copying and verifying archive');

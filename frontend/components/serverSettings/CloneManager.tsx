@@ -1,3 +1,4 @@
+import { AppOptionSelect } from '../../src/ui/components/AppOptionSelect';
 import { useEffect, useRef, useState } from 'react';
 import { apiClient, type BackupJob } from '../../utils/api';
 import { openFleet } from '../../utils/nodeContext';
@@ -111,13 +112,13 @@ export function CloneManager({ fleetId, serverId }: { fleetId: string; serverId:
               </h4>
               <label className="block">
                 Destination node
-                <select
+                <AppOptionSelect
                   aria-label="Destination node"
-                  className="block w-full rounded border bg-transparent p-2"
+                  className="block w-full"
                   disabled={locked}
                   value={targetNode}
-                  onChange={(e) => {
-                    setTargetNode(e.target.value);
+                  onChange={(value) => {
+                    setTargetNode(value);
                     setReview(false);
                   }}
                 >
@@ -127,7 +128,7 @@ export function CloneManager({ fleetId, serverId }: { fleetId: string; serverId:
                       {node.name} · {node.location}
                     </option>
                   ))}
-                </select>
+                </AppOptionSelect>
               </label>
               {targetNode && (
                 <p className="gp-workflow-muted">Destination requires the same images and unused allocated ports. The source is retained.</p>

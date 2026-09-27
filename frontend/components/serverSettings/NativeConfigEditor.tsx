@@ -1,3 +1,4 @@
+import { AppOptionSelect } from '../../src/ui/components/AppOptionSelect';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowRight, Check, Clock3, FileCode2, LockKeyhole, RefreshCw, Save, SlidersHorizontal } from 'lucide-react';
 import type { GameConfigDefinition, GameTemplate } from '../../../backend/src/templates/types';
@@ -122,11 +123,11 @@ export function NativeConfigEditor({ serverId, definition, template, active, can
             return <div key={field.key} className={`gp-config-field${modified ? ' is-modified' : ''}`}>
               <div className="gp-config-field-label"><label htmlFor={id}>{field.label}</label>{modified && <span>Modified</span>}{locked && <LockKeyhole size={13} aria-label="Managed setting" />}</div>
               <p id={`${id}-help`}>{ownedByStartup(field.key) ? 'Controlled by the startup configuration. Edit it in server Settings.' : complex(field.key) ? 'This command uses complex syntax. Use the file editor.' : field.description}</p>
-              {field.type === 'boolean' || field.type === 'select' ? <select id={id} value={value ?? '__unset__'} disabled={disabled} aria-describedby={`${id}-help`} onChange={e => edit(field.key, e.target.value)}>
+              {field.type === 'boolean' || field.type === 'select' ? <AppOptionSelect controlLabel={field.label} id={id} value={value ?? '__unset__'} disabled={disabled} aria-describedby={`${id}-help`} onChange={value => edit(field.key, value)}>
                 <option value="__unset__" disabled>Not set in file</option>
                 {field.type === 'boolean' ? <><option value="1">On</option><option value="0">Off</option></> : field.options?.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}
                 {value !== undefined && !(field.type === 'boolean' ? ['0', '1'] : field.options?.map(o => o.value) || []).includes(value) && <option value={value}>Current: {value}</option>}
-              </select> : <input id={id} type={field.type === 'number' ? 'number' : field.type === 'password' ? 'password' : 'text'} autoComplete="off" value={value ?? ''} placeholder="Not set in file" min={field.min} max={field.max} step={field.step ?? 'any'} maxLength={256} disabled={disabled} aria-invalid={Boolean(validation)} aria-describedby={`${id}-help`} onChange={e => edit(field.key, e.target.value)} />}
+              </AppOptionSelect> : <input id={id} type={field.type === 'number' ? 'number' : field.type === 'password' ? 'password' : 'text'} autoComplete="off" value={value ?? ''} placeholder="Not set in file" min={field.min} max={field.max} step={field.step ?? 'any'} maxLength={256} disabled={disabled} aria-invalid={Boolean(validation)} aria-describedby={`${id}-help`} onChange={e => edit(field.key, e.target.value)} />}
               <div className="gp-config-field-meta"><code>{field.key}</code><span>{field.apply === 'restart' ? 'Next restart' : 'Next map / config reload'}</span></div>
               {validation && <p className="gp-config-validation" role="alert">{validation}</p>}
             </div>;

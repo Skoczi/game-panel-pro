@@ -1,6 +1,23 @@
 import { test, expect, type Page } from '@playwright/test';
 import { cs16GameConfig } from '../../backend/src/templates/gameConfig';
 const original = '// My settings\r\nhostname "Puszka Pandory [FFA] @eserv.pl" // keep\r\nmp_timelimit 20\r\nmp_friendlyfire 0\r\nsv_password "private-password"\r\nsv_custom 99\r\n';
+test('styled configuration dropdown supports keyboard selection on mobile', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  const writes = await mock(page);
+  await page.goto('/test/native-game-config.fixture.html');
+  const select = page.getByRole('combobox', { name: 'Friendly fire', exact: true });
+  await expect(select).toContainText('Off');
+  await select.click();
+  await expect(page.getByRole('option', { name: 'On', exact: true })).toBeVisible();
+  await page.screenshot({ path: 'test-results/config-dropdown-mobile.png', fullPage: true });
+  await page.keyboard.press('Home');
+  await page.keyboard.press('Enter');
+  await expect(select).toContainText('On');
+  await page.getByRole('button', { name: 'Review changes', exact: true }).click();
+  await page.getByRole('button', { name: 'Save changes', exact: true }).click();
+  await expect(page.getByText(/Configuration saved/)).toBeVisible();
+  expect(writes[0].content).toContain('mp_friendlyfire "1"');
+});
 async function mock(page: Page, options: { conflict?: boolean; version?: boolean; content?: string; failure?: boolean; path?: string; etag?: string } = {}) {
   let content = options.content ?? original;
   const writes: any[] = [];

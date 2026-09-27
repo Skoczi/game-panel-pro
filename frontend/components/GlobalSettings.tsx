@@ -1,3 +1,4 @@
+import { AppOptionSelect } from '../src/ui/components/AppOptionSelect';
 import { SignedWebhookSettings } from './SignedWebhookSettings';
 import { NotificationSettings } from './NotificationSettings';
 import { confirmDialog } from '../utils/confirmDialog';
@@ -594,11 +595,11 @@ export function GlobalSettings({
                             udp: 'UDP ports',
                           }[key]
                         }
-                        {key === 'ip' && managedAddresses !== undefined ? <select aria-label="IP address" className={`${field} mt-1`} value={draft.ip} required onChange={event => setDraft({ ...draft, ip: event.target.value })}>
+                        {key === 'ip' && managedAddresses !== undefined ? <AppOptionSelect aria-label="IP address" className="mt-1 w-full" value={draft.ip} required onChange={value => setDraft({ ...draft, ip: value })}>
                           <option value="">{managedAddresses === null ? 'Host address list unavailable' : 'Choose a saved IP address'}</option>
                           {managedAddresses?.filter(e => !settings.network.allocations.some((a, i) => a.ip === e.ip && i !== editing)).map(e => <option key={e.ip} value={e.ip}>{e.ip}{e.status === 'needs-attention' ? ' · Needs attention' : ''}</option>)}
                           {editing !== null && !managedAddresses?.some(e => e.ip === settings.network.allocations[editing].ip) && <option value={settings.network.allocations[editing].ip}>{settings.network.allocations[editing].ip} · Existing allocation</option>}
-                        </select> : <input
+                        </AppOptionSelect> : <input
                           className={`${field} mt-1`}
                           value={draft[key]}
                           required={key === 'ip'}

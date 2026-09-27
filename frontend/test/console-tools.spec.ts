@@ -20,7 +20,8 @@ for (const width of [390, 1280]) test(`console filters preserve raw buffer at ${
   await expect(page.getByLabel('2 repeats')).toBeVisible();
   await page.getByRole('textbox', { name: 'Search console logs' }).fill('FAILED');
   await expect(page.getByText('Failed to load map', { exact: true })).toBeVisible();
-  await page.getByLabel('Console log level').selectOption('warning');
+  await page.getByRole('combobox', { name: 'Console log level' }).click();
+  await page.getByRole('option', { name: 'warning', exact: true }).click();
   await expect(page.getByText('No logs match these filters.')).toBeVisible();
   const [download] = await Promise.all([page.waitForEvent('download'), page.getByRole('button', { name: 'Download raw buffer' }).click()]);
   const raw = await readFile((await download.path())!, 'utf8');
