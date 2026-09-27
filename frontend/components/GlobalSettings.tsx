@@ -511,7 +511,7 @@ export function GlobalSettings({
                       <table className="w-full text-left text-sm">
                         <thead className="text-xs uppercase text-gray-500">
                           <tr>
-                            {['IP / alias', 'TCP ports', 'UDP ports', 'Used by', 'Actions'].map(
+                            {['IP / alias', 'TCP ports', 'UDP ports', 'Actions'].map(
                               (heading) => (
                                 <th
                                   key={heading}
@@ -540,15 +540,6 @@ export function GlobalSettings({
                               </td>
                               <td className="max-w-48 break-words px-2 py-3 font-mono text-xs">
                                 {row.udp || 'None'}
-                              </td>
-                              <td className="px-2 py-3 text-xs">
-                                {[
-                                  ...new Set(
-                                    assignments
-                                      .filter((used) => used.ip === row.ip)
-                                      .map((used) => used.serverName)
-                                  ),
-                                ].join(', ') || 'Unassigned'}
                               </td>
                               <td className="px-2 py-3">
                                 <div className="flex gap-2">
