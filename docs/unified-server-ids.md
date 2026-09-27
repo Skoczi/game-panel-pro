@@ -23,7 +23,11 @@ FR1 after deploying the shared allocator to both agents and the panel. It retain
 the runtime UUID, fleet UUID and grants, snapshots databases and game files,
 changes foreign-key references and storage to 100, and recreates the game container
 with its original image, environment, limits and port bindings. The old stopped
-container has automatic restart disabled. Private rollback artifacts are under
+container has automatic restart disabled during verification. After verifying the
+new runtime and central mapping, archive its console log and remove the old
+container without deleting volumes; otherwise its old port bindings would still
+appear in allocation checks. The saved inspect payload allows reconstruction.
+Private rollback artifacts are under
 `identity-migrations/` on each host. Do not publish these snapshots.
 
 The WAW2 migration retains `/fdl/srv9/` compatibility through a persistent Nginx
