@@ -652,7 +652,7 @@ export function FleetWorkspace({
         <ConfirmationModal
           isOpen
           title={`${power.action} ${power.server.name}?`}
-          message={`This will ${power.action} ${power.server.displayId || power.server.name}. Connected players may be disconnected.`}
+          message={`This will ${power.action} ${power.server.displayId || power.server.name}.${power.action === 'start' ? '' : ' Connected players may be disconnected.'}`}
           confirmText={power.action}
           onClose={() => setPower(null)}
           onConfirm={async () => {
