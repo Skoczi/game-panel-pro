@@ -106,6 +106,7 @@ export interface NativeProtectionSummary {
   warnings: string[];
 }
 export interface BackupJob {
+  progress?: { stage: string; message: string; percent: number | null };
   id: string; kind: 'backup' | 'restore' | 'import' | 'addon' | 'clone'; status: 'running' | 'completed' | 'failed' | 'interrupted';
   actor?: string;
   startedAt: string; completedAt?: string; error?: string;
@@ -953,6 +954,9 @@ class ApiClient {
   async readTransfer(jobId: string) { return (await this.client.get(`/api/fleet/transfers/${jobId}`)).data.job; }
   async previewClone(fleetId: string) { return (await this.client.get(`/api/fleet/${fleetId}/clone`)).data; }
   async startClone(fleetId: string, input: unknown) { return (await this.client.post(`/api/fleet/${fleetId}/clone`, input)).data; }
+  async listAddonJobs(serverId: number): Promise<BackupJob[]> {
+    return (await this.client.get(`/api/servers/${serverId}/rehlds/addons/jobs`)).data.jobs;
+  }
   async getRehldsContent(serverId: number, section: string) {
     return (await this.client.get(`/api/servers/${serverId}/rehlds/${section}`)).data;
   }

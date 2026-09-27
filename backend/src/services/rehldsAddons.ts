@@ -1,3 +1,4 @@
+import type { ReportProgress } from './operationProgress.js';
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import { createHash, randomBytes } from 'node:crypto';
@@ -49,7 +50,7 @@ export async function addonPreview(serverId: number, selection: unknown) {
     changes: ['Create a verified backup before changing files', 'Install pinned Linux binaries and missing default files', 'Preserve existing addon configuration and data', 'Register selected modules in liblist.gam and Metamod', 'Keep the server stopped; restore the pre-change backup to roll back'],
     sources: packageSources.filter(s => modules.includes(s.module)).map(s => ({ url: s.url, sha256: s.sha256 })) };
 }
-export async function stageAddonFiles(root: string, files: Map<string, Buffer>, modules: string[], versions: Record<string, string>, backup: string) {
+export async function stageAddonFiles(root: string, files: Map<string, Buffer>, modules: string[], versions: Record<string, string>, backup: string, report?: ReportProgress) {
   async function write(relative: string, bytes: Buffer) {
     const target = (await safeFile(root, relative, true))!;
     const handle = await fs.open(target.filename, 'w', /\.so$|^hlds_linux$/.test(relative) ? 0o755 : 0o644);
@@ -57,14 +58,28 @@ export async function stageAddonFiles(root: string, files: Map<string, Buffer>, 
     finally { await handle.close(); }
     await syncDirectory(path.dirname(target.filename));
   }
-  for (const [relative, original] of files) {
+  const moduleFor = (name: string) => name.includes('/metamod/reunion/') || name === 'cstrike/reunion.cfg' ? 'reunion'
+    : name.includes('/metamod/') ? 'metamod' : name.includes('reapi') ? 'reapi'
+    : name.includes('/amxmodx/') ? 'amxx' : name.startsWith('cstrike/') ? 'regamedll' : 'rehlds';
+  for (const name of files.keys()) await safeFile(root, name);
+  for (const module of modules) {
+    const entries = [...files].filter(([name]) => moduleFor(name) === module);
+    const moduleName = REHLDS_MODULES.find(m => m.id === module)!.name;
+    await report?.({ stage: `install-${module}`, message: `Installing ${moduleName}`, percent: 0 });
+    let processed = 0, last = 0;
+    for (const [relative, original] of entries) {
     const target = await safeFile(root, relative, true);
-    if (target?.stat && (/\.(ini|cfg)$/.test(relative) || /\/amxmodx\/(configs|data)\//.test(relative))) continue;
+    const preserve = target?.stat && (/\.(ini|cfg)$/.test(relative) || /\/amxmodx\/(configs|data)\//.test(relative));
     let bytes = original;
     if (relative.endsWith('/configs/users.ini')) bytes = Buffer.from(original.toString('utf8').replace(/^"loopback".*$/gm, '; Add Steam ID administrators through the panel.'));
     if (relative === 'cstrike/reunion.cfg') bytes = Buffer.from(original.toString('utf8').replace(/^SteamIdHashSalt\s*=.*$/m, 'SteamIdHashSalt = ' + randomBytes(32).toString('hex')));
-    await write(relative, bytes);
+    if (!preserve) await write(relative, bytes);
+    const percent = Math.floor(++processed / entries.length * 100);
+    if (percent >= last + 10) { last = percent; await report?.({ stage: `install-${module}`, message: `Installing ${moduleName}`, percent }); }
+    }
+    await report?.({ stage: `install-${module}`, message: `${moduleName} files ready`, percent: 100 });
   }
+  await report?.({ stage: 'configure', message: 'Registering addon modules', percent: null });
   if (modules.includes('metamod')) {
     const liblist = (await textFile(root, 'cstrike/liblist.gam'))!;
     await write('cstrike/liblist.gam', Buffer.from(liblist.replace(/^[ \t]*gamedll_linux\s+.*(?:\r?\n|$)/gm, '').trimEnd() + '\ngamedll_linux "addons/metamod/metamod_i386.so"\n'));
@@ -82,20 +97,23 @@ export async function stageAddonFiles(root: string, files: Map<string, Buffer>, 
   }
   await write('.gamepanel-addons.json', Buffer.from(JSON.stringify({ modules: versions, backup, installedAt: new Date().toISOString() })));
 }
-export async function installRehldsAddons(serverId: number, selection: unknown, expected: string) {
+export async function installRehldsAddons(serverId: number, selection: unknown, expected: string, report?: ReportProgress) {
+  await report?.({ stage: 'prepare', message: 'Preparing addon installation', percent: null });
   const preview = await addonPreview(serverId, selection);
   if (!preview.stopped || preview.fingerprint !== expected) throw Object.assign(new Error('Stop the server and refresh the installation preview'), { statusCode: 409 });
-  const modules = preview.modules.map(m => m.id), files = await downloadAddonFiles(modules);
+  const modules = preview.modules.map(m => m.id), files = await downloadAddonFiles(modules, report);
   const server = await getServerOrThrow(serverId);
   if (!server.docker_container_id) throw new Error('Game container unavailable');
   const runtime = { ...server, docker_container_id: server.docker_container_id };
   if ((await addonPreview(serverId, modules)).fingerprint !== expected) throw new Error('Configuration changed during package preparation');
-  const backup = await createNativeBackup(runtime, true, 'Before-ReHLDS-addons');
+  const backup = await createNativeBackup(runtime, true, 'Before-ReHLDS-addons', report);
   if (!backup.ok || backup.stderr) throw new Error('A verified pre-change backup is required');
   const versions = { ...preview.installed, ...Object.fromEntries(preview.modules.map(m => [m.id, m.version])) };
+  await report?.({ stage: 'staging', message: 'Preparing isolated game files', percent: null });
   const result = await restoreNativeBackup(runtime, backup.name, true, async staging => {
     if ((await addonPreview(serverId, modules)).fingerprint !== expected) throw new Error('Configuration changed during backup');
-    await stageAddonFiles(path.join(staging, 'serverfiles'), files, modules, versions, backup.name);
+    await stageAddonFiles(path.join(staging, 'serverfiles'), files, modules, versions, backup.name, report);
+    await report?.({ stage: 'commit', message: 'Applying addon installation', percent: null });
   });
   return { ...result, stdout: `Addons installed. Server remains stopped. Rollback backup: ${backup.name}` };
 }

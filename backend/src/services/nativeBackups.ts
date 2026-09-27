@@ -1,3 +1,5 @@
+import { archiveWithProgress } from './archiveProgress.js';
+import type { ReportProgress } from './operationProgress.js';
 import { withStorageReserve } from './storageReserve.js';
 import { recordNativeBackup } from './nativeProtection.js';
 import { syncDirectory } from './nativeRestoreJournal.js';
@@ -42,7 +44,7 @@ export function normalizeBackupName(value: unknown): string {
 }
 
 const busy = new Set<number>();
-export async function createNativeBackup(server: GameServerRow & { docker_container_id: string }, operationHeld = false, requestedName?: string) {
+export async function createNativeBackup(server: GameServerRow & { docker_container_id: string }, operationHeld = false, requestedName?: string, report?: ReportProgress) {
     const backupName = normalizeBackupName(requestedName);
     if (!nativeServerTemplate(server)) throw new Error('Not a Native server');
     if (busy.has(server.id)) throw Object.assign(new Error('A backup is already running'), { statusCode: 409 });
@@ -71,11 +73,12 @@ export async function createNativeBackup(server: GameServerRow & { docker_contai
         temporary = path.join(directory, `${filename}.partial`);
         // argv only; exclude logs, installers and backups by archiving only serverfiles.
         try {
-            await withStorageReserve(directory, signal => promisify(execFile)('tar', ['-czf', temporary!, '-C', archiveRoot, '--', ...keys], { signal, timeout: 600_000, maxBuffer: 1024 * 1024, env: { ...process.env, COPYFILE_DISABLE: '1' } }));
+            await withStorageReserve<unknown>(directory, signal => report ? archiveWithProgress(archiveRoot, keys, temporary!, signal, report) : promisify(execFile)('tar', ['-czf', temporary!, '-C', archiveRoot, '--', ...keys], { signal, timeout: 600_000, maxBuffer: 1024 * 1024, env: { ...process.env, COPYFILE_DISABLE: '1' } }));
         } catch (error: any) {
             if (!live || error.code !== 1 || !String(error.stderr).includes('file changed as we read it')) throw error;
             await promisify(execFile)('tar', ['-tzf', temporary], { timeout: 600_000, maxBuffer: 16 * 1024 * 1024 });
         }
+        await report?.({ stage: 'backup-verify', message: 'Backup: verifying archive', percent: null });
         await validateNativeArchive(temporary);
         await fs.chmod(temporary, 0o600);
         const output = await fs.open(temporary, 'r');
@@ -84,8 +87,10 @@ export async function createNativeBackup(server: GameServerRow & { docker_contai
         await syncDirectory(directory);
         temporary = undefined;
         const recordWarning = await recordNativeBackup(path.join(directory, filename), live).then(() => '', () => 'Archive created and checked, but its protection record could not be saved.');
+        await report?.({ stage: 'backup-protection', message: policy.externalCopy ? 'Backup: copying to external storage and verifying' : 'Backup: applying retention', percent: null });
         const protection = await finishNativeBackup(server, path.join(directory, filename), live,
             recordWarning ? { ...policy, automaticRetention: false } : policy);
+        await report?.({ stage: 'backup-ready', message: 'Backup verified', percent: 100 });
         return { ok: true, name: filename, exitCode: 0, stdout: `Native ${live ? 'live ' : ''}backup created: ${filename}${live ? '. Files may have changed during backup; game consistency is not guaranteed.' : ''} ${protection}`.trim(), stderr: recordWarning };
     } finally {
         if (temporary) await fs.unlink(temporary).catch(() => {});

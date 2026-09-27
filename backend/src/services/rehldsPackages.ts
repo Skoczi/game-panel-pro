@@ -1,3 +1,4 @@
+import type { ReportProgress } from './operationProgress.js';
 import { createHash } from 'node:crypto';
 import { Readable } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
@@ -37,7 +38,7 @@ export function addonPath(name: string) {
   if (name.startsWith('/') || parts.some(p => !p || p === '.' || p === '..') || /[\\\x00-\x1f]/.test(name)) throw new Error('Invalid addon archive path');
   return name;
 }
-export async function downloadAddonFiles(selected: string[]) {
+export async function downloadAddonFiles(selected: string[], report?: ReportProgress) {
   const modules = selectedModules(selected);
   const files = new Map<string, Buffer>();
   let expanded = 0;
@@ -47,12 +48,17 @@ export async function downloadAddonFiles(selected: string[]) {
     files.set(name, data);
   };
   for (const source of packageSources.filter(s => modules.includes(s.module))) {
+    const moduleName = REHLDS_MODULES.find(m => m.id === source.module)!.name;
+    await report?.({ stage: `download-${source.module}`, message: `Downloading ${moduleName}`, percent: 0 });
     const response = await fetch(source.url, { signal: AbortSignal.timeout(30000) });
     if (!response.ok || !response.body) throw new Error('Official addon package is unavailable');
+    const total = Number(response.headers.get('content-length'));
+    let last = 0;
     const chunks: Uint8Array[] = []; let size = 0;
-    for await (const chunk of response.body as any) { size += chunk.length; if (size > 10 * 1024 * 1024) throw new Error('Addon download exceeds limit'); chunks.push(chunk); }
+    for await (const chunk of response.body as any) { size += chunk.length; if (size > 10 * 1024 * 1024) throw new Error('Addon download exceeds limit'); chunks.push(chunk); if (total > 0) { const percent = Math.min(99, Math.floor(size / total * 100)); if (percent >= last + 10) { last = percent; await report?.({ stage: `download-${source.module}`, message: `Downloading ${moduleName}`, percent }); } } }
     const bytes = Buffer.concat(chunks);
     if (createHash('sha256').update(bytes).digest('hex') !== source.sha256) throw new Error('Addon package checksum mismatch');
+    await report?.({ stage: `download-${source.module}`, message: `Verifying ${moduleName}`, percent: null });
     if (source.kind === 'zip') {
       await new Promise<void>((resolve, reject) => yauzl.fromBuffer(bytes, { lazyEntries: true }, (error, zip) => {
         if (error || !zip) return reject(error); zip.on('error', reject); zip.on('end', resolve);
@@ -88,6 +94,7 @@ export async function downloadAddonFiles(selected: string[]) {
       await pipeline(Readable.from(bytes), createGunzip(), extract);
     }
   }
+  await report?.({ stage: 'packages-ready', message: 'Addon packages verified', percent: 100 });
   const required: Record<string, string> = { rehlds: 'hlds_linux', metamod: 'cstrike/addons/metamod/metamod_i386.so', amxx: 'cstrike/addons/amxmodx/dlls/amxmodx_mm_i386.so', regamedll: 'cstrike/dlls/cs.so', reapi: 'cstrike/addons/amxmodx/modules/reapi_amxx_i386.so', reunion: 'cstrike/addons/metamod/reunion/reunion_mm_i386.so' };
   for (const module of modules) if (!files.has(required[module])) throw new Error('Incomplete addon package');
   return files;

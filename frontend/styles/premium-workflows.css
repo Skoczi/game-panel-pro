@@ -484,3 +484,8 @@ html .gp-server-page .gp-server-stats .gp-server-stat small {
   border-radius: 12px;
   background: var(--ux-inset);
 }
+
+.gp-addon-progress-heading,.gp-addon-progress-meter { display:flex; justify-content:space-between; align-items:center; gap:16px; }
+.gp-addon-progress-heading span { color:var(--ux-muted); font-size:12px; }
+.gp-addon-progress-meter progress { flex:1; min-width:0; height:8px; accent-color:var(--ux-accent); }
+.gp-addon-progress-meter span { font-size:12px; font-variant-numeric:tabular-nums; }

@@ -100,24 +100,29 @@ export function RehldsManager({
       active = false;
     };
   }, [serverId, section, modules, revision]);
+  const [progressError, setProgressError] = useState('');
   useEffect(() => {
-    if (!job || job.status !== 'running') return;
-    let active = true;
-    const timer = setInterval(() => {
-      apiClient
-        .readBackupJob(serverId, job.id)
-        .then((value) => {
-          if (active) setJob(value);
-        })
-        .catch(() => {
-          if (active) setError('Operation status unavailable; inspect Backups before retrying.');
-        });
-    }, 3000);
-    return () => {
-      active = false;
-      clearInterval(timer);
+    if (!canWrite || (section !== 'addons' && job?.status !== 'running')) return;
+    let active = true, pending = false;
+    const refresh = async () => {
+      if (pending) return;
+      pending = true;
+      try {
+        const jobs = await apiClient.listAddonJobs(serverId);
+        if (active) {
+          setProgressError('');
+          if (Array.isArray(jobs) && jobs[0]) setJob(current => !current || jobs[0].startedAt >= current.startedAt ? jobs[0] : current);
+        }
+      } catch { if (active) setProgressError('Connection lost. Retrying progress updates...'); }
+      finally { pending = false; }
     };
-  }, [serverId, job?.id, job?.status]);
+    void refresh();
+    const timer = setInterval(() => void refresh(), 2000);
+    return () => { active = false; clearInterval(timer); };
+  }, [serverId, section, canWrite, job?.status]);
+  useEffect(() => {
+    if (job?.status === 'completed') setRevision(value => value + 1);
+  }, [job?.id, job?.status]);
   const save = async () => {
     if (!snapshot || section === 'files') return;
     setBusy(true);
@@ -185,6 +190,12 @@ export function RehldsManager({
             </AppButton>
           ))}
       </nav>
+      {job && <section className="gp-workflow-card" aria-label="Addon installation progress">
+        <div className="gp-addon-progress-heading"><strong>Addon installation</strong><span>{job.status}</span></div>
+        <p role="status">{job.error || job.progress?.message || (job.status === 'running' ? 'Preparing installation...' : job.result?.stdout || job.status)}</p>
+        {job.status === 'running' && <div className="gp-addon-progress-meter"><progress aria-label="Current installation stage" max={100} value={job.progress?.percent ?? undefined} /><span>{job.progress?.percent == null ? 'In progress' : `${job.progress.percent}%`}</span></div>}
+        {progressError && <p role="alert">{progressError}</p>}
+      </section>}
       {section === 'files' && children}
       {loading && <p role="status">Loading ReHLDS tools…</p>}
       {error && (
@@ -427,11 +438,7 @@ export function RehldsManager({
               </details>
             </>
           )}
-          {job && (
-            <p role="status" className="break-words">
-              Installation: {job.status}. {job.error || job.result?.stdout}
-            </p>
-          )}
+
         </>
       )}
       <ConfirmationModal

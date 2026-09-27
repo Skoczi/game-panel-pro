@@ -4,7 +4,7 @@ import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
 import { loadWithMocks } from './loadWithMocks.js';
-import { addonPath, selectedModules } from '../src/services/rehldsPackages.js';
+import { addonPath, selectedModules, REHLDS_MODULES } from '../src/services/rehldsPackages.js';
 
 const content = loadWithMocks('../src/services/rehldsContent.ts', {
   'node:fs': { promises: fs }, 'node:path': path, '../utils/fsBrowser.js': {}, './nativeGameConfig.js': {}, './servers.js': {}, './fileExplorer.js': {}, './atomicFile.js': {}, './fileHistory.js': {}, '../utils/storage.js': {},
@@ -29,7 +29,7 @@ test('addon staging preserves settings, appends missing loader and does not dupl
   const { stageAddonFiles } = loadWithMocks('../src/services/rehldsAddons.ts', {
     'node:fs': { promises: { ...fs, chown: async () => {} } }, 'node:path': path, 'node:crypto': await import('node:crypto'),
     './servers.js': {}, './rehldsContent.js': {}, '../utils/storage.js': {}, '../utils/docker.js': {}, './nativeBackups.js': {}, './nativeRestore.js': {},
-    './rehldsPackages.js': { addonPath }, './nativeRestoreJournal.js': { syncDirectory: async () => {} },
+    './rehldsPackages.js': { addonPath, REHLDS_MODULES }, './nativeRestoreJournal.js': { syncDirectory: async () => {} },
   }, { Buffer });
   await fs.mkdir(path.join(root, 'cstrike'), { recursive: true });
   await fs.writeFile(path.join(root, 'cstrike/liblist.gam'), 'game "Counter-Strike"\n');

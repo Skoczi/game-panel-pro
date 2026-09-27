@@ -1,6 +1,6 @@
 import { addonPreview, installRehldsAddons } from '../services/rehldsAddons.js';
 import { REHLDS_MODULES } from '../services/rehldsPackages.js';
-import { startBackupJob } from '../services/backupJobs.js';
+import { startBackupJob, listBackupJobs } from '../services/backupJobs.js';
 import { Router } from 'express';
 import { requireServerPermission, type AuthenticatedRequest } from '../middleware/auth.js';
 import { PERMISSIONS } from '../permissions.js';
@@ -16,9 +16,13 @@ rehldsRoutes.post('/addons', requireServerPermission(PERMISSIONS.fs.read), requi
   try {
     const id = requirePositiveInt(req.params.id, 'Invalid server'), preview = await addonPreview(id, req.body?.modules);
     if (!preview.stopped || preview.fingerprint !== req.body?.fingerprint) return res.status(409).json({ error: 'Stop the server and refresh the installation preview' });
-    const job = await startBackupJob(id, 'addon', req.user?.username || 'Operator', () => installRehldsAddons(id, req.body.modules, preview.fingerprint));
+    const job = await startBackupJob(id, 'addon', req.user?.username || 'Operator', report => installRehldsAddons(id, req.body.modules, preview.fingerprint, report));
     res.status(202).json({ job });
   } catch (error) { sendRouteError(res, error, { route: 'REHLDS:INSTALL', fallbackMessage: 'Cannot install addons' }); }
+});
+rehldsRoutes.get('/addons/jobs', requireServerPermission(PERMISSIONS.fs.read), requireServerPermission(PERMISSIONS.backups.create), async (req, res) => {
+  try { res.setHeader('Cache-Control', 'no-store'); res.json({ jobs: (await listBackupJobs(requirePositiveInt(req.params.id, 'Invalid server'))).filter(job => job.kind === 'addon') }); }
+  catch (error) { sendRouteError(res, error, { route: 'REHLDS:JOBS', fallbackMessage: 'Cannot load addon progress' }); }
 });
 rehldsRoutes.get('/:section', requireServerPermission(PERMISSIONS.fs.read), async (req, res) => {
   try { res.setHeader('Cache-Control', 'no-store'); res.json(await readRehldsContent(requirePositiveInt(req.params.id, 'Invalid server'), req.params.section)); }

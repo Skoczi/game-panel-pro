@@ -15,7 +15,7 @@ test('native backups include game files and FastDownload uploads without followi
     const root = await fs.mkdtemp(path.join(os.tmpdir(), 'gp-native-backup-test-'));
     let status = 'running'; let released = 0;
     const module = loadWithMocks('../src/services/nativeBackups.ts', {
-        './nativeProtection.js': { recordNativeBackup: async () => ({}) },
+        './archiveProgress.js': {}, './nativeProtection.js': { recordNativeBackup: async () => ({}) },
         './nativeBackupPolicy.js': { readNativeBackupPolicy: async () => ({ automaticRetention: false, externalCopy: false }) },
         './finishNativeBackup.js': { finishNativeBackup: async () => '' },
         './storageReserve.js': { withStorageReserve },
@@ -71,7 +71,7 @@ test('failed native backup removes partial output and releases its operation loc
     const root = await fs.mkdtemp(path.join(os.tmpdir(), 'gp-native-backup-failure-'));
     let released = 0; let fail = true;
     const module = loadWithMocks('../src/services/nativeBackups.ts', {
-        './nativeProtection.js': { recordNativeBackup: async () => ({}) },
+        './archiveProgress.js': {}, './nativeProtection.js': { recordNativeBackup: async () => ({}) },
         './nativeBackupPolicy.js': { readNativeBackupPolicy: async () => ({ automaticRetention: false, externalCopy: false }) },
         './finishNativeBackup.js': { finishNativeBackup: async () => '' },
         './storageReserve.js': { withStorageReserve },
@@ -104,7 +104,7 @@ test('native backups reject symlinked archive directories and mount roots', asyn
     const root = await fs.mkdtemp(path.join(os.tmpdir(), 'gp-native-backup-links-'));
     let released = 0;
     const module = loadWithMocks('../src/services/nativeBackups.ts', {
-        './nativeProtection.js': { recordNativeBackup: async () => ({}) },
+        './archiveProgress.js': {}, './nativeProtection.js': { recordNativeBackup: async () => ({}) },
         './nativeBackupPolicy.js': { readNativeBackupPolicy: async () => ({ automaticRetention: false, externalCopy: false }) },
         './finishNativeBackup.js': { finishNativeBackup: async () => '' },
         './storageReserve.js': { withStorageReserve },
