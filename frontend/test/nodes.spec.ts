@@ -391,3 +391,16 @@ test('node compatibility distinguishes unavailable runtime from unsupported capa
   await expect(section).toContainText('Native restore recovery: Supported');
   await expect(section.getByText('Not recorded', { exact: true })).toHaveCount(2);
 });
+
+test('local and remote node cards align actions and use the same online badge', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await page.route('**/api/nodes', route => route.fulfill({ json: { nodes: [node], local: { id: 'local', name: 'FR1', location: 'France', status: 'online', agent_version: '2.0.59', last_seen: Date.now(), heartbeat_kind: 'panel-response' } } }));
+  await page.goto('/test/nodes.fixture.html');
+  const local = page.getByRole('article').filter({ hasText: 'FR1' });
+  const remote = page.getByRole('article').filter({ hasText: 'Warsaw test' });
+  const open = local.getByRole('button', { name: 'Open servers', exact: true });
+  const settings = local.getByRole('button', { name: 'Node settings', exact: true });
+  expect(Math.abs((await open.boundingBox())!.y - (await settings.boundingBox())!.y)).toBeLessThan(2);
+  await expect(local.getByText('online', { exact: true })).toHaveAttribute('class', await remote.getByText('online', { exact: true }).getAttribute('class') || '');
+  await page.screenshot({ path: '/tmp/eserv-nodes-layout.png', fullPage: true });
+});

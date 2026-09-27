@@ -133,7 +133,7 @@ export function ServerConsoleTabs({
       if (Number.isFinite(raw) && raw > 0) stored = singleServer && raw === 360 ? 450 : raw;
     } catch { /* ignore */ }
     const max = typeof window !== 'undefined'
-      ? Math.max(MIN_CONSOLE_HEIGHT, Math.round(window.innerHeight * 0.85))
+      ? Math.max(MIN_CONSOLE_HEIGHT, Math.round(window.innerHeight * 2))
       : Number.POSITIVE_INFINITY;
     return Math.min(max, Math.max(MIN_CONSOLE_HEIGHT, stored));
   });
@@ -573,7 +573,7 @@ export function ServerConsoleTabs({
   useEffect(() => () => cancelAnimationFrame(resizeAutoScrollRef.current), []);
 
   function clampConsoleHeight(height: number): number {
-    const max = Math.max(MIN_CONSOLE_HEIGHT, Math.round(window.innerHeight * 0.85));
+    const max = Math.max(MIN_CONSOLE_HEIGHT, Math.round(window.innerHeight * 2));
     return Math.min(max, Math.max(MIN_CONSOLE_HEIGHT, height));
   }
 
@@ -942,6 +942,17 @@ export function ServerConsoleTabs({
           onPointerMove={handleResizePointerMove}
           onPointerUp={handleResizePointerUp}
           onPointerCancel={handleResizePointerUp}
+          onLostPointerCapture={handleResizePointerUp}
+          tabIndex={0}
+          aria-valuemin={MIN_CONSOLE_HEIGHT}
+          aria-valuemax={Math.max(MIN_CONSOLE_HEIGHT, Math.round(window.innerHeight * 2))}
+          aria-valuenow={Math.round(panelHeight)}
+          onDoubleClick={() => setPanelHeight(singleServer ? 450 : DEFAULT_CONSOLE_HEIGHT)}
+          onKeyDown={event => {
+            if (event.key === 'ArrowUp' || event.key === 'ArrowDown') {
+              event.preventDefault(); setPanelHeight(height => clampConsoleHeight(height + (event.key === 'ArrowDown' ? 40 : -40)));
+            }
+          }}
           className="group flex h-2.5 w-full shrink-0 cursor-row-resize touch-none select-none items-center justify-center border-t border-gray-700 bg-gp-surface-input"
         >
           <div className="h-1 w-10 rounded-full bg-gray-600 transition-colors group-hover:bg-[var(--color-cyan-400)]" />

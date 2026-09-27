@@ -49,13 +49,14 @@ test('console height is independent, persisted, and moves charts beside a tall c
   await page.goto('/test/server-page.fixture.html#/nodes/local/servers/7/console');
   const panel = page.locator('.gp-console-panel');
   expect((await panel.boundingBox())!.height).toBeGreaterThan(490);
-  expect(Math.abs((await panel.boundingBox())!.height - (await page.locator('.gp-server-stats').boundingBox())!.height)).toBeLessThan(2);
+  const initialHeight = (await panel.boundingBox())!.height;
   const handle = page.getByRole('separator', { name: 'Resize console' });
   const grip = (await handle.boundingBox())!;
   await page.mouse.move(grip.x + grip.width / 2, grip.y + grip.height / 2);
   await page.mouse.down();
   await page.mouse.move(grip.x + grip.width / 2, grip.y + 450, { steps: 10 });
   await page.mouse.up();
+  expect((await panel.boundingBox())!.height).toBeGreaterThan(initialHeight + 100);
   await expect(page.locator('.gp-server-overview')).toHaveClass(/gp-server-overview-tall/);
   const charts = page.locator('.gp-server-charts');
   expect((await charts.boundingBox())!.x).toBeGreaterThan((await panel.boundingBox())!.x + 500);
@@ -855,4 +856,39 @@ test('folder back and forward preserve an open dirty editor without a discard pr
   await page.goForward();
   await expect.poll(() => new URL(page.url()).searchParams.get('path')).toBe('/configs');
   await expect(editor).toContainText('hostname keep my changes');
+});
+
+test('file context menu and Ctrl+F operate within the current directory', async ({ page }) => {
+  await page.route('**/api/servers/7/files?**', route => route.fulfill({ json: { path: '/', entries: [{ name: 'server.cfg', type: 'file' }, { name: 'notes.txt', type: 'file' }] } }));
+  await page.goto('/test/server-page.fixture.html#/nodes/local/servers/7/filemanager');
+  await page.keyboard.press('ControlOrMeta+f');
+  const search = page.getByRole('textbox', { name: 'Search files in this folder' });
+  await expect(search).toBeFocused();
+  await search.fill('server');
+  await expect(page.locator('[data-file-name="server.cfg"]')).toBeVisible();
+  await expect(page.locator('[data-file-name="notes.txt"]')).toHaveCount(0);
+  await search.press('Escape');
+  await expect(page.locator('[data-file-name="notes.txt"]')).toBeVisible();
+  await page.locator('[data-file-name="server.cfg"]').click({ button: 'right' });
+  const menu = page.getByRole('menu', { name: 'Actions for server.cfg' });
+  await expect(menu).toBeVisible();
+  await page.screenshot({ path: '/tmp/eserv-file-menu.png' });
+  await expect(menu.getByRole('menuitem', { name: 'Open', exact: true })).toBeFocused();
+  await page.keyboard.press('ArrowDown');
+  await expect(menu.getByRole('menuitem', { name: 'Download', exact: true })).toBeFocused();
+  await menu.getByRole('menuitem', { name: 'Rename', exact: true }).click();
+  await expect(menu).toHaveCount(0);
+  await expect(page.locator('input[value="server.cfg"]')).toBeVisible();
+});
+
+test('copy notification floats without moving server tabs and can be dismissed', async ({ page, context }) => {
+  await context.grantPermissions(['clipboard-write', 'clipboard-read']);
+  await page.goto('/test/server-page.fixture.html#/nodes/local/servers/7/console');
+  const tabs = page.getByRole('link', { name: 'File Editor', exact: true });
+  const before = (await tabs.boundingBox())!;
+  await page.getByRole('button', { name: 'Copy connection address', exact: true }).click();
+  await expect(page.locator('.gp-server-toast')).toContainText('Address copied');
+  expect((await tabs.boundingBox())!.y).toBe(before.y);
+  await page.getByRole('button', { name: 'Dismiss notification' }).click();
+  await expect(page.locator('.gp-server-toast')).toHaveCount(0);
 });

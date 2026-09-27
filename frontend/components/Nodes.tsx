@@ -311,14 +311,14 @@ export function Nodes() {
         </section>
       )}
       <div className="grid gap-4 xl:grid-cols-2">
-        <article className={card}>
+        <article className={`${card} flex flex-col gap-4`}>
           <div className="flex items-center gap-3">
             <Server className="text-blue-600" />
             <div className="min-w-0">
               <h2 className="break-words font-semibold">{localNode?.name || 'Local'}</h2>
               <p className="text-xs text-slate-500">{localNode?.location || 'No location set'}</p>
             </div>
-            <span className="ml-auto rounded-full bg-slate-100 px-2 py-1 text-xs text-slate-600">
+            <span className={`ml-auto rounded-full px-2 py-1 text-xs font-medium ${colors[runtimeUnavailable ? 'offline' : localNode ? 'online' : 'pending']}`}>
               {runtimeUnavailable ? 'Unavailable' : localNode ? 'online' : 'Built in'}
             </span>
           </div>
@@ -326,11 +326,12 @@ export function Nodes() {
           <div className="mb-4">
             <LocalRuntimeInfo node={localNode} unavailable={runtimeUnavailable} />
           </div>
+          <div className="mt-auto flex flex-wrap gap-2">
           <button className={button} disabled={busy} onClick={() => openNodeServers('local')}>
             Open servers
           </button>
           <button
-            className={`${button} ml-2`}
+            className={button}
             onClick={async () => {
               setSelected({ id: 'local', name: localNode?.name || 'Local' });
               setNodeTab('overview');
@@ -339,9 +340,10 @@ export function Nodes() {
             <Network size={14} />
             Node settings
           </button>
+          </div>
         </article>
         {nodes.map((node) => (
-          <article key={node.id} className={`${card} space-y-4`}>
+          <article key={node.id} className={`${card} flex flex-col gap-4`}>
             <div className="flex items-center gap-3">
               <Server className="shrink-0 text-blue-600" />
               <div className="min-w-0">
@@ -364,7 +366,7 @@ export function Nodes() {
                 {node.last_seen ? new Date(node.last_seen).toLocaleString() : 'Waiting for agent'}
               </dd>
             </dl>
-            <div className="flex flex-wrap gap-2">
+            <div className="mt-auto flex flex-wrap gap-2">
               <button
                 className={button}
                 disabled={busy || node.status === 'disabled' || node.status === 'pending'}

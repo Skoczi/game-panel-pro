@@ -182,6 +182,11 @@ export function ServerManagementPage({
   const dockVisible = consoleDockOpen && canLogs && tab !== 'console';
   const [confirm, setConfirm] = useState<'stop' | 'restart' | null>(null);
   const [feedback, setFeedback] = useState('');
+  useEffect(() => {
+    if (!feedback) return;
+    const timer = setTimeout(() => setFeedback(''), 5000);
+    return () => clearTimeout(timer);
+  }, [feedback]);
   const consoleSectionRef = useRef<HTMLElement>(null);
   const [tallConsole, setTallConsole] = useState(false);
   const [chartsOpen, setChartsOpen] = useState(() => window.matchMedia('(min-width: 701px)').matches);
@@ -330,7 +335,7 @@ export function ServerManagementPage({
           onClose={() => setShowAccess(false)}
         />
       )}
-      {feedback && <p role="status">{feedback}</p>}
+      {feedback && <div role="status" className="gp-server-toast"><span>{feedback}</span><button aria-label="Dismiss notification" onClick={() => setFeedback('')}>×</button></div>}
       {['starting', 'stopping', 'restarting', 'installing', 'creating', 'unknown'].includes(server.status) && <OperationNotice state={server.status === 'unknown' ? 'unknown' : 'running'} />}
       <div className="gp-server-navigation">
         <nav className="gp-server-tabs" aria-label="Server sections">

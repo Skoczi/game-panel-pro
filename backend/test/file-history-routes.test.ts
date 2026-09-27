@@ -12,7 +12,9 @@ import { PERMISSIONS } from '../src/permissions.js';
 test('file history HTTP access uses file-read permission, records successful writes and refuses another path', async () => {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), 'gp-history-route-'));
   await fs.writeFile(path.join(root, 'server.cfg'), 'before'); await fs.writeFile(path.join(root, 'other.cfg'), 'other');
+  const actions: unknown[][] = [];
   const router = loadWithMocks('../src/routes/serverFile.ts', {
+    '../database/index.js': { actionsRepository: { create: async (...args: unknown[]) => { actions.push(args); } } },
     express: { Router: express.Router }, 'node:fs': { promises: fs }, 'node:path': path,
     '../utils/storage.js': { getServerStoragePaths: () => ({ serverRoot: root }) },
     '../services/fileHistory.js': history, '../services/atomicFile.js': atomic,
@@ -28,7 +30,10 @@ test('file history HTTP access uses file-read permission, records successful wri
   const base = `http://127.0.0.1:${(server.address() as any).port}/servers/7/file`;
   try {
     const save = await fetch(base+'?path=/server.cfg', { method: 'PUT', headers: { 'content-type': 'application/json', 'x-permission': 'fs.write' }, body: JSON.stringify({ content: 'after', version: atomic.fileVersion('before') }) });
+    assert.deepEqual(actions, [[7, 'info', 'File saved: data:/server.cfg', 'operator']]);
     assert.equal(save.status, 200); assert.equal((await save.json()).historyWarning, undefined);
+    assert.equal((await fetch(base+'?path=/server.cfg', { method: 'PUT', headers: { 'content-type': 'application/json', 'x-permission': 'fs.write' }, body: JSON.stringify({ content: 'conflicting', version: atomic.fileVersion('before') }) })).status, 409);
+    assert.equal(actions.length, 1);
     assert.equal((await fetch(base+'/history?path=/server.cfg', { headers: { 'x-permission': 'fs.write' } })).status, 403);
     const response = await fetch(base+'/history?path=/server.cfg', { headers: { 'x-permission': 'fs.read' } });
     assert.equal(response.status, 200); const entries = (await response.json()).entries;

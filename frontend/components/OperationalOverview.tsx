@@ -9,6 +9,9 @@ const labels = { ok: 'OK', warning: 'Warning', critical: 'Critical', unknown: 'U
 const colors = { ok: 'text-green-700 dark:text-green-400', warning: 'text-amber-700 dark:text-amber-400', critical: 'text-red-700 dark:text-red-400', unknown: 'text-gray-600 dark:text-gray-400' };
 
 export function OperationalOverview({ scope = 'all', servers = [] }: { scope?: string; servers?: Array<{ runtimeId?: number; displayId?: string; node: { id?: string } }> }) {
+  const [expanded, setExpanded] = useState(true);
+  const [page, setPage] = useState(0);
+  useEffect(() => setPage(0), [scope]);
   const [runtimes, setRuntimes] = useState<Runtime[]>([]);
   const [loading, setLoading] = useState(true), [error, setError] = useState(false), [revision, setRevision] = useState(0);
   useEffect(() => {
@@ -51,21 +54,27 @@ export function OperationalOverview({ scope = 'all', servers = [] }: { scope?: s
     return number ? `/s/${number}/${check.category === 'backup' ? 'backups' : check.category === 'schedule' ? 'schedules' : 'console'}` : null;
   };
   const issues = runtimes.flatMap(runtime => runtime.checks.filter(check => check.status !== 'ok').map(check => ({ ...check, node: runtime.name, id: runtime.id })));
+  const lastPage = Math.max(0, Math.ceil(issues.length / 5) - 1);
+  const currentPage = Math.min(page, lastPage);
   return <section aria-label="Operational health" className="gp-workflow gp-operational mb-4 rounded-xl border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-900">
     <div className="flex flex-wrap items-center justify-between gap-3">
-      <h2 className="font-semibold">Needs attention{!loading && !error ? ` · ${issues.length}` : ''}</h2>
+      <h2 className="font-semibold"><button type="button" aria-expanded={expanded} aria-controls="operational-issues" onClick={() => setExpanded(value => !value)}>Needs attention{!loading && !error ? ` · ${issues.length}` : ''} <span aria-hidden="true">{expanded ? '▾' : '▸'}</span></button></h2>
       <button type="button" className="gp-fleet-button" onClick={() => { setLoading(true); setRevision(v => v + 1); }}>Refresh checks</button>
     </div>
     {loading && <p role="status" className="mt-2 text-sm">Checking runtimes…</p>}
     {error && <p role="alert" className="mt-2 text-sm text-red-600">Could not refresh operational health. Previous measurements may be stale.</p>}
     {!loading && !error && !issues.length && <p className="mt-2 text-sm text-green-700 dark:text-green-400">All checks passed · {runtimes.length} nodes</p>}
-    {!!issues.length && <ul className="mt-3 space-y-2">{issues.map(issue => <li key={`${issue.id}:${issue.key}`} className="rounded-lg border border-gray-200 p-3 text-sm dark:border-gray-700">
+    {!!issues.length && expanded && <div id="operational-issues"><ul className="mt-3 space-y-2">{issues.slice(currentPage * 5, currentPage * 5 + 5).map(issue => <li key={`${issue.id}:${issue.key}`} className="rounded-lg border border-gray-200 p-3 text-sm dark:border-gray-700">
       <p className="break-words font-medium"><span className={colors[issue.status]}>{labels[issue.status]}</span> · {issue.node} · {issue.title}</p>
       <p className="mt-1 break-words">{issue.detail}</p>
       {destination(issue.id, issue) && <a className="mt-2 inline-block underline" href={destination(issue.id, issue)!}>Open {issue.category === 'backup' ? 'backups' : issue.category === 'schedule' ? 'schedules' : 'console'}</a>}
-    </li>)}</ul>}
+    </li>)}</ul>{lastPage > 0 && <nav aria-label="Issue pages" className="mt-3 flex items-center justify-end gap-3">
+      <button className="gp-fleet-button" disabled={currentPage === 0} onClick={() => setPage(currentPage - 1)}>Previous</button>
+      <span>{currentPage + 1} / {lastPage + 1}</span>
+      <button className="gp-fleet-button" disabled={currentPage === lastPage} onClick={() => setPage(currentPage + 1)}>Next</button>
+    </nav>}</div>}
     <details className="mt-3 text-sm"><summary className="cursor-pointer">All checks</summary>
-      <div className="mt-3 grid gap-3 md:grid-cols-2">{runtimes.map(runtime => <div key={runtime.id} className="min-w-0 rounded-lg border border-gray-200 p-3 dark:border-gray-700">
+      <div className="mt-3 grid max-h-[480px] overflow-y-auto gap-3 md:grid-cols-2">{runtimes.map(runtime => <div key={runtime.id} className="min-w-0 rounded-lg border border-gray-200 p-3 dark:border-gray-700">
         <p className="break-words font-medium">{runtime.name} · {runtime.version || 'Version unavailable'}{runtime.commit ? ` · ${runtime.commit.slice(0, 7)}` : ''}</p>
         <ul className="mt-2 space-y-2">{runtime.checks.map(check => <li key={check.key}><span className={colors[check.status]}>{labels[check.status]}</span> · {check.title}<p className="break-words text-gray-600 dark:text-gray-400">{check.detail}</p><time className="text-xs text-gray-500" dateTime={new Date(check.observedAt).toISOString()}>{new Date(check.observedAt).toLocaleString()}</time></li>)}</ul>
       </div>)}</div>

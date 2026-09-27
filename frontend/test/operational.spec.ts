@@ -21,3 +21,19 @@ for (const width of [390, 1280]) test(`operational incidents, compatibility and 
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   await page.screenshot({ path: `test-results/operational-${width}.png`, fullPage: true });
 });
+
+test('many operational issues paginate and collapse', async ({ page }) => {
+  await page.route('**/api/nodes', route => route.fulfill({ json: { local: { name: 'FR1' }, nodes: [] } }));
+  await page.route('**/api/health', route => route.fulfill({ json: { capabilities: { operationalHealth: 1, nativeBackupPolicy: 1, nativeRestoreRecovery: 1, alertRelay: 1 } } }));
+  await page.route('**/api/system/operational-health', route => route.fulfill({ json: { checks: Array.from({ length: 12 }, (_, i) => ({ key: String(i), title: `Problem ${i}`, detail: `Details ${i}`, status: 'warning', observedAt: Date.now() })) } }));
+  await page.goto('/test/operational.fixture.html');
+  await expect(page.locator('#operational-issues li')).toHaveCount(5);
+  await page.getByRole('button', { name: 'Next', exact: true }).click();
+  await expect(page.locator('#operational-issues')).toContainText('Problem 5');
+  await page.getByRole('button', { name: 'Next', exact: true }).click();
+  await expect(page.locator('#operational-issues li')).toHaveCount(2);
+  await page.getByRole('button', { name: /Needs attention/ }).click();
+  await expect(page.locator('#operational-issues')).toHaveCount(0);
+  await page.getByRole('button', { name: /Needs attention/ }).click();
+  await expect(page.locator('#operational-issues li')).toHaveCount(2);
+});

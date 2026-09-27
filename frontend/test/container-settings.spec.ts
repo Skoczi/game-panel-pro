@@ -19,7 +19,7 @@ test('settings preview, parameter editing and port checks preserve IP and block 
  await page.getByLabel('Map', { exact: true }).fill('de_dust2');
  await expect(page.locator('.gp-settings-startup pre')).toContainText('+map de_dust2');
  await page.getByRole('button', { name: 'Edit startup parameters' }).click();
- await expect(page.getByText('Dostępne parametry:', { exact: true })).toBeVisible();
+ await expect(page.getByText('Available parameters:', { exact: true })).toBeVisible();
  await expect(page.locator('.gp-startup-variables')).toContainText('{{SERVER_PORT}}');
  await page.getByLabel('Startup parameters').fill('./hlds_linux -port {{SERVER_PORT}} +map {{MAP}} +maxplayers {{MAX_PLAYERS}}');
  await expect(page.locator('.gp-settings-startup pre')).toContainText('+maxplayers 32');

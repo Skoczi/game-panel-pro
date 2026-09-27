@@ -1,3 +1,4 @@
+import { actionsRepository } from '../database/index.js';
 import path from 'node:path';
 import { getServerStoragePaths } from '../utils/storage.js';
 import { prepareFileHistory, commitFileHistory, listFileHistory, readFileHistory, type FileHistoryRecord } from '../services/fileHistory.js';
@@ -107,6 +108,9 @@ router.put('/', requireServerPermission(PERMISSIONS.fs.write), async (req: Authe
             try { await commitFileHistory(historyDirectory, record); }
             catch { historyWarning = 'File saved. History could not confirm this save.'; }
         }
+        try {
+            await actionsRepository.create(serverId, 'info', `File saved: ${resolved.root}:${resolved.apiPath}`, req.user?.username || 'Unknown operator');
+        } catch { historyWarning = 'File saved. Activity entry could not be recorded.'; }
         return res.json({ ok: true, version, ...(historyWarning ? { historyWarning } : {}) });
     } catch (error) {
         return sendRouteError(res, error, {
