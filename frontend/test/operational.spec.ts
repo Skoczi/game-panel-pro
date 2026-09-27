@@ -10,12 +10,12 @@ for (const width of [390, 1280]) test(`operational incidents, compatibility and 
   await page.goto('/test/operational.fixture.html');
   await expect(page.getByRole('heading', { name: 'Needs attention · 5' })).toBeVisible();
   await expect(page.getByText('1 GiB available', { exact: true }).first()).toBeVisible();
-  await expect(page.getByText('This runtime does not support the required protocol. Update the agent.').first()).toBeVisible();
+  await expect(page.getByText('Update the agent to support this check.').first()).toBeVisible();
   await expect(page.getByRole('link', { name: 'Open backups' })).toHaveAttribute('href', '/s/27/backups');
   healthy = true;
   await page.getByRole('button', { name: 'Refresh checks' }).press('Enter');
   await expect(page.getByRole('heading', { name: 'Needs attention · 4' })).toBeVisible();
-  await page.getByText('Runtime versions and all checks').press('Enter');
+  await page.getByText('All checks').press('Enter');
   await expect(page.getByText('49 GiB available')).toBeVisible();
   await expect(page.getByText('FR1 · 2.0.59 · abcdef1')).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);

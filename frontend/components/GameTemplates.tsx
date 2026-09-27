@@ -564,7 +564,7 @@ export function GameTemplates() {
                 </div>
                 <p className="text-sm text-slate-500">
                   {draft.schemaVersion === 2
-                    ? 'Installation and startup use the commands in Lifecycle. The node must have the reviewed image loaded locally; its exact image ID is pinned at installation.'
+                    ? 'Uses Lifecycle commands. The image must exist on the node and is pinned at installation.'
                     : 'Installation, start and stop use the selected provider/image. Use the Lifecycle tab to create a native recipe instead.'}
                 </p>
               </>
@@ -575,10 +575,7 @@ export function GameTemplates() {
             {tab === 'lifecycle' && <NativeLifecycleEditor draft={draft} change={change} />}
             {tab === 'network' && (
               <>
-                <p className="text-sm text-slate-500">
-                  One row per container port/protocol. IP addresses belong to nodes, not templates.
-                  Labels can combine roles such as Game / Query / RCON.
-                </p>
+                <p className="text-sm text-slate-500">One row per port and protocol. Assign IPs in node settings.</p>
                 {draft.ports.map((p, i) => {
                   const patch = (v: Partial<typeof p>) =>
                     change({ ports: draft.ports.map((x, n) => (n === i ? { ...x, ...v } : x)) });
@@ -744,10 +741,7 @@ export function GameTemplates() {
             )}
             {tab === 'storage' && (
               <>
-                <p className="text-sm text-slate-500">
-                  Named server-owned directories only. No host paths or Docker socket mounts. OVH
-                  adapters may supply their own required mounts.
-                </p>
+                <p className="text-sm text-slate-500">Server directories only; host paths and Docker sockets are blocked.</p>
                 {draft.mounts.map((m, i) => (
                   <div key={i} className="grid gap-4 md:grid-cols-3">
                     <Field
@@ -795,10 +789,7 @@ export function GameTemplates() {
             )}
             {tab === 'versions' && (
               <>
-                <p className="text-sm text-slate-500">
-                  Select a version to inspect its definition. Older published versions remain
-                  available until disabled.
-                </p>
+                <p className="text-sm text-slate-500">Published versions remain available until disabled.</p>
                 {rows
                   .filter((r) => r.id === selected?.id)
                   .map((r) => (
@@ -874,10 +865,7 @@ export function GameTemplates() {
             )}
             {tab === 'json' && (
               <>
-                <p className="text-sm text-slate-500">
-                  Game Templates schema v1/v2. Imported documents are validated and saved as drafts.
-                  Do not put infrastructure addresses or credentials in descriptions/default values.
-                </p>
+                <p className="text-sm text-slate-500">Imports create drafts. Keep credentials out of template defaults.</p>
                 <textarea
                   aria-label="Template JSON"
                   className={`${input} font-mono text-xs`}
@@ -977,14 +965,9 @@ export function GameTemplates() {
               ))}
           </div>
           {!busy && !latest.length && (
-            <p className={card}>
-              No templates yet. Create a definition or import a reviewed JSON document.
-            </p>
+            <p className={card}>No templates yet.</p>
           )}
-          <p className="text-sm text-slate-500">
-            Legacy installation remains available. Adding or publishing templates does not migrate
-            existing servers.
-          </p>
+
         </>
       )}
     </section>
@@ -1210,7 +1193,7 @@ export function TemplateInstall({ row, onClose, fixedNodeId, initialNodeId, onIn
         <fieldset disabled={busy || uncertain} className="space-y-5">
           <div>
             <Field label="Panel server name" value={name} onChange={setName} />
-            <p className="mt-1 text-xs text-slate-500">Name used to identify this server in the panel.</p>
+
           </div>
           <div className="grid gap-4 md:grid-cols-2">
             <Field
@@ -1282,10 +1265,7 @@ export function TemplateInstall({ row, onClose, fixedNodeId, initialNodeId, onIn
         </fieldset>
       {uncertain && (
         <div role="alert" className="space-y-3">
-          <p>
-            The response was not confirmed. Check this node’s server list before retrying to avoid
-            duplicate installations.
-          </p>
+          <p>Installation not confirmed. Check the server list before retrying.</p>
           <button className={button} onClick={() => selectNode(nodeId)}>
             Check node servers
           </button>

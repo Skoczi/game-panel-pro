@@ -66,10 +66,10 @@ export function ApiTokensModal({ onClose }: { onClose: () => void }) {
       <AppModalContent className="gp-api-tokens w-[calc(100%-2rem)] max-w-2xl" dismissible={!busy}>
         <AppModalHeader><AppModalTitle>API tokens</AppModalTitle></AppModalHeader>
         <AppModalBody className="space-y-4 max-h-[75vh] overflow-y-auto">
-          <p className="text-sm text-gray-500 dark:text-gray-400">Connect tools to selected servers. Tokens inherit your current access and expire automatically. Choose only the operations your integration needs.</p>
+
           {error && <p role="alert" className="text-sm text-red-500">{error}</p>}
           {secret ? <section aria-label="New token secret" className="space-y-3 rounded-xl border border-gray-300 dark:border-gray-600 p-4">
-            <p>Copy this token now. It cannot be shown again. Keep it out of shared messages and source code.</p>
+            <p>Copy and store this token securely. It is shown only once.</p>
             <label className="block" htmlFor={`${id}-secret`}>New API token</label>
             <AppInput id={`${id}-secret`} readOnly value={secret} autoComplete="off" />
             <div className="flex flex-wrap gap-2">

@@ -324,7 +324,7 @@ export function FileManagerTab({
                   <div><strong>Overwrite existing files</strong><p>Replace files with matching names.</p></div>
                   <AppToggle size="compact" ariaLabel="Allow extraction to overwrite existing files" checked={uploadOptions.overwrite} onChange={checked => setUploadOptions(o => ({ ...o, overwrite: checked }))} />
                 </div>
-                <p className="gp-archive-options-note">If extraction fails, the archive is kept. Existing files are preserved unless overwrite is enabled.</p>
+                <p className="gp-archive-options-note">Existing files are kept unless overwrite is enabled.</p>
               </>}
           </AppModalBody>
               <AppModalFooter>

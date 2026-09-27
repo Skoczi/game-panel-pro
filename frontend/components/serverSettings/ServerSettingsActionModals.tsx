@@ -226,7 +226,7 @@ export function ServerSettingsActionModals({
               <AppFormField label="Backup name (optional)" helper="Leave empty for an automatic name.">
               <AppInput className="gp-backup-input" aria-label="Backup name (optional)" value={backupName} onChange={event => setBackupName(event.target.value)} maxLength={71} placeholder="Before update" autoComplete="off" />
               </AppFormField>
-              {!nameValid && <p role="alert" className="text-xs text-red-500">Use up to 64 letters, numbers, spaces, dots, hyphens or underscores. Start with a letter or number.</p>}
+              {!nameValid && <p role="alert" className="text-xs text-red-500">1–64 characters: letters, numbers, spaces, dots, - or _. Start with a letter or number.</p>}
             </div>}
             <div className="mt-5 flex justify-end gap-2">
               <AppButton tone="neutral" onClick={closeBackupWarningModal} disabled={backupNowLoading}>Cancel</AppButton>

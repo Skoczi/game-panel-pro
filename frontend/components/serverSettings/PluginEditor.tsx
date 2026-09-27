@@ -23,9 +23,7 @@ export function PluginEditor({
   return (
     <section className="gp-workflow-card" aria-label="Plugin manager">
       <h3>Installed plugins</h3>
-      <p className="gp-workflow-muted">
-        Enable plugins without editing their configuration. Review and save to apply your changes.
-      </p>
+
       <input
         aria-label="Search plugins"
         placeholder="Search plugins…"

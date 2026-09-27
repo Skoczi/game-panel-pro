@@ -180,10 +180,7 @@ export function Nodes() {
               </dl>
             )}
             <RuntimeCapabilities key={selected.id} nodeId={selected.id} />
-            <p className="text-sm text-slate-500">
-              IP addresses and TCP/UDP ranges belong to this node. Existing servers stay on their
-              current runtime.
-            </p>
+
           </section>
         )}
       </div>
@@ -265,10 +262,7 @@ export function Nodes() {
               placeholder="Warsaw, PL"
             />
           </label>
-          <p className="text-xs text-slate-500 md:col-span-2">
-            The origin is for agent management, not a game allocation. Configure verified HTTPS
-            before enrollment.
-          </p>
+          <p className="text-xs text-slate-500 md:col-span-2">Agent HTTPS address. Game IPs are configured separately.</p>
           <button className={button} disabled={busy} type="submit">
             {busy ? 'Creating…' : 'Create enrollment'}
           </button>
@@ -277,10 +271,7 @@ export function Nodes() {
       {enrollment && (
         <section className={`${card} space-y-3`} aria-label="Node enrollment">
           <h2 className="text-lg font-semibold">Connect your agent</h2>
-          <p className="text-sm text-slate-500">
-            One-time token, valid for 15 minutes. Paste it into the installer prompt; never put it
-            in command history or a URL.
-          </p>
+          <p className="text-sm text-slate-500">One-use token · expires in 15 minutes · paste into the installer prompt</p>
           <p className="break-all font-mono text-xs">Node ID: {enrollment.nodeId}</p>
           <label className="block text-sm">
             Enrollment token
@@ -330,9 +321,7 @@ export function Nodes() {
               {runtimeUnavailable ? 'Unavailable' : localNode ? 'online' : 'Built in'}
             </span>
           </div>
-          <p className="my-4 text-sm text-slate-500">
-            Create and manage servers on the panel host. No additional agent is required.
-          </p>
+
           <div className="mb-4">
             <LocalRuntimeInfo node={localNode} unavailable={runtimeUnavailable} />
           </div>
@@ -491,10 +480,7 @@ export function Nodes() {
                 }
               }}
             >
-              <p className="text-sm text-slate-500">
-                Tracked servers block deletion. Previously connected agents must be reachable and
-                empty.
-              </p>
+              <p className="text-sm text-slate-500">To delete a node, its agent must be reachable and have no servers.</p>
               <label className="block text-sm">
                 Type the node name to confirm
                 <input

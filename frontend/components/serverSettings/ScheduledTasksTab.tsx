@@ -667,7 +667,7 @@ export function ScheduledTasksTab({
 
             {showPrePost && !(form.type === 'restart' && form.maintenance) && (
               <div className="space-y-5">
-                <p className={`text-xs ${textSecondary}`}>Pre, post and cleanup commands run in the game console. Use any command supported by your game.</p>
+                <p className={`text-xs ${textSecondary}`}>Commands run in the game console.</p>
                 <StepsEditor
                   label="Pre-commands"
                   steps={form.pre}
@@ -685,7 +685,7 @@ export function ScheduledTasksTab({
                   borderColor={borderColor}
                 />
                 <StepsEditor label="Cleanup (also after failure)" steps={form.cleanup} onChange={(v) => setF('cleanup', v)} textPrimary={textPrimary} textSecondary={textSecondary} borderColor={borderColor} />
-                <p className={`text-xs ${textSecondary}`}>Use cleanup to re-enable saving after a live backup. Cleanup runs after errors while the agent remains available.</p>
+                <p className={`text-xs ${textSecondary}`}>Cleanup also runs after errors while the agent is available.</p>
               </div>
             )}
 

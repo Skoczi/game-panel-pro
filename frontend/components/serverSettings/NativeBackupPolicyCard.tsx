@@ -62,10 +62,10 @@ export function NativeBackupPolicyCard({ serverId, canEdit, canImport, busy, loc
     {!policy && !error && <p role="status" className="text-sm text-slate-500">Loading backup settings…</p>}
     {error && <p role="alert" className="text-sm text-red-500">{error}</p>}
     {policy && <>
-      <p className="text-sm text-slate-500 dark:text-slate-400">Applies to manual and scheduled backups. Set the backup time in Schedules.</p>
+      <p className="text-sm text-slate-500 dark:text-slate-400">Manual and scheduled backups. Set times in Schedules.</p>
       <div className="space-y-2">
         <AppToggle label="Automatic retention" checked={policy.automaticRetention} disabled={disabled} onChange={automaticRetention => setPolicy({ ...policy, automaticRetention })} />
-        <p className="text-xs text-slate-500 dark:text-slate-400">Removes older validated backups after a successful new copy. Recovery folders and unrecognized archives stay available for manual cleanup.</p>
+        <p className="text-xs text-slate-500 dark:text-slate-400">Deletes older verified backups after a successful copy. Recovery folders are kept.</p>
       </div>
       <div className="space-y-2">
         <AppToggle label="Copy to external storage" checked={policy.externalCopy} disabled={disabled || (!destination?.configured && !policy.externalCopy)} onChange={externalCopy => setPolicy({ ...policy, externalCopy })} />
@@ -75,7 +75,7 @@ export function NativeBackupPolicyCard({ serverId, canEdit, canImport, busy, loc
         <div><label htmlFor={`${id}-local`} className="block text-sm mb-2">Local backups to keep</label><AppInput className={inputClass} id={`${id}-local`} type="number" min={1} max={100} value={policy.keepLocal} disabled={disabled} onChange={e => setPolicy({ ...policy, keepLocal: Number(e.target.value) })} /></div>
         {policy.externalCopy && <div><label htmlFor={`${id}-external`} className="block text-sm mb-2">External backups to keep</label><AppInput className={inputClass} id={`${id}-external`} type="number" min={1} max={100} value={policy.keepExternal} disabled={disabled} onChange={e => setPolicy({ ...policy, keepExternal: Number(e.target.value) })} /></div>}
       </div>}
-      {!canEdit && <p className="text-xs text-slate-500">Editing protection requires backup settings and deletion permissions.</p>}
+      {!canEdit && <p className="text-xs text-slate-500">Requires backup settings and deletion permissions.</p>}
       {canEdit && <AppButton className="px-4 py-2.5" tone="primary" disabled={disabled || !valid || JSON.stringify(policy) === JSON.stringify(saved)} onClick={() => void save()}><Save size={16} className="mr-2" />{pending ? 'Saving…' : 'Save protection settings'}</AppButton>}
     </>}
     {notice && <p role="status" className="text-sm text-emerald-600 dark:text-emerald-400">{notice}</p>}

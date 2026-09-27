@@ -43,7 +43,7 @@ export function CreateUserDialog({
           <DialogHeader className="border-b border-gray-800 pb-5 pr-8">
             <DialogTitle className="text-xl text-white">Create user</DialogTitle>
             <DialogDescription className="leading-relaxed text-gray-400">
-              Step 1 of 2: create the account. Next, choose a server and permissions. The account starts without server access.
+              Step 1 of 2 · Account details. Assign server access next.
             </DialogDescription>
           </DialogHeader>
 

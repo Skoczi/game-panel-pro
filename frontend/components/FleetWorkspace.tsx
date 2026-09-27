@@ -839,9 +839,7 @@ export function FleetAccess({
                 }))}
               />
             </div>
-            <p className="gp-fleet-muted">
-              Permissions apply only to this server. Assigned users can see status and metrics.
-            </p>
+            <p className="gp-fleet-muted">Server-specific access. Status and metrics are always visible.</p>
             <div className="gp-fleet-actions">
               {Object.entries(profiles).map(([name, values]) => (
                 <button

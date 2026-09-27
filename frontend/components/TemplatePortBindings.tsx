@@ -254,10 +254,7 @@ export function TemplatePortBindings({
           </div>
         );
       })}
-      <p className="text-xs text-slate-500">
-        Excludes saved server reservations (including stopped servers) and Docker mappings. Other
-        host services may still occupy a port. Availability is checked again on creation.
-      </p>
+      <p className="text-xs text-slate-500">Reserved ports are excluded. Host availability is rechecked on creation.</p>
     </section>
   );
 }

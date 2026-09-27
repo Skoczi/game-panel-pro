@@ -266,10 +266,7 @@ export function GlobalSettings({
       )}
       {pending && (
         <div className="rounded-xl border border-amber-400 p-4 text-sm">
-          <p>
-            A previous save has not been confirmed. Its IP reservations remain held. Retry checks
-            the same request; it does not create a new operation.
-          </p>
+          <p>Save not confirmed. IPs remain reserved; Retry checks the original request.</p>
           <button className={`${button} mt-3`} disabled={busy} onClick={() => void retryPending()}>
             Retry pending save
           </button>
@@ -283,10 +280,7 @@ export function GlobalSettings({
             <>
               <section className={card}>
                 <h2 className="text-lg font-semibold">Branding &amp; login page</h2>
-                <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                  These fields are public, including before sign-in. Do not enter secrets. Text is
-                  displayed as plain text, not HTML.
-                </p>
+                <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">Visible before sign-in. Plain text only; no credentials.</p>
                 <div className="mt-5 grid min-w-0 gap-6 lg:grid-cols-2">
                   <div className="min-w-0 space-y-4">
                     <div className="space-y-1">
@@ -394,11 +388,7 @@ export function GlobalSettings({
                         }}
                       />
                     </label>
-                    <p className="text-xs text-gray-500">
-                      PNG, JPEG or WebP, up to 256 KiB. Uploads stay in the panel database. HTTPS
-                      images load directly in visitors’ browsers. One logo is used on login and in
-                      the sidebar.
-                    </p>
+                    <p className="text-xs text-gray-500">PNG, JPEG or WebP · up to 256 KiB · login and sidebar logo</p>
                     {settings.appearance.logo && (
                       <button
                         type="button"
@@ -449,10 +439,7 @@ export function GlobalSettings({
                         </p>
                       )}
                     </div>
-                    <p className="mt-3 text-xs text-gray-500">
-                      Site name also sets the browser tab title. Blank subtitle or description hides
-                      that line. Save changes to publish.
-                    </p>
+
                   </div>
                 </div>
               </section>
@@ -467,7 +454,7 @@ export function GlobalSettings({
                     IP allocations
                   </h2>
                   <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                    {embedded ? 'Select a saved host address and define which game ports it can publish.' : 'IPs must already exist on the host. Adding one here does not create an interface or firewall rule.'}
+                    IPs must already exist on the host.
                   </p>
                 </div>}
                 <div className={card}>
@@ -488,10 +475,7 @@ export function GlobalSettings({
                     Empty TCP or UDP ranges block that protocol.
                   </p>
                   {!settings.network.restrictPorts && (
-                    <p className="mt-2 text-sm text-amber-700 dark:text-amber-400">
-                      Legacy mode: port ranges are not enforced and Docker default bindings remain
-                      available.
-                    </p>
+                    <p className="mt-2 text-sm text-amber-700 dark:text-amber-400">Port restrictions are off. Docker default bindings are allowed.</p>
                   )}
                   {settings.network.restrictPorts && settings.network.allocations.length === 0 && (
                     <p className="mt-2 text-sm text-amber-700 dark:text-amber-400">

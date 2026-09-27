@@ -196,10 +196,7 @@ export function AccountSecurityModal({
               {codes.length > 0 && (
                 <div role="status" className="space-y-2 rounded border border-amber-500 p-3">
                   <h4 className="font-semibold">Save your recovery codes now</h4>
-                  <p>
-                    Each code works once. Store them privately outside this device. They cannot be
-                    shown again.
-                  </p>
+                  <p>Save these one-use recovery codes securely. They are shown only once.</p>
                   <pre className="text-xs whitespace-pre-wrap break-all select-all">
                     {codes.join('\n')}
                   </pre>
@@ -209,10 +206,7 @@ export function AccountSecurityModal({
             </section>
             <section className="space-y-3">
               <h3 className="font-semibold">Active sessions</h3>
-              <p className="text-sm">
-                Sessions expire after 12 hours. Revoking a session also ends its live connections
-                within a few seconds.
-              </p>
+              <p className="text-sm">Sessions expire after 12 hours. Revoking disconnects the device.</p>
               {sessions.map((session) => (
                 <article key={session.id} className="gp-workflow-card gp-session">
                   <div className="gp-session-copy">

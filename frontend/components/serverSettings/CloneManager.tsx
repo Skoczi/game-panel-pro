@@ -90,10 +90,7 @@ export function CloneManager({ fleetId, serverId }: { fleetId: string; serverId:
     <section aria-label="Clone server" className="gp-workflow space-y-4">
       <header className="gp-workflow-intro">
         <h3>Clone or transfer your server</h3>
-        <p>
-          Create an independent copy from a verified backup. Your configuration and credentials are
-          included. Both servers remain stopped until you start them.
-        </p>
+        <p>Includes files, configuration and credentials. Both servers remain stopped.</p>
       </header>
       {error && (
         <p role="alert" className="text-red-600">
@@ -133,11 +130,7 @@ export function CloneManager({ fleetId, serverId }: { fleetId: string; serverId:
                 </select>
               </label>
               {targetNode && (
-                <p className="gp-workflow-muted">
-                  The destination needs the same reviewed runtime and installer images. Choose an IP
-                  and unused ports allocated to that node. The source is retained for rollback;
-                  start the destination only after reviewing the result.
-                </p>
+                <p className="gp-workflow-muted">Destination requires the same images and unused allocated ports. The source is retained.</p>
               )}
 
               <label className="block">
@@ -222,10 +215,7 @@ export function CloneManager({ fleetId, serverId }: { fleetId: string; serverId:
                     <li key={item}>{item}</li>
                   ))}
                 </ul>
-                <p>
-                  After starting the clone, verify the game query, credentials and any URLs pointing
-                  to the source. Delete only the clone if you want to roll back.
-                </p>
+                <p>Check copied credentials and URLs before starting the clone.</p>
               </div>
             )}
             <div className="gp-workflow-actions">
@@ -307,9 +297,7 @@ export function CloneManager({ fleetId, serverId }: { fleetId: string; serverId:
                 Stop the source in its console, then refresh this preview.
               </p>
             )}
-            <p className="gp-workflow-muted mt-4">
-              A verified backup is created before copying. The source is retained for recovery.
-            </p>
+
           </aside>
         </div>
       )}
@@ -320,7 +308,7 @@ export function CloneManager({ fleetId, serverId }: { fleetId: string; serverId:
           </p>
           {transfer.error && <p>{transfer.error}</p>}
           {transfer.targetId && (
-            <p>Destination runtime: {transfer.targetId}. Both copies have separate identities.</p>
+            <p>Server ID: {transfer.targetId}</p>
           )}
           <AppButton onClick={() => openFleet()}>Open Game Servers</AppButton>
         </div>

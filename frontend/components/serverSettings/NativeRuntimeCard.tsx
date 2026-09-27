@@ -9,10 +9,10 @@ export function NativeRuntimeCard({ template, version, serverId, status, isRoot 
   const [message, setMessage] = useState('');
   const [dispatched, setDispatched] = useState(false);
   return <section className="space-y-4 rounded-2xl border border-blue-500/30 bg-blue-500/5 p-5">
-    <div><h4 className="font-semibold">Template maintenance · v{version}</h4><p className="text-sm opacity-70">{template.name}. Startup uses the installed snapshot; publishing a new template does not change this server.</p></div>
+    <div><h4 className="font-semibold">Template maintenance · v{version}</h4><p className="text-sm opacity-70">{template.name} · installed template version</p></div>
 
     {isRoot && !!template.lifecycle?.update.length && <>
-      <p className="text-sm">Updates use the saved local recipe and can overwrite game files. Stop the server and take a backup first. An update does not start the server afterwards.</p>
+      <p className="text-sm">Stop and back up first: updates can overwrite files. The server stays stopped.</p>
       <AppToggle checked={confirmed} onChange={setConfirmed} label="I have a backup and want to run this update." />
       <AppButton tone="primary" disabled={!confirmed || busy || dispatched || !['stopped', 'failed'].includes(status || '')} onClick={async () => {
         setBusy(true); setMessage('');

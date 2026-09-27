@@ -21,7 +21,7 @@ export function GameServersGrid({
       {filteredAndSortedServers.length === 0 && (
         <div className="rounded-lg border border-dashed border-gray-700 p-6 text-center">
           <p className="text-sm text-gray-400">No game servers yet.</p>
-          <p className="mt-1 text-xs text-gray-500">Use “Add Game Server” to install your first one.</p>
+
         </div>
       )}
 

@@ -8,12 +8,12 @@ export function SignedWebhookSettings() {
     useEffect(() => { void refresh(); }, []);
     return <section aria-label="Signed integration webhook" className="gp-workflow gp-workflow-card space-y-4">
         <h2 className="text-lg font-semibold">Signed integration webhook</h2>
-        <p>Send alert summaries and API power results to your HTTPS receiver. Deliveries contain a signature and stable event ID. Your receiver must verify the signature and ignore duplicate IDs.</p>
+        <p>Signed alerts and API results. Verify signatures and deduplicate event IDs.</p>
         {error && <p role="alert">{error}</p>}{notice && <p role="status">{notice}</p>}
         {data && <>
             <AppToggle label="Enable signed webhook" checked={data.enabled} disabled={busy} onChange={enabled => { setData({ ...data, enabled }); setDirty(true); }} />
             <label className="block">Receiver URL<input aria-label="Signed webhook receiver URL" type="url" value={data.url} disabled={busy} placeholder="https://example.com/eserv/events" onChange={e => { setData({ ...data, url: e.target.value }); setDirty(true); }} className="mt-2 w-full rounded border bg-transparent p-2" /></label>
-            <p>Public HTTPS address on port 443, without query parameters. Up to five delivery attempts within 24 hours.</p>
+            <p>HTTPS · port 443 · no query parameters · 5 attempts over 24 hours</p>
             <label className="flex gap-2"><input type="checkbox" checked={rotate} disabled={busy} onChange={e => { setRotate(e.target.checked); setDirty(true); }} />Generate a new signing secret on save</label>
             {rotate && <p>Update the receiver after saving. The previous secret will stop working.</p>}
             {secret && <label className="block">New signing secret — save it now<input aria-label="New webhook signing secret" readOnly value={secret} autoComplete="off" className="mt-2 w-full rounded border bg-transparent p-2" /><AppButton onClick={() => setSecret('')}>I have saved the signing secret</AppButton></label>}

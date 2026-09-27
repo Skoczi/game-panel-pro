@@ -256,7 +256,7 @@ export function UserEditDialog({
                 {globalKnown.includes('panel.operator') ? (
                   <section className="rounded-lg border border-gray-700 bg-[#1f2937] p-4">
                     <h3 className="text-lg font-semibold">All servers and nodes</h3>
-                    <p role="status" className="mt-2 text-sm text-gray-300">Operator already has full access to every server. No individual assignment is needed. Existing assignments are preserved for a future change back to User.</p>
+                    <p role="status" className="mt-2 text-sm text-gray-300">Operator has access to all servers. User assignments are retained.</p>
                   </section>
                 ) : (
                 <section className="rounded-lg border border-gray-700 bg-[#1f2937] p-4">
@@ -311,7 +311,7 @@ export function UserEditDialog({
                       <p className="text-sm font-medium text-gray-200">
                         Set permissions for <span className="text-white">{selectedServerName}</span>
                       </p>
-                      <p className="mt-2 text-sm text-gray-400">Server administrator manages the game console, files, backups and schedules. CPU, RAM, IP, ports, environment, terminal and server deletion stay locked. Global user management can grant wider access; leave it disabled for game administrators.</p>
+                      <p className="mt-2 text-sm text-gray-400">Server administrator: console, files, backups and schedules. No resource, network, environment, terminal or deletion access. Global user management grants wider access.</p>
                       <p className="mt-2 text-sm font-medium text-gray-200">Quick presets · replace the current selection</p>
                       {(() => {
                         const ADDON_PERMS = ['minecraft.addons.read', 'minecraft.addons.write'];

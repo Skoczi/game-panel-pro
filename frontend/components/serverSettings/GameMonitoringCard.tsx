@@ -42,7 +42,7 @@ export function GameMonitoringCard({ serverId }: { serverId: number }) {
         {!data && !error && <p role="status">Loading game monitoring…</p>}
         {data && draft && <>
             <GameMonitoringStatus summary={data.summary} detailed />
-            <p>Checks run on this node even when the panel is closed. A2S supports Counter-Strike 1.6 / ReHLDS and compatible Source games.</p>
+            <p>A2S checks for CS 1.6, ReHLDS and compatible Source games.</p>
             {!data.ports.length ? <p>No UDP ports are allocated to this server.</p> : <>
                 <AppSelect controlLabel="Game query port" value={String(draft.queryPort ?? '')} disabled={busy} placeholder="Select a UDP query port"
                     options={data.ports.map(p => ({ value: String(p.container), label: `${p.label || 'UDP'} · ${p.host} → ${p.container}` }))}
@@ -51,17 +51,17 @@ export function GameMonitoringCard({ serverId }: { serverId: number }) {
                     {([{ key: 'intervalSeconds', label: 'Check interval (seconds)', min: 10, max: 300 }, { key: 'startupGraceSeconds', label: 'Startup grace (seconds)', min: 0, max: 900 }, { key: 'failureThreshold', label: 'Failures before incident', min: 1, max: 10 }] as const).map(f => <label key={f.key}>{f.label}<input type="number" min={f.min} max={f.max} step="1" value={Number.isNaN(draft[f.key]) ? '' : draft[f.key]} disabled={busy} onChange={e => change({ [f.key]: e.target.value === '' ? NaN : Number(e.target.value) })} /></label>)}
                 </div>
             </>}
-            <p>Outages and recoveries appear in Activity. Checks use the node’s internal game network; they do not test the public connection from a player’s location.</p>
+            <p>Checks use the internal game network. Incidents appear in Activity.</p>
             {data.recovery && <div className="mt-4 space-y-3 rounded-xl border border-gray-300 p-4 dark:border-gray-700">
                 <h4>Automatic recovery</h4>
                 <AppToggle label="Automatically restart an unresponsive game" checked={draft.autoRestart?.enabled || false} disabled={busy || !draft.enabled} onChange={enabled => change({ autoRestart: { cooldownSeconds: 300, maxAttempts: 2, windowSeconds: 3600, ...draft.autoRestart, enabled } })} />
-                <p>Uses the incident threshold above. Planned stops, maintenance and unavailable observations never trigger a restart. Attempts remain counted after an agent restart.</p>
+                <p>Restarts after the failure threshold. Planned stops and maintenance are excluded.</p>
                 {draft.autoRestart?.enabled && <div className="gp-monitor-fields">
                     {([{ key: 'cooldownSeconds', label: 'Minimum time between attempts (seconds)', min: 60, max: 3600 }, { key: 'maxAttempts', label: 'Maximum attempts in window', min: 1, max: 5 }, { key: 'windowSeconds', label: 'Restart limit window (seconds)', min: 900, max: 86400 }] as const).map(f => <label key={f.key}>{f.label}<input type="number" min={f.min} max={f.max} value={Number.isNaN(draft.autoRestart![f.key]) ? '' : draft.autoRestart![f.key]} disabled={busy} onChange={e => change({ autoRestart: { ...draft.autoRestart!, [f.key]: e.target.value === '' ? NaN : Number(e.target.value) } })}/></label>)}
                 </div>}
                 <p>Attempts in window: {data.recovery.attemptsInWindow}{data.recovery.nextAttemptAt ? ` · Next eligible attempt: ${new Date(data.recovery.nextAttemptAt).toLocaleString()}` : ''}</p>
                 {data.recovery.lastResult && <p>{data.summary.state === 'online' ? 'Game response confirmed. Restart details are available in Activity.' : data.recovery.lastResult}</p>}
-                <p>Discord alerts are configured in Panel Settings → Discord notifications.</p>
+
             </div>}
             <AppButton onClick={() => void save()} disabled={busy || !Number.isInteger(draft.intervalSeconds) || !Number.isInteger(draft.startupGraceSeconds) || !Number.isInteger(draft.failureThreshold) || (draft.enabled && !draft.queryPort)}><Save size={16} />{busy ? 'Saving…' : 'Save monitoring settings'}</AppButton>
         </>}

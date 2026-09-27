@@ -39,23 +39,23 @@ export function SftpAccessCard({ serverId, canManage }: { serverId: number; canM
   }
   const field = (label: string, value: string) => <div className="gp-sftp-field"><span>{label}</span><div><code>{value}</code><AppButton tone="ghost" aria-label={`Copy ${label}`} onClick={() => void copy(value, label)}><Copy size={16} /></AppButton></div></div>;
   return <section className="gp-settings-card gp-sftp" aria-label="SFTP access">
-    <header><div className="gp-sftp-title"><FolderLock size={23} /><div><h4>SFTP access</h4><p>Connect your file client directly to this server’s game files.</p></div></div>
+    <header><div className="gp-sftp-title"><FolderLock size={23} /><div><h4>SFTP access</h4></div></div>
       <div className="gp-sftp-actions"><AppButton tone="ghost" aria-label="Refresh SFTP status" disabled={busy} onClick={() => void refresh()}><RefreshCw size={16} /></AppButton>
       <AppToggle ariaLabel="Enable SFTP access" checked={Boolean(data?.enabled)} disabled={busy || (!data?.available && !data?.enabled) || !canManage} onChange={enabled => enabled ? void change('enable') : setConfirm('disable')} /></div></header>
     {error && <p role="alert" className="gp-sftp-error">{error}</p>}
     {!data && !error && <p role="status">Loading SFTP access…</p>}
     {data && !data.available && <p>{data.reason}</p>}
-    {data?.available && !data.enabled && <p>SFTP is off. Enable it to generate a separate login and password. No SSH shell access is granted.</p>}
+    {data?.available && !data.enabled && <p>SFTP is disabled. Enabling generates credentials; no shell access.</p>}
     {data?.available && data.enabled && <>
       <div className="gp-sftp-grid">{field('Address', data.host || '')}{field('Port', String(data.port))}{field('Login', data.username || '')}
-        <div className="gp-sftp-field"><span>Password</span><div>{password ? <><input aria-label="SFTP password" autoComplete="off" readOnly type={visible ? 'text' : 'password'} value={password} /><AppButton tone="ghost" aria-label={visible ? 'Hide SFTP password' : 'Show SFTP password'} onClick={() => setVisible(v => !v)}>{visible ? <EyeOff size={16} /> : <Eye size={16} />}</AppButton><AppButton tone="ghost" aria-label="Copy Password" onClick={() => void copy(password, 'Password')}><Copy size={16} /></AppButton></> : <span>Saved securely · generate a new password if needed</span>}</div></div>
+        <div className="gp-sftp-field"><span>Password</span><div>{password ? <><input aria-label="SFTP password" autoComplete="off" readOnly type={visible ? 'text' : 'password'} value={password} /><AppButton tone="ghost" aria-label={visible ? 'Hide SFTP password' : 'Show SFTP password'} onClick={() => setVisible(v => !v)}>{visible ? <EyeOff size={16} /> : <Eye size={16} />}</AppButton><AppButton tone="ghost" aria-label="Copy Password" onClick={() => void copy(password, 'Password')}><Copy size={16} /></AppButton></> : <span>Hidden · reset to issue a new password</span>}</div></div>
       </div>
       <div className="gp-sftp-footer"><span>Game files only · no shell · private backups excluded</span>{canManage && <AppButton disabled={busy} onClick={() => setConfirm('rotate')}>Generate new password</AppButton>}</div>
       {data.fingerprint && <details><summary>SSH host fingerprint</summary><code>{data.fingerprint}</code></details>}
-      <p className="gp-sftp-note">This is a separate, shared server credential. Rotate it when someone should no longer have access. Panel logout does not disconnect SFTP.</p>
+      <p className="gp-sftp-note">Shared credentials. Rotate to revoke access; panel logout does not disconnect SFTP.</p>
     </>}
     {notice && <p role="status">{notice}</p>}
-    {!canManage && data?.available && <p>Ask an administrator with SFTP management permission to enable access or issue a new password.</p>}
+    {!canManage && data?.available && <p>Ask an administrator to enable SFTP or reset the password.</p>}
     {confirm && <ConfirmationModal isOpen title={confirm === 'disable' ? 'Disable SFTP access?' : 'Generate a new SFTP password?'} message="Active SFTP sessions will be disconnected. The current password will stop working." confirmText={confirm === 'disable' ? 'Disable SFTP' : 'Generate password'} onConfirm={() => change(confirm)} onClose={() => { if (!busy) setConfirm(null); }} />}
   </section>;
 }

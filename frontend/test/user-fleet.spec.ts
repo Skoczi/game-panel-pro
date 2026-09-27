@@ -56,7 +56,7 @@ test('account level grants Operator globally while keeping Super Admin protected
  await expect(page.getByRole('button', { name: 'Edit', exact: true })).toHaveCount(1);
  await page.getByRole('button', { name: 'Edit', exact: true }).click();
  await page.getByRole('group', { name: 'Account level' }).getByRole('button', { name: 'Operator', exact: true }).click();
- await expect(page.getByText('Operator already has full access', { exact: false })).toBeVisible();
+ await expect(page.getByText('Operator has access to all servers', { exact: false })).toBeVisible();
  if (process.env.PLAYWRIGHT_SCREENSHOTS) {
   await page.screenshot({ path: '../docs/pro/visual-premium-2026-09-26/account-levels-desktop.png', fullPage: true });
   await page.setViewportSize({ width: 390, height: 844 });

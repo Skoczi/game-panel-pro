@@ -240,9 +240,7 @@ export function ServerSettingsModalLayout({
               <div className="flex h-full items-center justify-center p-8 text-center">
                 <div>
                   <p className={`text-sm font-medium ${textPrimary}`}>No access to this section</p>
-                  <p className={`mt-1 text-xs ${textSecondary}`}>
-                    You don't have permission to view or manage this part of the server's settings.
-                  </p>
+                  <p className={`mt-1 text-xs ${textSecondary}`}>You do not have access to this section.</p>
                 </div>
               </div>
             )}

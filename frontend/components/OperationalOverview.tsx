@@ -28,7 +28,7 @@ export function OperationalOverview({ scope = 'all', servers = [] }: { scope?: s
               const prefix = runtimePrefix(node.id);
               const health = await nodesRequest<{ version: string; commit?: string; capabilities?: Record<string, number> }>(`${prefix}/api/health`);
               base.version = health.version; base.commit = health.commit;
-              for (const [key, title] of Object.entries(requirements)) if (health.capabilities?.[key] !== 1) base.checks.push(problem(key, title, 'This runtime does not support the required protocol. Update the agent.', 'warning'));
+              for (const [key, title] of Object.entries(requirements)) if (health.capabilities?.[key] !== 1) base.checks.push(problem(key, title, 'Update the agent to support this check.', 'warning'));
               if (health.capabilities?.operationalHealth === 1) {
                 const operational = await nodesRequest<{ checks: Check[] }>(`${prefix}/api/system/operational-health`);
                 base.checks.push(...operational.checks);
@@ -58,13 +58,13 @@ export function OperationalOverview({ scope = 'all', servers = [] }: { scope?: s
     </div>
     {loading && <p role="status" className="mt-2 text-sm">Checking runtimes…</p>}
     {error && <p role="alert" className="mt-2 text-sm text-red-600">Could not refresh operational health. Previous measurements may be stale.</p>}
-    {!loading && !error && !issues.length && <p className="mt-2 text-sm text-green-700 dark:text-green-400">All reported checks are healthy across {runtimes.length} runtimes.</p>}
+    {!loading && !error && !issues.length && <p className="mt-2 text-sm text-green-700 dark:text-green-400">All checks passed · {runtimes.length} nodes</p>}
     {!!issues.length && <ul className="mt-3 space-y-2">{issues.map(issue => <li key={`${issue.id}:${issue.key}`} className="rounded-lg border border-gray-200 p-3 text-sm dark:border-gray-700">
       <p className="break-words font-medium"><span className={colors[issue.status]}>{labels[issue.status]}</span> · {issue.node} · {issue.title}</p>
       <p className="mt-1 break-words">{issue.detail}</p>
       {destination(issue.id, issue) && <a className="mt-2 inline-block underline" href={destination(issue.id, issue)!}>Open {issue.category === 'backup' ? 'backups' : issue.category === 'schedule' ? 'schedules' : 'console'}</a>}
     </li>)}</ul>}
-    <details className="mt-3 text-sm"><summary className="cursor-pointer">Runtime versions and all checks</summary>
+    <details className="mt-3 text-sm"><summary className="cursor-pointer">All checks</summary>
       <div className="mt-3 grid gap-3 md:grid-cols-2">{runtimes.map(runtime => <div key={runtime.id} className="min-w-0 rounded-lg border border-gray-200 p-3 dark:border-gray-700">
         <p className="break-words font-medium">{runtime.name} · {runtime.version || 'Version unavailable'}{runtime.commit ? ` · ${runtime.commit.slice(0, 7)}` : ''}</p>
         <ul className="mt-2 space-y-2">{runtime.checks.map(check => <li key={check.key}><span className={colors[check.status]}>{labels[check.status]}</span> · {check.title}<p className="break-words text-gray-600 dark:text-gray-400">{check.detail}</p><time className="text-xs text-gray-500" dateTime={new Date(check.observedAt).toISOString()}>{new Date(check.observedAt).toLocaleString()}</time></li>)}</ul>

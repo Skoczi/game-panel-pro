@@ -135,7 +135,7 @@ export function NativeConfigEditor({ serverId, definition, template, active, can
       </div>
       {review && <section className="gp-config-review" aria-label="Review configuration changes"><h4>Review changes <span>{changed}</span></h4>
         {Object.entries(changes).map(([key, value]) => <div className="gp-config-diff" key={key}><strong>{fields.find(f => f.key === key)?.label}</strong><code>{displayValue(key, parsed.values[key])}</code><ArrowRight size={15} /><code>{displayValue(key, value)}</code></div>)}
-        <p>Only these settings will change. Comments and other commands stay in the file. Plugins or other config files can override them when the game runs.</p>
+        <p>Comments are preserved. Other configs or plugins may override these values.</p>
       </section>}
       <footer className="gp-config-savebar"><div><strong>{changed ? `${changed} unsaved ${changed === 1 ? 'change' : 'changes'}` : 'Configuration up to date'}</strong><span>{changed ? 'Review your changes before saving.' : 'Values reflect the file, not live console overrides.'}</span></div>
         <div><AppButton tone="ghost" disabled={busy} onClick={() => onOpen(snapshot.path, definition.root)}><FileCode2 size={16} />File editor</AppButton>

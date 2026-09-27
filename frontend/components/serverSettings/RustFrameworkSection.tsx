@@ -180,9 +180,7 @@ export function RustFrameworkSection({
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
         <div className="space-y-1.5 min-w-0">
           <h4 className={`text-sm font-semibold ${textPrimary}`}>Oxide (uMod)</h4>
-          <p className={`text-xs ${textSecondary}`}>
-            The modding framework for Rust. Installing Oxide lets you load and manage plugins that extend your server.
-          </p>
+          <p className={`text-xs ${textSecondary}`}>Plugin loader for Rust.</p>
           <div className="flex flex-wrap gap-1.5 pt-0.5">
             <span
               className={`inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full ${

@@ -113,7 +113,7 @@ test('node enrollment keeps token masked and gives explicit operator instruction
   await page.getByRole('button', { name: 'Create enrollment' }).click();
   await expect(page.getByLabel('Enrollment token')).toHaveAttribute('type', 'password');
   await expect(
-    page.getByText('One-time token, valid for 15 minutes.', { exact: false })
+    page.getByText('One-use token · expires in 15 minutes', { exact: false })
   ).toBeVisible();
   await page.getByRole('button', { name: 'Dismiss token' }).click();
   await expect(page.getByLabel('Enrollment token')).toHaveCount(0);
