@@ -29,7 +29,7 @@ html .gp-workflow .gp-workflow-nav .gp-app-button[data-ods='button'][aria-presse
 html .gp-workflow .gp-workflow-nav .gp-app-button[data-ods='button']:hover {
   background: var(--ux-tint);
 }
-html.dark .gp-sidebar-nav .gp-app-button[data-ods='button'][aria-current='page'] {
+html.dark .gp-sidebar-nav .gp-app-button[aria-current='page'] {
   background: #153344 !important;
   color: #79e2ef !important;
   border-color: #275163 !important;

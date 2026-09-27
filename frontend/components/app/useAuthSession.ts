@@ -1,3 +1,4 @@
+import { fileLocationUrl } from '../../utils/fileLocationUrl';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { apiClient } from '../../utils/api';
 import {
@@ -5,7 +6,7 @@ import {
   ACTIVE_SERVER,
   ADMIN_RUNTIME,
   openServer,
-  openFleet,
+  redirectToFleet,
   selectNode,
   type ServerContext,
 } from '../../utils/nodeContext';
@@ -36,7 +37,7 @@ export function useAuthSession() {
     const user = profile?.user ?? null;
     const shortRoute = shortServerRoute();
     if (location.pathname.startsWith('/s/') && !shortRoute) {
-      openFleet();
+      redirectToFleet();
       return;
     }
     const requestedServer =
@@ -93,14 +94,14 @@ export function useAuthSession() {
               if (value !== null) canonical.searchParams.set(key, value);
             }
           }
-          history.replaceState(null, '', canonical);
+          history.replaceState(null, '', fileLocationUrl(canonical));
         }
       } catch {
-        openFleet();
+        redirectToFleet();
         return;
       }
     } else if (user && !user.isRoot && ADMIN_RUNTIME) {
-      openFleet();
+      redirectToFleet();
       return;
     }
     setCurrentUser(user);
@@ -143,7 +144,7 @@ export function useAuthSession() {
         );
       } catch (error) {
         if (!cancelled && [401, 403, 404].includes(Number((error as { status?: number }).status)))
-          openFleet();
+          redirectToFleet();
         // A transient network/node outage must not discard open forms or switch runtime.
       } finally {
         busy = false;

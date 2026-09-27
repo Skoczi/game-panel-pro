@@ -12,7 +12,7 @@ const context = {
   placementRevision: 1,
 };
 test.beforeEach(async ({ page }, testInfo) => {
-  await page.route(/\/(?:s\/[^?]*|)(?:\?.*)?$/, async (route) => {
+  await page.route(/\/(?:s\/[^?]*|nodes|templates|settings|users|host-status|)(?:\?.*)?$/, async (route) => {
     if (!route.request().isNavigationRequest()) return route.continue();
     const response = await route.fetch({
       url: 'http://127.0.0.1:4178/test/short-links.fixture.html',
@@ -112,4 +112,28 @@ test('file folder query survives authentication canonicalization and reload', as
   await page.reload();
   await expect(page.getByRole('heading')).toHaveText('Remote Arena');
   await expect.poll(() => new URL(page.url()).searchParams.get('path')).toBe('/cfg # test');
+});
+
+ test('main URLs preserve history across server runtimes and work as cold shared links', async ({ page }) => {
+  await page.goto('/s/18/console');
+  await expect(page.getByRole('heading')).toHaveText('Remote Arena');
+  await page.getByRole('link', { name: 'nodes', exact: true }).click();
+  await expect(page).toHaveURL(/\/nodes$/);
+  await expect(page.getByRole('heading')).toHaveText('nodes');
+  expect(await page.evaluate(() => sessionStorage.getItem('gamepanel_active_server'))).toBeNull();
+  await page.getByRole('link', { name: 'game-templates', exact: true }).click();
+  await expect(page).toHaveURL(/\/templates$/);
+  await page.goBack();
+  await expect(page.getByRole('heading')).toHaveText('nodes');
+  await page.goBack();
+  await expect(page).toHaveURL(/\/s\/18\/console$/);
+  await expect(page.getByRole('heading')).toHaveText('Remote Arena');
+  await page.goForward();
+  await expect(page.getByRole('heading')).toHaveText('nodes');
+  for (const [tab, path] of [['settings', '/settings'], ['admin-users', '/users'], ['host-status', '/host-status'], ['game-templates', '/templates']]) {
+    await page.getByRole('link', { name: tab, exact: true }).click();
+    await expect(page).toHaveURL(new RegExp(path + '$'));
+    await page.reload();
+    await expect(page.getByRole('heading')).toHaveText(tab);
+  }
 });

@@ -26,5 +26,5 @@ export function shortServerUrl(number: string, tab: string) {
   return `/s/${number}/${SERVER_TAB_SLUGS[tab] || 'console'}`;
 }
 export function appRootPath() {
-  return location.pathname.startsWith('/s/') ? '/' : location.pathname;
+  return location.pathname.startsWith('/test/') ? location.pathname : '/';
 }

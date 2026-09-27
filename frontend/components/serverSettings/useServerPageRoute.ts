@@ -1,7 +1,8 @@
 import { FILE_LOCATION_CHANGED, FILE_LOCATION_WRITTEN } from './useFileManagerLocation';
+import { panelTab, panelUrl, readPanelTab } from '../../utils/panelLinks';
 import { confirmDialog } from '../../utils/confirmDialog';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { ACTIVE_NODE, ACTIVE_SERVER, openFleet } from '../../utils/nodeContext';
+import { ACTIVE_NODE, ACTIVE_SERVER, ADMIN_RUNTIME, clearNodeSelection } from '../../utils/nodeContext';
 import type { SettingsTab } from './access';
 import { serverNumber, shortServerRoute, shortServerUrl } from '../../utils/serverLinks';
 
@@ -22,6 +23,8 @@ export interface ServerPageRoute {
   tab: ServerPageTab;
 }
 function readRoute(): ServerPageRoute | null {
+  if (panelTab() && !location.hash && !new URLSearchParams(location.search).has('server')) return null;
+  if (readPanelTab() !== 'game-servers') return null;
   const shortRoute = shortServerRoute();
   if (shortRoute && ACTIVE_SERVER && shortRoute.number === serverNumber(ACTIVE_SERVER.displayId))
     return {
@@ -49,6 +52,7 @@ export function serverPageHash(route: ServerPageRoute) {
   return `#/nodes/${route.node}/servers/${route.id}/${route.tab}`;
 }
 export function useServerPageRoute() {
+  const [mainTab, setMainTab] = useState(readPanelTab);
   const [route, setRoute] = useState(readRoute);
   const dirty = useRef(false);
   const acceptedUrl = useRef(location.href);
@@ -75,11 +79,26 @@ export function useServerPageRoute() {
           : `${location.pathname}${location.search}${next ? serverPageHash(next) : ''}`
       );
       acceptedUrl.current = location.href;
+      setMainTab('game-servers');
       setRoute(next);
       window.scrollTo(0, 0);
     },
     [allowLeave]
   );
+  const navigateMain = useCallback(async (tab: string) => {
+    if (!await allowLeave()) return;
+    const destination = panelUrl(tab);
+    if (ACTIVE_SERVER || ADMIN_RUNTIME) {
+      clearNodeSelection();
+      location.assign(destination);
+      return;
+    }
+    if (location.href !== new URL(destination, location.origin).href) history.pushState(null, '', destination);
+    acceptedUrl.current = location.href;
+    setRoute(null);
+    setMainTab(tab);
+    window.scrollTo(0, 0);
+  }, [allowLeave]);
   useEffect(() => {
     let checking = false;
     const changed = async () => {
@@ -111,9 +130,11 @@ export function useServerPageRoute() {
         return;
       }
       if (ACTIVE_SERVER && !shortRoute && !requestedServer && !location.hash) {
-        openFleet();
+        clearNodeSelection();
+        window.location.reload();
         return;
       }
+      setMainTab(readPanelTab());
       setRoute(readRoute());
       window.dispatchEvent(new Event(FILE_LOCATION_CHANGED));
     };
@@ -135,5 +156,5 @@ export function useServerPageRoute() {
       window.removeEventListener('beforeunload', unloading);
     };
   }, [allowLeave]);
-  return { route, navigate, setDirty, allowLeave };
+  return { route, navigate, navigateMain, mainTab, setDirty, allowLeave };
 }

@@ -219,7 +219,7 @@ test('system login theme follows OS changes, while light overrides a dark panel 
 test('global settings only edits appearance and preserves Local allocations', async ({ page }) => {
   const state = await mock(page);
   await page.goto('/test/settings.fixture.html');
-  await expect(page.locator('aside nav button')).toHaveText([
+  await expect(page.locator('aside nav a')).toHaveText([
     'Game Servers',
     'User Administration',
     'Nodes',
@@ -227,7 +227,7 @@ test('global settings only edits appearance and preserves Local allocations', as
     'Panel Settings',
     'Host Status',
   ]);
-  await expect(page.getByRole('button', { name: 'Panel Settings', exact: true })).toHaveAttribute(
+  await expect(page.getByRole('link', { name: 'Panel Settings', exact: true })).toHaveAttribute(
     'aria-current',
     'page'
   );
@@ -329,7 +329,7 @@ test('conflicting save preserves edits and offers reload', async ({ page }) => {
 test('non-root menu has no global Settings entry', async ({ page }) => {
   await mock(page);
   await page.goto('/test/settings.fixture.html?nonroot');
-  await expect(page.getByRole('button', { name: 'Panel Settings', exact: true })).toHaveCount(0);
+  await expect(page.getByRole('link', { name: 'Panel Settings', exact: true })).toHaveCount(0);
   await expect(page.getByTestId('panel-revision')).toHaveText(
     formatDisplayVersion(packageInfo.version)
   );

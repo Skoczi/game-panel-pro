@@ -1,6 +1,6 @@
 import { NodeScopeProvider, useNodeScope } from '../../contexts/NodeScopeContext';
 import { ErrorBoundary } from '../ErrorBoundary';
-import { lazy, Suspense, useRef } from 'react';
+import { lazy, Suspense, useRef, useEffect } from 'react';
 import { Menu } from 'lucide-react';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useFocusTrap } from '../../src/ui/utils/useFocusTrap';
@@ -154,7 +154,8 @@ function AppShellContent({
   setChangePasswordOpen,
   currentUserId,
 }: AppShellProps) {
-  const { route, navigate, setDirty, allowLeave } = useServerPageRoute();
+  const { route, navigate, navigateMain, mainTab, setDirty, allowLeave } = useServerPageRoute();
+  useEffect(() => { setActiveTab(mainTab); }, [mainTab, setActiveTab]);
   const { selectScope } = useNodeScope();
   const changeNodeScope = async (id: string) => {
     if (!(await allowLeave())) return;
@@ -165,7 +166,7 @@ function AppShellContent({
   const managedServer =
     route?.node === ACTIVE_NODE ? gameServers.find((server) => server.id === route.id) : undefined;
   const changeMainTab = async (tab: string) => {
-    if (await allowLeave()) setActiveTab(tab);
+    await navigateMain(tab);
   };
   const { theme } = useTheme();
   const isDark = theme === 'dark';
@@ -284,6 +285,7 @@ function AppShellContent({
 
       <main className="flex-1 w-full overflow-x-hidden bg-transparent pt-16 md:pl-52 md:pt-0">
         <ErrorBoundary section key={activeTab}>
+        {((['nodes', 'game-templates', 'settings', 'host-status'].includes(activeTab) && !currentUser?.isRoot) || (activeTab === 'admin-users' && !canManageUsers)) && <AppPageLayout className={pageShellClassName}><p role="alert">You do not have access to this page.</p></AppPageLayout>}
         {activeTab === 'host-status' && currentUser?.isRoot && (
           <AppPageLayout className={pageShellClassName}>
             <Suspense fallback={<div className="p-6 text-sm text-gray-400">Loading…</div>}>
@@ -381,7 +383,7 @@ function AppShellContent({
           </AppPageLayout>
         )}
 
-        {activeTab === 'admin-users' && (
+        {activeTab === 'admin-users' && canManageUsers && (
           <AppPageLayout className={pageShellClassName}>
             <UserAdministration
               servers={gameServers}

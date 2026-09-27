@@ -1148,17 +1148,17 @@ html:not(.dark) .gp-sidebar-bottom .hover\:text-\[\#f17993\]:hover { color: #f17
    (sidebar keeps its dark navy bg in light mode)
    ───────────────────────────────────────────────────── */
 
-html:not(.dark) .gp-sidebar-nav .gp-app-button--ghost[data-ods='button'] {
+html:not(.dark) .gp-sidebar-nav .gp-app-button--ghost {
   color: rgba(255, 255, 255, 0.8) !important;
 }
 
-html:not(.dark) .gp-sidebar-nav .gp-app-button--ghost[data-ods='button']:hover {
+html:not(.dark) .gp-sidebar-nav .gp-app-button--ghost:hover {
   color: #ffffff !important;
   background-color: rgba(255, 255, 255, 0.22) !important;
 }
 
-html:not(.dark) .gp-sidebar-nav .gp-app-button--ghost[data-ods='button'][disabled],
-html:not(.dark) .gp-sidebar-nav .gp-app-button--ghost[data-ods='button'][aria-disabled='true'] {
+html:not(.dark) .gp-sidebar-nav .gp-app-button--ghost[disabled],
+html:not(.dark) .gp-sidebar-nav .gp-app-button--ghost[aria-disabled='true'] {
   color: rgba(255, 255, 255, 0.35) !important;
 }
 

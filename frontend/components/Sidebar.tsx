@@ -1,9 +1,9 @@
+import { panelUrl } from '../utils/panelLinks';
 import { useState, useRef, useEffect, type ReactNode } from 'react';
 import { KeyRound, Moon, MoreVertical, Power, Sun, X, Settings, Server } from 'lucide-react';
 import { useBranding } from '../contexts/BrandingContext';
 import { PanelBrand } from './PanelBrand';
 import { NodeSelector } from './NodeSelector';
-import { ADMIN_RUNTIME, ACTIVE_SERVER, openFleet } from '../utils/nodeContext';
 import { Icon, type IconName } from '@ovhcloud/ods-react';
 import { formatDisplayVersion, getAppVersion } from '../utils/appInfo';
 import type { AuthUser } from '../utils/permissions';
@@ -280,20 +280,18 @@ export function Sidebar({
           const isDisabled = Boolean(item.disabled);
 
           return (
-            <AppButton
+            <a
               key={item.id}
               aria-current={isActive ? 'page' : undefined}
-              onClick={() => {
+              href={isDisabled ? undefined : panelUrl(item.id)}
+              onClick={(event) => {
+                if (event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
+                event.preventDefault();
                 if (isDisabled) return;
-                if (item.id === 'game-servers' && (ACTIVE_SERVER || ADMIN_RUNTIME)) {
-                  openFleet();
-                  return;
-                }
                 onTabChange(item.id);
               }}
-              disabled={isDisabled}
-              tone={isActive ? 'secondary' : 'ghost'}
-              className={`mb-1 flex w-full items-center justify-start gap-3 rounded-lg px-4 py-3 text-left transition-colors ${
+              aria-disabled={isDisabled || undefined}
+              className={`gp-app-button gp-app-button--${isActive ? 'secondary' : 'ghost'} min-h-9 cursor-pointer mb-1 flex w-full items-center justify-start gap-3 rounded-lg px-4 py-3 text-left transition-colors ${
                 isDisabled
                   ? isDark
                     ? 'text-gray-600 cursor-not-allowed opacity-60'
@@ -307,7 +305,7 @@ export function Sidebar({
                       : 'border-none bg-transparent text-white/80 hover:bg-white/15 hover:text-white'
               }`}
             >
-              <span className="inline-flex h-5 w-5 shrink-0 items-center justify-center">
+              <span aria-hidden="true" className="inline-flex h-5 w-5 shrink-0 items-center justify-center">
                 {item.id === 'settings' ? (
                   <Settings size={20} />
                 ) : item.id === 'nodes' ? (
@@ -317,7 +315,7 @@ export function Sidebar({
                 )}
               </span>
               <span className="text-sm font-medium leading-none">{item.label}</span>
-            </AppButton>
+            </a>
           );
         })}
       </nav>

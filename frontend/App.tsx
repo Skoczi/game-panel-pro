@@ -1,4 +1,5 @@
 import { SessionLoading } from './components/SessionLoading';
+import { readPanelTab } from './utils/panelLinks';
 import {
   useState,
   useEffect,
@@ -68,7 +69,7 @@ function AppContent() {
     resetSession,
     markAuthenticated,
   } = useAuthSession();
-  const [activeTab, setActiveTab] = useState('game-servers');
+  const [activeTab, setActiveTab] = useState(readPanelTab);
   const {
     cliMessages,
     setCliMessages,
@@ -528,11 +529,6 @@ function AppContent() {
     document.body.scrollTop = 0;
   }, [activeTab]);
 
-  useEffect(() => {
-    if (activeTab === 'admin-users' && !canManageUsers) {
-      setActiveTab('game-servers');
-    }
-  }, [activeTab, canManageUsers]);
 
   const handleLogin = () => {
     if (window.location.pathname.startsWith('/s/')) {
