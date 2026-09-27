@@ -335,7 +335,9 @@ export function FleetWorkspace({
             }
           />
           <button
-            className={button}
+            className={`${button} fleet-refresh`}
+            aria-label="Refresh"
+            title="Refresh"
             disabled={busy}
             onClick={() =>
               void run(async () => {
@@ -345,12 +347,12 @@ export function FleetWorkspace({
             }
           >
             <RefreshCw size={16} />
-            Refresh
+            <span className="fleet-mobile-action-label">Refresh</span>
           </button>
           {administrator && (
-            <button className={`${button} gp-fleet-primary`} onClick={() => setInstallOpen(true)}>
+            <button className={`${button} gp-fleet-primary`} aria-label="Add Game Server" onClick={() => setInstallOpen(true)}>
               <Plus size={16} />
-              Add Game Server
+              <span className="fleet-add-desktop-label">Add Game Server</span><span className="fleet-add-mobile-label">Add server</span>
             </button>
           )}
         </div>
@@ -591,8 +593,10 @@ export function FleetWorkspace({
                         </div>
                         {connection(server)}
                         {metrics(server)}
-                        {powerButtons(server)}
-                        {management(server)}
+                        <div className="fleet-card-actions">
+                          {powerButtons(server)}
+                          {management(server)}
+                        </div>
                         {!server.available && (
                           <p className="gp-fleet-notice">
                             Node unavailable. Last observed{' '}

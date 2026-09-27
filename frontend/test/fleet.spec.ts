@@ -398,6 +398,17 @@ test('global IDs, premium views and quick consoles stay scoped across identical 
     .poll(() => page.evaluate(() => document.documentElement.scrollWidth))
     .toBeLessThanOrEqual(390);
   if (process.env.PLAYWRIGHT_SCREENSHOTS === '1') await page.screenshot({ path: 'test-results/fleet-premium-mobile.png', fullPage: true });
+  for (const width of [320, 390, 430]) {
+    await page.setViewportSize({ width, height: 900 });
+    const manage = await first.getByRole('button', { name: 'Manage', exact: true }).boundingBox();
+    const power = await first.getByRole('button', { name: 'restart Community Arena', exact: true }).boundingBox();
+    expect(Math.abs(manage!.y + manage!.height / 2 - power!.y - power!.height / 2)).toBeLessThanOrEqual(3);
+    await expect(first.locator('.fleet-mobile-action-label').first()).toBeHidden();
+    const refresh = await page.locator('header .fleet-refresh').boundingBox();
+    const add = await page.getByRole('button', { name: 'Add Game Server', exact: true }).boundingBox();
+    expect(Math.abs(refresh!.y + refresh!.height / 2 - add!.y - add!.height / 2)).toBeLessThanOrEqual(3);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  }
 });
 test('custom dropdown supports keyboard, typeahead, cancellation and focus', async ({ page }) => {
   await page.goto('/test/fleet.fixture.html');
