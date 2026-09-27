@@ -242,11 +242,11 @@ export function UserAdministration({
       setCreateModalOpen(false);
       await loadUsers();
       if (typeof res.user?.id === 'number') {
-        setSelectedUserId(res.user.id);
+        openUserEdit({ ...res.user, globalPermissions: res.user.globalPermissions || [] });
       }
       setFeedback({
         type: 'success',
-        text: `User ${res.user?.username || usernameValue} created successfully.`,
+        text: `User ${res.user?.username || usernameValue} created. Choose a server and save its permissions to grant access.`,
       });
     } catch (error: any) {
       setCreateError(apiError(error, 'Failed to create user.'));
@@ -262,7 +262,7 @@ export function UserAdministration({
   }, [createModalOpen, resetCreateForm]);
 
   const handleSaveEdit = async () => {
-    if (!selectedUser || membersLoading || membersError || inventoryLoading || inventoryError) return;
+    if (!selectedUser || (!allGlobalPerms.includes('panel.operator') && (membersLoading || membersError || inventoryLoading || inventoryError))) return;
     if (selectedUser.isRoot) {
       setEditError('Super Admin account cannot be edited here.');
       return;
@@ -303,7 +303,7 @@ export function UserAdministration({
         await apiClient.resetUserPassword(selectedUser.id, newPassword);
       }
 
-      if (selectedServerId) {
+      if (selectedServerId && !allGlobalPerms.includes('panel.operator')) {
         const selectedUserMember =
           members.find((member) => String(member.userId) === String(selectedUser.id)) ?? null;
 

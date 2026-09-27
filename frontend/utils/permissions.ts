@@ -1,7 +1,9 @@
 export interface AuthUser {
   id: number;
   username: string;
+  /** Full panel authority; role distinguishes the protected owner. */
   isRoot: boolean;
+  role?: 'super-admin' | 'operator' | 'user';
   isEnabled: boolean;
 }
 

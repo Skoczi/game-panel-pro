@@ -1,3 +1,4 @@
+import { SERVER_ADMIN_PERMISSIONS } from '../components/userAdministration/utils';
 import React, { useEffect, useState } from 'react';
 import { MAX_SERVER_LOG_LINES } from '../components/app/appRuntime';
 import { createRoot } from 'react-dom/client';
@@ -12,7 +13,8 @@ import '../src/ui/theme/ods-light.css';
 import '../styles/globals.css';
 const noop = () => {};
 const deleteOnly = location.search.includes('deleteOnly');
-const admin = !location.search.includes('restricted') && !deleteOnly;
+const gameAdmin = location.search.includes('gameAdmin');
+const admin = !location.search.includes('restricted') && !deleteOnly && !gameAdmin;
 const metadata = JSON.stringify({
   template: {
     document: {
@@ -92,7 +94,7 @@ function Fixture() {
       ],
     },
     gameNamesByKey: {},
-    serverPermissionsById: { '7': admin ? ['*'] : deleteOnly ? ['server.delete'] : [] },
+    serverPermissionsById: { '7': admin ? ['*'] : gameAdmin ? SERVER_ADMIN_PERMISSIONS : deleteOnly ? ['server.delete'] : [] },
     handleServerAction: async (id: string, name: string, action: string) => {
       (window as any).actions = [...((window as any).actions || []), { id, name, action }];
     },

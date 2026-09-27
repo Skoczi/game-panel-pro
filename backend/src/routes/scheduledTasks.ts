@@ -1,3 +1,4 @@
+import { authorizeScheduledTask } from '../services/scheduledTaskAccess.js';
 import { maintenanceRuns } from '../services/maintenanceWorkflow.js';
 import { Router, type Response } from 'express';
 import { type AuthenticatedRequest, requireServerPermission } from '../middleware/auth.js';
@@ -48,7 +49,7 @@ router.post(
                 schedule: body.schedule,
                 enabled: body.enabled,
                 payload: body.payload,
-            });
+            }, authorizeScheduledTask(req.user, serverId));
 
             return res.status(201).json({ task });
         } catch (error) {
@@ -102,7 +103,7 @@ router.patch(
                 schedule: body.schedule,
                 enabled: body.enabled,
                 payload: body.payload,
-            });
+            }, authorizeScheduledTask(req.user, serverId));
 
             return res.json({ task });
         } catch (error) {

@@ -1,6 +1,7 @@
 // Execute our own compiled module with explicit test doubles; no database or daemon access.
 import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
+import * as accountRoles from '../src/utils/accountRole.js';
 import ts from 'typescript';
 export function loadWithMocks(relativePath: string, mocks: Record<string, unknown>, globals: Record<string, unknown> = {}): any {
     const source = readFileSync(new URL(relativePath, import.meta.url), 'utf8');
@@ -10,6 +11,7 @@ export function loadWithMocks(relativePath: string, mocks: Record<string, unknow
         ...globals,
         exports: module.exports, module,
         require: (name: string) => {
+            if (!(name in mocks) && name.endsWith('/utils/accountRole.js')) return accountRoles;
             if (!(name in mocks)) throw new Error(`Unexpected test dependency: ${name}`);
             return mocks[name];
         },

@@ -88,10 +88,10 @@ export function UsersPanel({
                 <div className="min-w-0">
                   <div className="flex items-center gap-2">
                     <span className="font-semibold text-white">{u.username}</span>
-                    {u.isRoot && (
+                    {(
                       <span className="inline-flex items-center gap-1 rounded border border-amber-500/60 dark:border-amber-500/40 bg-amber-50 dark:bg-amber-500/10 px-2 py-0.5 text-xs text-amber-700 dark:text-amber-300">
                         <Shield className="h-3.5 w-3.5" />
-                        Super Admin
+                        {u.isRoot ? 'Super Admin' : u.globalPermissions.includes('panel.operator') ? 'Operator' : u.globalPermissions.length ? 'Custom (legacy)' : 'User'}
                       </span>
                     )}
                   </div>

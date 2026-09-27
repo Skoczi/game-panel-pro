@@ -1,3 +1,4 @@
+import { isPanelAdministrator } from '../utils/accountRole.js';
 import type { NextFunction, Request, Response } from 'express';
 import type { JWTPayload } from '../utils/auth.js';
 import { extractTokenFromHeader, verifyToken } from '../utils/auth.js';
@@ -57,7 +58,7 @@ export async function authMiddleware(
       return;
     }
 
-    req.user = { ...payload, isRoot: Boolean(user.is_root) };
+    req.user = { ...payload, isRoot: isPanelAdministrator(user) };
     next();
   } catch (err) {
     res.status(401).json({ error: 'Invalid token' });

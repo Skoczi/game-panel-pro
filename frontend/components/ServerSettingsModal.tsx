@@ -1068,6 +1068,8 @@ export function ServerSettingsModal({
             serverGame={serverGame}
             canRead={canAccessTab('scheduledtasks')}
             canWrite={canWriteScheduledTasks}
+            permissions={serverPermissions}
+            administrator={Boolean(currentUser?.isRoot)}
             contentBg={contentBg}
             borderColor={borderColor}
             textPrimary={textPrimary}

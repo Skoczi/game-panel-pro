@@ -1,3 +1,4 @@
+import { isPanelAdministrator } from '../utils/accountRole.js';
 import type { IncomingMessage } from 'http';
 import { WebSocketServer, type RawData } from 'ws';
 import crypto from 'node:crypto';
@@ -84,7 +85,7 @@ async function ensureWsUserEnabled(ws: AuthenticatedWebSocket): Promise<boolean>
     return false;
   }
 
-  ws.isRoot = Boolean(user.is_root);
+  ws.isRoot = isPanelAdministrator(user);
   if (ws.selectedServer) {
     try {
       const scope = await serverDelegation(ws.selectedServer, 'local', {

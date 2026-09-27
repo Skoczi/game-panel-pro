@@ -9,6 +9,23 @@ import * as cron from '../src/utils/cron.js';
 import * as time from '../src/utils/time.js';
 
 const past = '2020-01-01T00:00:00.000Z';
+test('partial schedule updates authorize stored and replacement actions before persistence', async t => {
+    const f = fixture(); t.after(f.close);
+    const row = await f.add(1, { command: 'id' }, 'custom');
+    let checks: string[] = [];
+    const guard = async (type: string) => {
+        checks.push(type);
+        if (type === 'custom') throw Object.assign(new Error('Terminal denied'), { statusCode: 403 });
+    };
+    await assert.rejects(f.scheduler.updateScheduledTask(1, row.id, { enabled: true }, guard), { statusCode: 403 });
+    await assert.rejects(f.scheduler.updateScheduledTask(1, row.id, { type: 'restart', payload: {} }, guard), { statusCode: 403 });
+    const safe = await f.add(1, {}, 'restart');
+    checks = [];
+    await assert.rejects(f.scheduler.updateScheduledTask(1, safe.id, { type: 'custom', payload: { command: 'id' } }, guard), { statusCode: 403 });
+    assert.deepEqual(checks, ['restart', 'custom']);
+    assert.equal((await f.repo.findById(safe.id)).type, 'restart');
+    await assert.rejects(f.scheduler.createScheduledTask(1, { type: 'custom', schedule: '0 5 * * *', payload: { command: 'id' } }, guard), { statusCode: 403 });
+});
 function deferred() {
     let resolve!: () => void;
     const promise = new Promise<void>(done => { resolve = done; });
@@ -148,7 +165,7 @@ test('process recovery durably pauses interrupted tasks, preserves other tasks, 
     assert.deepEqual(f.calls.map(c => c.command), ['task-2']);
     assert(f.actions.some(a => a.includes('interrupted; schedule disabled')));
     assert.equal((await f.repo.recoverInterrupted()).length, 0);
-    await f.scheduler.updateScheduledTask(1, interrupted.id, { enabled: true });
+    await f.scheduler.updateScheduledTask(1, interrupted.id, { enabled: true }, async () => {});
     const resumed = await f.repo.findById(interrupted.id);
     assert.equal(resumed.enabled, 1); assert(Date.parse(resumed.next_run_at) > Date.now());
     await f.scheduler.runDueScheduledTasks(); assert.equal(f.calls.length, 1, 're-enable schedules a future run, not a replay');

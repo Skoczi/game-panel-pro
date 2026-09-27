@@ -1,3 +1,4 @@
+import { isPanelAdministrator } from '../utils/accountRole.js';
 import { signedWebhooks } from './signedWebhooks.js';
 import { apiPower } from './publicApiPower.js';
 import { getDatabase } from '../database/init.js';
@@ -31,7 +32,7 @@ export const publicApiRoutes = publicApi({
     store: () => tokens,
     owner: async id => {
         const user = await userRepository.findById(id);
-        return user ? { userId: user.id, isRoot: Boolean(user.is_root), enabled: Boolean(user.is_enabled) } : null;
+        return user ? { userId: user.id, isRoot: isPanelAdministrator(user), enabled: Boolean(user.is_enabled) } : null;
     },
     servers: () => fleet().list(),
     permissions: fleetPermissions,

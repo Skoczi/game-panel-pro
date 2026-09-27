@@ -1,3 +1,4 @@
+import { isPanelAdministrator, accountRole, OPERATOR_PERMISSION } from '../utils/accountRole.js';
 import { Router, type Request, type Response } from 'express';
 import { LoginRateLimit } from '../services/loginRateLimit.js';
 import { type AuthenticatedRequest, authMiddleware, requireGlobalPermission } from '../middleware/auth.js';
@@ -67,7 +68,7 @@ router.post(
   '/register',
   authMiddleware,
   requireGlobalPermission(PERMISSIONS.users.manage),
-  async (req: Request, res: Response) => {
+  async (req: AuthenticatedRequest, res: Response) => {
     try {
       const body = requireBodyObject(req.body);
       const username = asNonEmptyString(body.username);
@@ -89,6 +90,7 @@ router.post(
           return res.status(400).json({ error: 'Wildcard permission "*" is reserved for root' });
         }
 
+        if (parsed.includes(OPERATOR_PERMISSION) && !req.user?.isRoot) return res.status(403).json({ error: 'Only panel administrators can grant Operator access' });
         globalPermissions = parsed;
       }
 
@@ -133,7 +135,7 @@ router.post(
           username: user.username,
           isRoot: Boolean(user.is_root),
           isEnabled: Boolean(user.is_enabled),
-          globalPermissions,
+          globalPermissions: globalPermissions || [],
         },
       });
     } catch (error) {
@@ -195,7 +197,8 @@ router.post('/login', async (req: Request, res: Response) => {
       user: {
         id: user.id,
         username: user.username,
-        isRoot: Boolean(user.is_root),
+        isRoot: isPanelAdministrator(user),
+        role: accountRole(user),
         isEnabled: Boolean(user.is_enabled),
       },
       token,
@@ -216,7 +219,7 @@ router.get('/me', authMiddleware, async (req: AuthenticatedRequest, res: Respons
     const user = await userRepository.findById(userId);
     if (!user) return res.status(404).json({ error: 'User not found' });
 
-    const isRoot = Boolean(user.is_root);
+    const isRoot = isPanelAdministrator(user);
 
     const globalPermissions = isRoot
       ? ['*']
@@ -244,6 +247,7 @@ router.get('/me', authMiddleware, async (req: AuthenticatedRequest, res: Respons
         id: user.id,
         username: user.username,
         isRoot,
+        role: accountRole(user),
         isEnabled: Boolean(user.is_enabled),
       },
       permissions: {

@@ -23,3 +23,15 @@ test('maintenance form saves the explicit plan and displays durable step results
   await expect(page.getByText('Update game: pending')).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
 });
+
+
+test('game administrator cannot schedule shell commands or updates, including existing tasks', async ({ page }) => {
+ await page.route('**/api/servers/**', route => route.fulfill({ json: { tasks: [{ id: 9, type: 'custom', enabled: false, schedule: '0 5 * * *', payload: { command: 'id' } }], maintenanceWorkflow: true, maintenanceRuns: [] } }));
+ await page.goto('/test/maintenance.fixture.html?gameAdmin');
+ await expect(page.getByRole('switch', { name: 'Task enabled' })).toBeDisabled();
+ await expect(page.getByRole('button', { name: 'Edit custom task' })).toBeDisabled();
+ await page.getByRole('button', { name: 'Add Task' }).click();
+ await expect(page.getByRole('button', { name: 'Container shell command', exact: true })).toHaveCount(0);
+ await page.getByRole('checkbox', { name: 'Maintenance workflow', exact: true }).check();
+ await expect(page.getByRole('checkbox', { name: 'Run the template update recipe' })).toBeDisabled();
+});

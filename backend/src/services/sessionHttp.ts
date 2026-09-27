@@ -1,3 +1,4 @@
+import { isPanelAdministrator } from '../utils/accountRole.js';
 import type { Request, Response } from 'express';
 import { getConfig } from '../config.js';
 import { generateToken } from '../utils/auth.js';
@@ -21,7 +22,7 @@ export function trustedSessionRequest(req: Request, res: Response) {
   return true;
 }
 export function sessionAccessToken(user: DbUserRow, session: LoginSession) {
-  return generateToken({ userId: user.id, username: user.username, isRoot: Boolean(user.is_root),
+  return generateToken({ userId: user.id, username: user.username, isRoot: isPanelAdministrator(user),
     tokenVersion: user.token_version, sessionId: session.id });
 }
 export async function issueSession(req: Request, res: Response, user: DbUserRow) {

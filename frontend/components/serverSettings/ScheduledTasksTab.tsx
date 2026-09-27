@@ -313,6 +313,8 @@ interface ScheduledTasksTabProps {
   serverGame?: string;
   canRead: boolean;
   canWrite: boolean;
+  permissions?: string[];
+  administrator?: boolean;
   contentBg: string;
   borderColor: string;
   textPrimary: string;
@@ -329,6 +331,8 @@ export function ScheduledTasksTab({
   serverGame = '',
   canRead,
   canWrite,
+  permissions = [],
+  administrator = false,
   contentBg,
   borderColor,
   textPrimary,
@@ -340,7 +344,19 @@ export function ScheduledTasksTab({
   const formId = useId();
   const [togglingId, setTogglingId] = useState<number | null>(null);
   const isExternal = serverProvider === 'external';
-  const showPrePost = !isExternal;
+  const allowed = (permission: string) => administrator || permissions.includes('*') || permissions.includes(permission);
+  const canShell = allowed('container.terminal');
+  const canCommand = allowed('server.command.send');
+  const canPower = allowed('server.power');
+  const canBackup = allowed('backups.create');
+  const canEditTask = (task: ScheduledTask) => canWrite
+    && (task.type !== 'custom' || canShell)
+    && (task.type !== 'game_command' || canCommand)
+    && (task.type !== 'restart' || canPower)
+    && (task.type !== 'backup' || canBackup)
+    && (!task.payload.maintenance || (canBackup && (!task.payload.maintenance.update || administrator) && (!task.payload.maintenance.saveCommand || canCommand)))
+    && (canCommand || ![task.payload.pre, task.payload.post, task.payload.cleanup].some(steps => steps?.some(step => step.type === 'game_command')));
+  const showPrePost = !isExternal && canCommand;
   const showIncludeServerArtifact =
     serverProvider === 'ovhcloud' &&
     serverBackupSupported &&
@@ -404,13 +420,15 @@ export function ScheduledTasksTab({
   }, [load]);
 
   const openNew = () => {
-    const defaultType = 'restart';
+    const defaultType = availableTypes[0]?.value;
+    if (!defaultType) return;
     setForm({ ...DEFAULT_FORM, type: defaultType });
     setFormError(null);
     setEditingId(-1);
   };
 
   const openEdit = (task: ScheduledTask) => {
+    if (!canEditTask(task)) return;
     setForm(taskToForm(task));
     setFormError(null);
     setEditingId(task.id);
@@ -473,7 +491,7 @@ export function ScheduledTasksTab({
   };
 
   const handleToggleEnabled = async (task: ScheduledTask) => {
-    if (!serverId || !canWrite || togglingId !== null) return;
+    if (!serverId || !canEditTask(task) || togglingId !== null) return;
     setTogglingId(task.id);
     setError(null);
     try {
@@ -487,10 +505,10 @@ export function ScheduledTasksTab({
   const inputCls = `w-full rounded-lg bg-white dark:bg-[#0f1723]/60 border ${inputBorder} ${textPrimary} text-sm px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[var(--gp-ods-accent-primary)] focus:border-transparent transition-all`;
 
   const availableTypes: Array<{ value: TaskForm['type']; label: string }> = [
-    { value: 'restart', label: 'Restart' },
-    ...(serverBackupSupported ? [{ value: 'backup' as const, label: 'Backup' }] : []),
-    ...(!isExternal ? [{ value: 'game_command' as const, label: 'Game console command' }] : []),
-    { value: 'custom', label: 'Container shell command' },
+    ...(canPower ? [{ value: 'restart' as const, label: 'Restart' }] : []),
+    ...(serverBackupSupported && canBackup ? [{ value: 'backup' as const, label: 'Backup' }] : []),
+    ...(!isExternal && canCommand ? [{ value: 'game_command' as const, label: 'Game console command' }] : []),
+    ...(canShell ? [{ value: 'custom' as const, label: 'Container shell command' }] : []),
   ];
 
   return (
@@ -519,7 +537,7 @@ export function ScheduledTasksTab({
             >
               <RefreshCw className="w-4 h-4" />
             </AppButton>
-            {canWrite && (
+            {canWrite && availableTypes.length > 0 && (
               <AppButton
                 tone={editingId === null ? "primary" : "neutral"}
                 disabled={saving}
@@ -590,12 +608,12 @@ export function ScheduledTasksTab({
               />
             </div>
 
-            {form.type === 'restart' && workflowSupported && isExternal && serverBackupSupported && <div className="space-y-3 rounded border p-3">
+            {form.type === 'restart' && workflowSupported && canBackup && (isExternal || serverProvider === 'native') && serverBackupSupported && <div className="space-y-3 rounded border p-3">
               <label className="flex items-center gap-2"><input type="checkbox" checked={form.maintenance} onChange={e => setF('maintenance', e.target.checked)} />Maintenance workflow</label>
               {form.maintenance && <>
                 <p className="text-sm">Save command (optional) → stop → verified backup → update (optional) → start → A2S health check. Requires game query monitoring. Failure stops the game and disables this schedule; review the backup before retrying.</p>
-                <label className="block">Optional game save command<AppInput aria-label="Optional game save command" value={form.saveCommand} onChange={e => setF('saveCommand', e.target.value)} /></label>
-                <label className="flex items-center gap-2"><input type="checkbox" checked={form.updateGame} onChange={e => setF('updateGame', e.target.checked)} />Run the template update recipe</label>
+                <label className="block">Optional game save command<AppInput aria-label="Optional game save command" disabled={!canCommand} value={form.saveCommand} onChange={e => setF('saveCommand', e.target.value)} /></label>
+                <label className="flex items-center gap-2"><input type="checkbox" disabled={!administrator} checked={form.updateGame} onChange={e => setF('updateGame', e.target.checked)} />Run the template update recipe</label>
                 <p className="text-sm">The health check waits up to 120 seconds. Existing separate pre/post/cleanup steps are not used by this workflow.</p>
               </>}
             </div>}
@@ -705,7 +723,7 @@ export function ScheduledTasksTab({
           <div className={`${contentBg} border ${borderColor} rounded-lg p-8 flex flex-col items-center gap-3`}>
             <Clock className="w-8 h-8 text-gray-400" />
             <p className={`text-sm ${textSecondary}`}>No scheduled tasks yet.</p>
-            {canWrite && editingId === null && (
+            {canWrite && availableTypes.length > 0 && editingId === null && (
               <AppButton
                 tone="neutral"
                 onClick={openNew}
@@ -755,7 +773,7 @@ export function ScheduledTasksTab({
                     <AppToggle
                       ariaLabel="Task enabled"
                       checked={task.enabled}
-                      disabled={!canWrite || togglingId !== null || !!task.lockedAt}
+                      disabled={!canEditTask(task) || togglingId !== null || !!task.lockedAt}
                       size="standard"
                       onChange={() => handleToggleEnabled(task)}
                     />
@@ -764,7 +782,7 @@ export function ScheduledTasksTab({
                         <AppButton
                           tone="ghost"
                           aria-label={`Edit ${task.type} task`}
-                          disabled={!!task.lockedAt}
+                          disabled={!!task.lockedAt || !canEditTask(task)}
                           onClick={() => editingId === task.id ? closeForm() : openEdit(task)}
                           className={`p-2 rounded ${textSecondary} hover:text-[var(--gp-ods-accent-primary)] hover:bg-gray-100 dark:hover:bg-white/10`}
                         >

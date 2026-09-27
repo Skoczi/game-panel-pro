@@ -1,4 +1,5 @@
 export const GLOBAL_OPTIONS = [
+  { value: 'panel.operator', label: 'Operator' },
   { value: 'users.manage', label: 'Manage users' },
   { value: 'server.install', label: 'Install servers' },
   { value: '*', label: 'Full global access (*)' },
@@ -7,10 +8,10 @@ export const GLOBAL_OPTIONS = [
 export const SERVER_CORE_OPTIONS = [
   { value: 'server.power', label: 'Start/Stop/Restart' },
   { value: 'container.logs.read', label: 'Read server logs' },
-  { value: 'server.command.send', label: 'Access server console' },
-  { value: 'server.edit', label: 'Edit container properties' },
+  { value: 'server.command.send', label: 'Send game console commands' },
+  { value: 'server.edit', label: 'Change CPU, RAM, IP, ports and startup' },
   { value: 'server.env', label: 'Manage environment variables' },
-  { value: 'container.terminal', label: 'Access container terminal' },
+  { value: 'container.terminal', label: 'Use terminal / shell commands' },
   { value: 'server.delete', label: 'Delete server' },
   { value: 'scheduledtasks.read', label: 'View scheduled tasks' },
   { value: 'scheduledtasks.write', label: 'Manage scheduled tasks' },
@@ -115,12 +116,18 @@ export const ASSIGNABLE_SERVER_PERMISSIONS: string[] = [
   ...VALHEIM_OVHCLOUD_OPTIONS,
 ].map((option) => option.value);
 
+export const SERVER_ADMIN_PERMISSIONS = [
+  'server.power', 'container.logs.read', 'server.command.send', 'fs.read', 'fs.write',
+  'backups.read', 'backups.create', 'backups.download', 'backups.restore', 'backups.rename',
+  'scheduledtasks.read', 'scheduledtasks.write',
+];
+
 export const SERVER_PRESETS = [
+  { id: 'server-admin', label: 'Server administrator', permissions: SERVER_ADMIN_PERMISSIONS },
   {
     id: 'viewer',
     label: 'Viewer',
     permissions: [
-      'server.command.send',
       'container.logs.read',
       'fs.read',
       'backups.read',
@@ -129,7 +136,7 @@ export const SERVER_PRESETS = [
   },
   {
     id: 'operator',
-    label: 'Operator',
+    label: 'Infrastructure operator',
     permissions: [
       'server.edit',
       'server.command.send',
@@ -149,7 +156,7 @@ export const SERVER_PRESETS = [
 ];
 
 const BASE_VIEWER = [
-  'server.command.send', 'container.logs.read', 'fs.read',
+  'container.logs.read', 'fs.read',
   'backups.read', 'scheduledtasks.read',
 ];
 const BASE_OPERATOR = [

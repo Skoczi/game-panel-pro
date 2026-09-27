@@ -817,3 +817,15 @@ for (const width of [390, 1440]) for (const monitoring of [false, true]) test(`c
   expect(overlaps.some(Boolean)).toBe(false);
   await page.locator('.gp-server-stats').screenshot({path:`test-results/console-details-${width}-${monitoring}.png`});
 });
+
+
+test('assigned server administrator sees game console and files, with no terminal and read-only infrastructure', async ({ page }) => {
+ await page.goto('/test/server-page.fixture.html?gameAdmin#/nodes/local/servers/7/console');
+ await expect(page.locator('.gp-console-panel').getByText('Server Console', { exact: true })).toBeVisible();
+ await expect(page.getByRole('link', { name: 'File Editor', exact: true })).toBeVisible();
+ await expect(page.getByRole('link', { name: 'Terminal', exact: true })).toHaveCount(0);
+ await page.getByRole('link', { name: 'Settings', exact: true }).click();
+ await expect(page.getByPlaceholder('e.g. 2', { exact: true })).toBeDisabled();
+ await expect(page.getByPlaceholder('e.g. 4096', { exact: true })).toBeDisabled();
+ await expect(page.getByRole('button', { name: 'Delete server', exact: true })).toHaveCount(0);
+});

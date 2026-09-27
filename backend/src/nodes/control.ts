@@ -1,3 +1,4 @@
+import { isPanelAdministrator } from '../utils/accountRole.js';
 import { alertStore } from '../services/alerts.js';
 import { validateAlertBatch } from '../services/alertStore.js';
 import express, { type Request, type Response, type NextFunction } from 'express';
@@ -68,10 +69,10 @@ export function mountNodeControl(app: express.Application) {
             let delegatedDownload: Delegation | undefined;
             try {
                 const user = await activeUser(claim.userToken);
-                if (!user.is_root || claim.serverId) {
+                if (!isPanelAdministrator(user) || claim.serverId) {
                     const delegation = await serverDelegation(claim.serverId || '', claim.nodeId, {
                         userId: user.id,
-                        isRoot: Boolean(user.is_root),
+                        isRoot: isPanelAdministrator(user),
                     });
                     if (!delegation.permissions.includes('fs.read')) throw new Error();
                     delegatedDownload = { ...delegation, downloadPath: claim.path };
@@ -356,16 +357,16 @@ function bridgeNodeSocket(client: WebSocket, nodeId: string, serverId?: string) 
     let accessFingerprint = '';
     const access = async () => {
         const user = await activeUser(token);
-        const delegation = user.is_root && !serverId
+        const delegation = isPanelAdministrator(user) && !serverId
             ? undefined
             : await serverDelegation(serverId || '', nodeId, {
                   userId: user.id,
-                  isRoot: Boolean(user.is_root),
+                  isRoot: isPanelAdministrator(user),
               });
         return {
             user,
             delegation,
-            fingerprint: JSON.stringify([Boolean(user.is_root), delegation]),
+            fingerprint: JSON.stringify([isPanelAdministrator(user), delegation]),
         };
     };
     const authDeadline = setTimeout(() => client.close(1008, 'Authentication timeout'), 3000);

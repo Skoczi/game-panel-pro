@@ -1,3 +1,4 @@
+import { isPanelAdministrator } from '../utils/accountRole.js';
 import { Router, type Request, type Response } from 'express';
 import { sendRouteError } from '../utils/routeErrors.js';
 import { contentDispositionAttachment } from '../utils/fsBrowser.js';
@@ -43,7 +44,7 @@ router.get('/:token', async (req: Request, res: Response) => {
                     {
                         userId: user.id,
                         username: user.username,
-                        isRoot: Boolean(user.is_root),
+                        isRoot: isPanelAdministrator(user),
                         tokenVersion: user.token_version,
                     },
                     claim.serverId,

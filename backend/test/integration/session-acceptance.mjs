@@ -11,6 +11,8 @@ const { initializeDatabase, closeDatabase } = await import('../../dist/database/
 const { userRepository } = await import('../../dist/database/index.js');
 const { hashPassword, verifyToken, generateToken } = await import('../../dist/utils/auth.js');
 const { default: auth } = await import('../../dist/routes/auth.js');
+const { authMiddleware, rootOnly, requireServerPermission } = await import('../../dist/middleware/auth.js');
+const { default: users } = await import('../../dist/routes/users.js');
 const { default: security } = await import('../../dist/routes/accountSecurity.js');
 const { totp } = await import('../../dist/services/mfa.js');
 const { setupWebSocket } = await import('../../dist/websocket/handler.js');
@@ -19,11 +21,14 @@ assert.equal((await db.get('SELECT COUNT(*) AS n FROM users')).n, 0, 'Fresh test
 const password = randomBytes(18).toString('hex');
 const userId = await userRepository.create('SessionTest', await hashPassword(password));
 const app = express(); app.use(express.json()); app.use('/api/auth', auth); app.use('/api/auth/security', security);
+app.use('/api/auth/managed-users', authMiddleware, users);
+app.get('/api/auth/probe-admin', authMiddleware, rootOnly, (_req, res) => res.json({ ok: true }));
+app.get('/api/auth/servers/:id/probe-terminal', authMiddleware, requireServerPermission('container.terminal'), (_req, res) => res.json({ ok: true }));
 const server = createServer(app), wss = new WebSocketServer({ server }); setupWebSocket(wss);
 server.listen(0, '127.0.0.1'); await once(server, 'listening');
 const base = `http://127.0.0.1:${server.address().port}/api/auth/`;
-async function call(path, { body, token, cookie, origin = 'https://panel.example', header = true } = {}) {
-  const res = await fetch(base + path, { method: body ? 'POST' : 'GET', headers: {
+async function call(path, { body, token, cookie, origin = 'https://panel.example', header = true, method } = {}) {
+  const res = await fetch(base + path, { method: method || (body ? 'POST' : 'GET'), headers: {
     'Content-Type': 'application/json', Origin: origin, ...(header ? { 'X-GP-Session': '1' } : {}),
     ...(token ? { Authorization: `Bearer ${token}` } : {}), ...(cookie ? { Cookie: cookie } : {}) }, body: body ? JSON.stringify(body) : undefined });
   return { status: res.status, data: await res.json(), cookie: res.headers.get('set-cookie'), cache: res.headers.get('cache-control') };
@@ -35,6 +40,29 @@ try {
   let cookie = login.cookie.split(';')[0], token = login.data.token;
   const claims = verifyToken(token); assert.equal(claims.exp - claims.iat, 900);
   assert.equal((await call('me', { token })).status, 200);
+  // Account-level authority and owner protection through real HTTP + SQLite.
+  const ownerId = await userRepository.create('OwnerTest', await hashPassword(password));
+  await db.run('UPDATE users SET is_root=1 WHERE id=?', ownerId);
+  const operatorId = await userRepository.create('OperatorTest', await hashPassword(password), { globalPermissions: ['panel.operator'] });
+  const operatorLogin = await call('login', { body: { username: 'OperatorTest', password } });
+  const operatorToken = operatorLogin.data.token;
+  const operatorMe = await call('me', { token: operatorToken });
+  assert.equal(operatorMe.data.user.role, 'operator');
+  assert.equal(operatorMe.data.user.isRoot, true);
+  assert.equal((await call('probe-admin', { token: operatorToken })).status, 200);
+  assert.equal((await call('servers/987/probe-terminal', { token: operatorToken })).status, 200);
+  assert.equal((await call('probe-admin', { token })).status, 403);
+  assert.equal((await call('servers/987/probe-terminal', { token })).status, 403);
+  for (const [method, suffix, body] of [
+    ['DELETE', '', undefined], ['PATCH', '', { isEnabled: false, globalPermissions: [] }],
+    ['POST', '/reset-password', { newPassword: 'temporary-test-password' }],
+  ]) assert.equal((await call(`managed-users/${ownerId}${suffix}`, { token: operatorToken, method, body })).status, 403);
+  const rootAfter = await userRepository.findById(ownerId);
+  assert.equal(rootAfter.is_root, 1); assert.equal(rootAfter.is_enabled, 1);
+  await userRepository.updateUser(operatorId, { globalPermissions: [] });
+  assert.equal((await call('probe-admin', { token: operatorToken })).status, 403);
+  assert.equal((await call('me', { token: operatorToken })).data.user.role, 'user');
+  console.log('PASS: Operator authority, assigned-user denial, protected owner and immediate HTTP demotion');
   const legacy = generateToken({ userId, username: 'SessionTest', isRoot: false, tokenVersion: 0 });
   assert.equal((await call('me', { token: legacy })).status, 401);
   assert.equal((await call('session', { body: {}, cookie, origin: 'https://evil.example' })).status, 403);

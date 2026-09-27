@@ -1,5 +1,6 @@
 import { Router, type Request, type Response } from 'express';
-import { requireGlobalPermission } from '../middleware/auth.js';
+import { isPanelAdministrator, OPERATOR_PERMISSION } from '../utils/accountRole.js';
+import { type AuthenticatedRequest, requireGlobalPermission } from '../middleware/auth.js';
 import { userRepository } from '../database/index.js';
 import { hashPassword } from '../utils/auth.js';
 import { sendRouteError } from '../utils/routeErrors.js';
@@ -76,13 +77,15 @@ router.get(
 router.patch(
     '/:id',
     requireGlobalPermission(PERMISSIONS.users.manage),
-    async (req: Request, res: Response) => {
+    async (req: AuthenticatedRequest, res: Response) => {
         try {
             const id = requirePositiveInt(req.params.id, 'Invalid user id');
             const body = requireBodyObject(req.body);
 
             const user = await userRepository.findById(id);
             if (!user) return res.status(404).json({ error: 'User not found' });
+
+            if (isPanelAdministrator(user) && !req.user?.isRoot) return res.status(403).json({ error: 'Only panel administrators can manage operator accounts' });
 
             if (user.is_root) {
                 return res.status(403).json({ error: 'Root user cannot be modified' });
@@ -114,6 +117,8 @@ router.patch(
                 return res.status(400).json({ error: 'Wildcard permission "*" is reserved for root' });
             }
 
+            if (globalPermissions?.includes(OPERATOR_PERMISSION) && !req.user?.isRoot) return res.status(403).json({ error: 'Only panel administrators can grant Operator access' });
+
             const isEnabled = optionalBoolean(body.isEnabled, 'isEnabled must be a boolean');
 
             await userRepository.updateUser(id, {
@@ -137,12 +142,14 @@ router.patch(
 router.delete(
     '/:id',
     requireGlobalPermission(PERMISSIONS.users.manage),
-    async (req: Request, res: Response) => {
+    async (req: AuthenticatedRequest, res: Response) => {
         try {
             const id = requirePositiveInt(req.params.id, 'Invalid user id');
 
             const user = await userRepository.findById(id);
             if (!user) return res.status(404).json({ error: 'User not found' });
+
+            if (isPanelAdministrator(user) && !req.user?.isRoot) return res.status(403).json({ error: 'Only panel administrators can manage operator accounts' });
 
             if (user.is_root) {
                 return res.status(403).json({ error: 'Root user cannot be deleted' });
@@ -165,7 +172,7 @@ router.delete(
 router.post(
     '/:id/reset-password',
     requireGlobalPermission(PERMISSIONS.users.manage),
-    async (req: Request, res: Response) => {
+    async (req: AuthenticatedRequest, res: Response) => {
         try {
             const id = requirePositiveInt(req.params.id, 'Invalid user id');
             const body = requireBodyObject(req.body);
@@ -177,6 +184,8 @@ router.post(
 
             const user = await userRepository.findById(id);
             if (!user) return res.status(404).json({ error: 'User not found' });
+
+            if (isPanelAdministrator(user) && !req.user?.isRoot) return res.status(403).json({ error: 'Only panel administrators can manage operator accounts' });
 
             if (user.is_root) {
                 return res.status(403).json({ error: 'Root user password should be changed via /auth route' });

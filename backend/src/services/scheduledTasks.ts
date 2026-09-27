@@ -27,7 +27,7 @@ import {
     restartOvhcloudServerIfHandled,
 } from './ovhcloudLifecycle.js';
 
-type ScheduledTaskType = ScheduledTaskRow['type'];
+export type ScheduledTaskType = ScheduledTaskRow['type'];
 type ScheduledTaskLastStatus = 'success' | 'failed' | 'skipped';
 
 export type ScheduledTaskStep =
@@ -267,7 +267,7 @@ export async function createScheduledTask(serverId: number, input: {
     schedule: unknown;
     enabled?: unknown;
     payload?: unknown;
-}): Promise<SerializedScheduledTask> {
+}, authorize: (type: ScheduledTaskType, payload: ScheduledTaskPayload) => Promise<void>): Promise<SerializedScheduledTask> {
     const server = await serverRepository.findById(serverId);
     if (!server) throw Object.assign(new Error('Server not found'), { statusCode: 404 });
 
@@ -279,6 +279,7 @@ export async function createScheduledTask(serverId: number, input: {
     const schedule = assertValidCronExpression(input.schedule);
     const enabled = normalizeOptionalBoolean(input.enabled, 'enabled') ?? true;
     const payload = normalizePayload(type, input.payload);
+    await authorize(type, payload);
     if (payload.maintenance) await validateMaintenanceServer(server, payload.maintenance);
     const nextRunAt = computeNextRunAt(schedule, enabled);
 
@@ -299,10 +300,11 @@ export async function updateScheduledTask(serverId: number, taskId: number, inpu
     schedule?: unknown;
     enabled?: unknown;
     payload?: unknown;
-}): Promise<SerializedScheduledTask> {
+}, authorize: (type: ScheduledTaskType, payload: ScheduledTaskPayload) => Promise<void>): Promise<SerializedScheduledTask> {
     const current = await scheduledTaskRepository.findByIdForServer(taskId, serverId);
     if (!current) throw Object.assign(new Error('Scheduled task not found'), { statusCode: 404 });
 
+    await authorize(current.type, parsePayload(current));
     const type = input.type === undefined ? current.type : normalizeTaskType(input.type);
     const schedule = input.schedule === undefined
         ? current.schedule
@@ -311,6 +313,7 @@ export async function updateScheduledTask(serverId: number, taskId: number, inpu
             : (() => { throw Object.assign(new Error('schedule must be a cron string'), { statusCode: 400 }); })();
     const enabled = normalizeOptionalBoolean(input.enabled, 'enabled') ?? Boolean(current.enabled);
     const payload = normalizePayload(type, input.payload === undefined ? parsePayload(current) : input.payload);
+    await authorize(type, payload);
     if (payload.maintenance) {
         const server = await serverRepository.findById(serverId);
         if (!server) throw new Error('Server not found');

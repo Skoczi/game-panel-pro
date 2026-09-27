@@ -43,7 +43,7 @@ export function CreateUserDialog({
           <DialogHeader className="border-b border-gray-800 pb-5 pr-8">
             <DialogTitle className="text-xl text-white">Create user</DialogTitle>
             <DialogDescription className="leading-relaxed text-gray-400">
-              Create the account directly from the panel. The user is enabled immediately.
+              Step 1 of 2: create the account. Next, choose a server and permissions. The account starts without server access.
             </DialogDescription>
           </DialogHeader>
 
