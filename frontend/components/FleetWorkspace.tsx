@@ -25,6 +25,7 @@ import {
   defaultFleetLayout,
   readFleetLayout,
   fleetLayoutKey,
+  compareFleetAddresses,
   fleetGame,
   type FleetLayout,
 } from '../utils/fleetLayout';
@@ -231,6 +232,11 @@ export function FleetWorkspace({
   );
   const ranks = new Map(layout.order.map((id, index) => [id, index]));
   const ordered = [...servers].sort((a, b) => {
+    if (layout.sort === 'address') {
+      const left = runtimes[a.id]?.address, right = runtimes[b.id]?.address;
+      if (!left || !right) return compareFleetAddresses(left, right) || a.id.localeCompare(b.id);
+      return (compareFleetAddresses(left, right) || a.id.localeCompare(b.id)) * (layout.direction === 'desc' ? -1 : 1);
+    }
     if (layout.sort === 'custom')
       return (
         (ranks.get(a.id) ?? Infinity) - (ranks.get(b.id) ?? Infinity) ||
@@ -251,7 +257,7 @@ export function FleetWorkspace({
         a.id.localeCompare(b.id)) * (layout.direction === 'desc' ? -1 : 1)
     );
   });
-  const sortHeader = (sort: 'name' | 'type' | 'status', label: string) => (
+  const sortHeader = (sort: 'address' | 'name' | 'type' | 'status', label: string) => (
     <th
       aria-sort={
         layout.sort === sort ? (layout.direction === 'desc' ? 'descending' : 'ascending') : 'none'
@@ -420,6 +426,7 @@ export function FleetWorkspace({
             changeLayout({ ...layout, sort: sort as FleetLayout['sort'], direction: 'asc' })
           }
           options={[
+            { value: 'address', label: 'IP:Port' },
             { value: 'custom', label: 'My order' },
             { value: 'name', label: 'Name A–Z' },
             { value: 'type', label: 'Game / type' },
@@ -488,7 +495,7 @@ export function FleetWorkspace({
                   <thead>
                     <tr>
                       {sortHeader('name', 'Server name')}
-                      <th>Server IP</th>
+                      {sortHeader('address', 'Server IP')}
                       {sortHeader('status', 'Server status')}
                       <th>Server metrics</th>
                       <th>Power</th>

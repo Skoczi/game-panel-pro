@@ -52,7 +52,8 @@ test('game monitoring appears in fleet cards and list using the selected node ru
   await expect(row.getByText('Running', { exact: true })).toHaveCount(0);
   await expect(row.locator('.gp-game-icon img')).toHaveAttribute('src', '/game-icons/counter-strike-go.jpg');
   await expect(row.locator('.gp-game-icon img')).toHaveJSProperty('naturalWidth', 32);
-  await expect(page.getByRole('columnheader')).toHaveText(['Server name', 'Server IP', 'Server status', 'Server metrics', 'Power', 'Management']);
+  await expect(page.getByRole('columnheader')).toHaveText([/^Server name\s*$/, /^Server IP\s*↑$/, /^Server status\s*$/, 'Server metrics', 'Power', 'Management']);
+  await expect(page.getByRole('columnheader').nth(1)).toHaveAttribute('aria-sort', 'ascending');
   await expect(row.getByRole('cell').nth(2).getByText('Game responding')).toBeVisible();
   await expect(row.getByRole('cell').first().getByRole('img', { name: 'Custom image' })).toBeVisible();
   await expect(page.getByRole('row').filter({ hasText: 'Survival World' }).getByText('Unavailable', { exact: true })).toBeVisible();
@@ -504,6 +505,7 @@ test('keyboard and pointer reorder cards and retain custom order after reload', 
 }) => {
   await page.setViewportSize({ width: 1440, height: 1100 });
   await page.goto('/test/fleet.fixture.html');
+  await select(page, 'Sort servers', 'My order');
   const headings = page.locator('.gp-fleet-card h3');
   await expect(headings).toHaveText(['Community Arena', 'Survival World']);
   const handle = page.getByRole('button', { name: 'Reorder Community Arena' });
@@ -549,6 +551,8 @@ test('damaged preferences and unavailable stored filters remain recoverable', as
 test('touch handle reorders cards on mobile without a desktop pointer', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 1000 });
   await page.goto('/test/fleet.fixture.html');
+  await select(page, 'Sort servers', 'My order');
+  await page.getByRole('button', { name: /^Filters/ }).click();
   const handles = page.getByRole('button', { name: /^Reorder / });
   await expect(handles).toHaveCount(2);
   await handles.first().scrollIntoViewIfNeeded();
