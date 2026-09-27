@@ -242,7 +242,7 @@ class Upgrade:
             staged.rename(self.root / 'app')
             # Preserve JWT, users, domain, mounts and every unrelated setting.
             env = self.env.read_text()
-            line = 'GAMEPANEL_REPOSITORY_URL=https://github.com/Skoczi/game-panel-skoczi.git'
+            line = 'GAMEPANEL_REPOSITORY_URL=https://github.com/Skoczi/game-panel-pro.git'
             env = re.sub(r'^GAMEPANEL_REPOSITORY_URL=.*$', line, env, flags=re.M) if re.search(r'^GAMEPANEL_REPOSITORY_URL=', env, re.M) else env.rstrip() + '\n' + line + '\n'
             for key, value in [('GAMEPANEL_MANAGED_UPDATES', 'true'), ('GAMEPANEL_PRO_UPDATER_IMAGE', 'gamepanel-pro-updater:' + target_version), ('COMPOSE_PROJECT_NAME', self.project)]:
                 env = re.sub(r'^' + key + r'=.*$', key + '=' + value, env, flags=re.M) if re.search(r'^' + key + '=', env, re.M) else env.rstrip() + '\n' + key + '=' + value + '\n'

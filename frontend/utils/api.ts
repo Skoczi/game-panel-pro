@@ -1,5 +1,5 @@
 import type { BackupVerification } from './backupPresentation';
-import type { GameMonitoringConfig, GameMonitoringSettings } from '../../backend/src/templates/types';
+import type { GameMonitoringConfig, GameMonitoringSettings, GamePlayersSnapshot } from '../../backend/src/templates/types';
 import type { SftpStatus } from '../components/serverSettings/SftpAccessCard';
 import type { FastDownloadStatus } from '../components/serverSettings/FastDownloadCard';
 import { nodesRequest } from './nodesApi';
@@ -500,6 +500,7 @@ class ApiClient {
   }
 
   async getMonitoring(id: number): Promise<GameMonitoringSettings> { return (await this.client.get(`/api/servers/${id}/monitoring`)).data; }
+  async getServerPlayers(id: number): Promise<GamePlayersSnapshot> { return (await this.client.get(`/api/servers/${id}/players`)).data; }
   async updateMonitoring(id: number, config: GameMonitoringConfig): Promise<GameMonitoringSettings> { return (await this.client.patch(`/api/servers/${id}/monitoring`, config)).data; }
   async getServerSftp(id: number): Promise<SftpStatus> { return (await this.client.get(`/api/servers/${id}/sftp`)).data; }
   async updateServerSftp(id: number, action: 'enable' | 'disable' | 'rotate'): Promise<SftpStatus> { return (await this.client.post(`/api/servers/${id}/sftp`, { action })).data; }

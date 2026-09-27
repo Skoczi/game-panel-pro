@@ -25,8 +25,8 @@ Samodzielnie hostowany panel do zarządzania serwerami gier na wielu maszynach L
 Potrzebny jest obsługiwany Debian/Ubuntu, root, domena i dostępne porty 80/443. Budowanie ze źródeł wymaga co najmniej 6 GiB dostępnego RAM; zasoby gier licz osobno.
 
 ```bash
-git clone --branch v2.1.0 --depth 1 https://github.com/Skoczi/game-panel-skoczi.git
-cd game-panel-skoczi
+git clone --branch v2.1.0 --depth 1 https://github.com/Skoczi/game-panel-pro.git
+cd game-panel-pro
 sudo bash deploy/install.sh
 ```
 
@@ -42,6 +42,6 @@ PDF-y opisują kontrakt API wdrożony przed wydaniem 2.1.0. Nie zastępują inst
 
 ## Projekt
 
-Rozwijany przez **Skoczi**. Błędy i propozycje zgłaszaj w [GitHub Issues](https://github.com/Skoczi/game-panel-skoczi/issues), bez haseł, tokenów i prywatnych plików.
+Rozwijany przez **Skoczi**. Błędy i propozycje zgłaszaj w [GitHub Issues](https://github.com/Skoczi/game-panel-pro/issues), bez haseł, tokenów i prywatnych plików.
 
 Licencja Apache 2.0. Informacje o prawach autorskich i wykorzystanym oprogramowaniu: [LICENSE](../LICENSE), [pełna licencja](../LICENSE-2.0.txt), [NOTICE](../NOTICE).

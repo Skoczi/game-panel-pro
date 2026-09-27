@@ -195,7 +195,8 @@ export function GameServerCard({
             </div>
           )}
           <p className={`text-sm ${TEXT_SECONDARY} mt-1 truncate`} title={getGameLabel(server)}>{getGameLabel(server)}</p>
-          <GameMonitoringStatus summary={server.monitoring} runtimeStatus={server.status} />
+          <GameMonitoringStatus summary={server.monitoring} runtimeStatus={server.status} hidePlayers />
+          <OnlinePlayers server={server} canRead={hasServerPermission(currentUser, permissionsByServer, server.id, 'server.players.read')} />
           <div className="mt-2">
             {server.port ? (
               <div className="flex items-center gap-1 -ml-2">
@@ -455,3 +456,4 @@ export function GameServerCard({
     </div>
   );
 }
+import { OnlinePlayers } from './OnlinePlayers';

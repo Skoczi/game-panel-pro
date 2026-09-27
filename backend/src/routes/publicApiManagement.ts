@@ -22,7 +22,7 @@ import type { ApiOperationStore } from '../services/apiOperations.js';
 export const API_MEMBER_PRESETS = {
     viewer: ['container.logs.read'],
     'console-operator': ['container.logs.read', 'server.command.send', 'server.power'],
-    'server-admin': ['container.logs.read', 'server.command.send', 'server.power', 'fs.read', 'fs.write', 'backups.read', 'backups.create', 'backups.restore', 'backups.download', 'backups.rename', 'backups.delete', 'scheduledtasks.read', 'scheduledtasks.write', 'sftp.manage'],
+    'server-admin': ['server.players.read', 'container.logs.read', 'server.command.send', 'server.power', 'fs.read', 'fs.write', 'backups.read', 'backups.create', 'backups.restore', 'backups.download', 'backups.rename', 'backups.delete', 'scheduledtasks.read', 'scheduledtasks.write', 'sftp.manage'],
 } as const;
 function requireScope(res: Response, scope: ApiScope, admin = false) {
     const token = res.locals.apiToken as ApiToken;

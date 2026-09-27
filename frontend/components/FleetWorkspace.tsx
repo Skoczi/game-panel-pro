@@ -1,4 +1,6 @@
 import { GameMonitoringStatus } from './GameMonitoringStatus';
+import { OnlinePlayers } from './gameServersTable/OnlinePlayers';
+import { mapBackendStatusToUi } from '../utils/serverRuntime';
 import { GameIcon } from './GameIcon';
 import { ServerListStatus } from './ServerListStatus';
 import { withoutDeletedServers } from '../utils/deletedFleetServers';
@@ -532,6 +534,7 @@ export function FleetWorkspace({
                         <td>{connection(server)}</td>
                         <td>
                           <ServerListStatus
+                            players={runtimes[server.id] && <OnlinePlayers server={{ ...runtimes[server.id].server, status: mapBackendStatusToUi(server.available ? server.status : 'unknown') }} canRead={fleetAllowed(runtimes[server.id].context, 'server.players.read')} />}
                             summary={runtimes[server.id]?.server.monitoring}
                             runtimeStatus={server.available ? server.status : 'unknown'}
                             name={server.name}
@@ -591,7 +594,8 @@ export function FleetWorkspace({
                               {serverName(server)}
                             </h3>
                             <p>{game(server).label}</p>
-                            <GameMonitoringStatus summary={runtimes[server.id]?.server.monitoring} runtimeStatus={server.available ? server.status : "unknown"} />
+                            <GameMonitoringStatus summary={runtimes[server.id]?.server.monitoring} runtimeStatus={server.available ? server.status : "unknown"} hidePlayers />
+                            {runtimes[server.id] && <OnlinePlayers server={{ ...runtimes[server.id].server, status: mapBackendStatusToUi(server.available ? server.status : 'unknown') }} canRead={fleetAllowed(runtimes[server.id].context, 'server.players.read')} />}
                           </div>
                           <FleetStatus
                             status={server.status}
@@ -802,6 +806,7 @@ export function FleetAccess({
     backups: 'Backups',
   };
   const permissionNames: Record<string, string> = {
+    'server.players.read': 'View online player list',
     'server.edit': 'Edit server',
     'server.power': 'Start, restart & stop',
     'server.delete': 'Delete server',

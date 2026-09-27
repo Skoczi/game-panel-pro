@@ -8,7 +8,7 @@ Install Game Panel PRO directly from this release; no upstream panel installatio
 
 Existing standard OVHcloud Game Panel 1.5.0 installations have a dedicated preflight and migration command. Accounts, memberships, game records, JWT secret and deployment settings are preserved. The updater saves the stopped database and old image references before switching, then rolls back if startup fails.
 
-Standalone installations can launch future updates from **Version & changelog**. Downloads come only from `Skoczi/game-panel-skoczi`; the archive checksum and contents are validated. Confirmation is required. Multi-node and custom deployments remain coordinated manual updates. [Install and migrate](https://github.com/Skoczi/game-panel-skoczi/blob/v2.0.50/docs/pro/INSTALL.md).
+Standalone installations can launch future updates from **Version & changelog**. Downloads come only from `Skoczi/game-panel-pro`; the archive checksum and contents are validated. Confirmation is required. Multi-node and custom deployments remain coordinated manual updates. [Install and migrate](https://github.com/Skoczi/game-panel-pro/blob/v2.0.50/docs/pro/INSTALL.md).
 
 ## Server workspace
 
@@ -36,7 +36,7 @@ Native scheduled backups now work without contradictory server-state requirement
 
 Scoped, expiring tokens for selected servers; the secret is displayed once and stored as a hash. Owner permissions are checked on every request. Tokens can be revoked from the panel.
 
-The first API covers server inventory, resources, backup lists, named Native backup creation and operation status. Backup requests use durable idempotency keys, including after restart. Uncertain outcomes are explicit. [API guide](https://github.com/Skoczi/game-panel-skoczi/blob/v2.0.50/docs/pro/API-PROGRESS.md) · [OpenAPI](https://github.com/Skoczi/game-panel-skoczi/blob/v2.0.50/docs/pro/openapi-v1.json).
+The first API covers server inventory, resources, backup lists, named Native backup creation and operation status. Backup requests use durable idempotency keys, including after restart. Uncertain outcomes are explicit. [API guide](https://github.com/Skoczi/game-panel-pro/blob/v2.0.50/docs/pro/API-PROGRESS.md) · [OpenAPI](https://github.com/Skoczi/game-panel-pro/blob/v2.0.50/docs/pro/openapi-v1.json).
 
 ## Loading and console
 
@@ -50,4 +50,4 @@ Unchanged console rows are reused. Following the tail and counting unread logs c
 
 Local validation covers backend, UI, real Linux filesystem faults and an isolated panel/agent integration. Target-host and game-client acceptance must still be performed before production rollout. No new games, ReHLDS template work or Egg importer are included.
 
-[Deployment and rollback](https://github.com/Skoczi/game-panel-skoczi/blob/v2.0.50/docs/pro/DEPLOYMENT.md) · [Validation](https://github.com/Skoczi/game-panel-skoczi/blob/v2.0.50/docs/pro/VALIDATION-2.0.50.md) · [Screenshot slots](https://github.com/Skoczi/game-panel-skoczi/blob/v2.0.50/docs/screenshots/README.md)
+[Deployment and rollback](https://github.com/Skoczi/game-panel-pro/blob/v2.0.50/docs/pro/DEPLOYMENT.md) · [Validation](https://github.com/Skoczi/game-panel-pro/blob/v2.0.50/docs/pro/VALIDATION-2.0.50.md) · [Screenshot slots](https://github.com/Skoczi/game-panel-pro/blob/v2.0.50/docs/screenshots/README.md)

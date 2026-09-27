@@ -247,7 +247,7 @@ test('global settings only edits appearance and preserves Local allocations', as
   await expect(footerName).toBeVisible();
   await expect(revision).toHaveText(formatDisplayVersion(packageInfo.version));
   const upstream = page.getByRole('link', { name: 'GitHub', exact: true });
-  await expect(upstream).toHaveAttribute('href', 'https://github.com/Skoczi/game-panel-skoczi');
+  await expect(upstream).toHaveAttribute('href', 'https://github.com/Skoczi/game-panel-pro');
   await expect(upstream).toHaveAttribute('rel', 'noopener noreferrer');
   await expect(revision.locator('..')).toHaveAttribute(
     'title',
@@ -255,7 +255,7 @@ test('global settings only edits appearance and preserves Local allocations', as
   );
   await expect(page.getByRole('link', { name: 'Bug or feature?' })).toHaveAttribute(
     'href',
-    'https://github.com/Skoczi/game-panel-skoczi/issues'
+    'https://github.com/Skoczi/game-panel-pro/issues'
   );
   const nameBox = await footerName.boundingBox();
   const revisionBox = await revision.boundingBox();

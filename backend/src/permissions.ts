@@ -3,6 +3,7 @@ export const PERMISSIONS = {
         manage: 'users.manage',
     },
     server: {
+        playersRead: 'server.players.read',
         install: 'server.install',
         edit: 'server.edit',
         power: 'server.power',

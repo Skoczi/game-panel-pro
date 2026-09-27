@@ -297,7 +297,7 @@ export function Nodes() {
             </button>
             <a
               className={button}
-              href="https://github.com/Skoczi/game-panel-skoczi/blob/main/docs/skoczi/NODES.md"
+              href="https://github.com/Skoczi/game-panel-pro/blob/main/docs/skoczi/NODES.md"
               target="_blank"
               rel="noopener noreferrer"
             >

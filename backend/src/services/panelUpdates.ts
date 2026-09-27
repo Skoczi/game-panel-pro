@@ -7,7 +7,7 @@ import { logError } from '../utils/logger.js';
 import { toIsoTimestamp, toIsoTimestampOrNull } from '../utils/time.js';
 
 // Game Panel PRO releases only; never fall back to the upstream repository.
-const GITHUB_RELEASES_URL = 'https://api.github.com/repos/Skoczi/game-panel-skoczi/releases?per_page=100';
+const GITHUB_RELEASES_URL = 'https://api.github.com/repos/Skoczi/game-panel-pro/releases?per_page=100';
 const RELEASES_CACHE_TTL_MS = 10 * 60 * 1000;
 const VERSION_RE = /^(\d+)\.(\d+)\.(\d+)(?:-([0-9A-Za-z.-]+))?$/;
 

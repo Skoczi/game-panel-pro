@@ -132,7 +132,7 @@ export function PanelUpdateModal({ isOpen, onClose, updateInfo }: PanelUpdateMod
         </AppModalBody>
       </AppModalContent>
     </AppModal>
-    {confirmUpdate && <ConfirmationModal isOpen title="Update Game Panel PRO?" message={`Install ${info?.latestVersion} from Skoczi/game-panel-skoczi? The panel will restart. A rollback snapshot is created first; running game containers are left alone.`} confirmText="Install update" onClose={() => setConfirmUpdate(false)} onConfirm={startUpdate} />}
+    {confirmUpdate && <ConfirmationModal isOpen title="Update Game Panel PRO?" message={`Install ${info?.latestVersion} from Skoczi/game-panel-pro? The panel will restart. A rollback snapshot is created first; running game containers are left alone.`} confirmText="Install update" onClose={() => setConfirmUpdate(false)} onConfirm={startUpdate} />}
     </>
   );
 }
