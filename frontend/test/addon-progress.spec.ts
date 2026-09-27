@@ -22,6 +22,10 @@ test('addon installation progress reconnects after reload and reaches a visible 
   phase = 2;
   await expect(progress).toContainText('Installation completed');
   await expect(progress.getByRole('progressbar')).toHaveCount(0);
+  await expect(progress).toHaveCount(0, { timeout: 7000 });
+  await page.reload();
+  await page.getByRole('button', { name: 'Install addons', exact: true }).click();
+  await expect(progress).toHaveCount(0);
 });
 test('installed Reunion is visible independently of the installation selection', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
@@ -41,7 +45,7 @@ test('installed Reunion is visible independently of the installation selection',
   await expect(card.getByRole('button', { name: 'Reinstall', exact: true })).toBeVisible();
   await expect(card.getByRole('button', { name: 'Uninstall', exact: true })).toBeVisible();
   await expect(card).toContainText('Installed 0.2.0.25');
-  await expect(page.getByRole('region', { name: 'Addon installation progress' })).not.toContainText('Server remains stopped');
+  await expect(page.getByRole('region', { name: 'Addon installation progress' })).toHaveCount(0);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   await page.screenshot({ path: 'test-results/addon-installed-mobile.png', fullPage: true });
 });

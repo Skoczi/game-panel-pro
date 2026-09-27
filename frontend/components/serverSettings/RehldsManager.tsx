@@ -113,7 +113,12 @@ export function RehldsManager({
         const jobs = await apiClient.listAddonJobs(serverId);
         if (active) {
           setProgressError('');
-          if (Array.isArray(jobs) && jobs[0]) setJob(current => !current || jobs[0].startedAt >= current.startedAt ? jobs[0] : current);
+          if (Array.isArray(jobs) && jobs[0]) setJob(current => {
+            const latest = jobs[0];
+            // Completed history belongs in Activity, not in a new page visit.
+            if (latest.status === 'completed' && current?.id !== latest.id) return current;
+            return !current || latest.startedAt >= current.startedAt ? latest : current;
+          });
         }
       } catch { if (active) setProgressError('Connection lost. Retrying progress updates...'); }
       finally { pending = false; }
@@ -125,6 +130,13 @@ export function RehldsManager({
   useEffect(() => {
     if (job?.status === 'completed') { setModules([]); setRevision(value => value + 1); }
   }, [job?.id, job?.status]);
+  useEffect(() => {
+    if (job?.status !== 'completed') return;
+    if (section !== 'addons') { setJob(null); return; }
+    const completedId = job.id;
+    const timer = setTimeout(() => setJob(current => current?.id === completedId && current.status === 'completed' ? null : current), 5000);
+    return () => clearTimeout(timer);
+  }, [job?.id, job?.status, section]);
   const save = async () => {
     if (!snapshot || section === 'files') return;
     setBusy(true);
