@@ -988,6 +988,10 @@ class ApiClient {
     return { bytes: response.data as ArrayBuffer, version: response.headers.etag as string | undefined };
   }
 
+  async copyServerFile(serverId: number, from: string, to: string, root: string, toRoot: string) {
+    return (await this.client.post(`/api/servers/${serverId}/file/copy`, { from, to, root, toRoot })).data;
+  }
+
   async fileHistory(serverId: number, path: string, root: string): Promise<FileHistoryEntry[]> {
     const response = await this.client.get(`/api/servers/${serverId}/file/history`, { params: { path, root } });
     if (!Array.isArray(response.data.entries)) throw new Error('File history is unavailable on this agent');

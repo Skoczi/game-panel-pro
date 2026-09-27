@@ -1,3 +1,4 @@
+import { apiClient } from '../../utils/api';
 import { createPortal } from 'react-dom';
 import { EditorLoadingState } from './EditorLoadingState';
 import { AppOptionSelect } from '../../src/ui/components/AppOptionSelect';
@@ -250,6 +251,13 @@ export function FileManagerTab({
   const [fileSearch, setFileSearch] = useState('');
   const searchRef = useRef<HTMLInputElement>(null);
   const [contextMenu, setContextMenu] = useState<{ file: FileItem; x: number; y: number } | null>(null);
+  const [copySource, setCopySource] = useState<{ path: string; root: string } | null>(null);
+  const [copyDestination, setCopyDestination] = useState('');
+  const [copyRoot, setCopyRoot] = useState('data');
+  const [copyBusy, setCopyBusy] = useState(false);
+  const [copyError, setCopyError] = useState('');
+  const [copySuccess, setCopySuccess] = useState('');
+  useEffect(() => { if (!copySuccess) return; const timer = setTimeout(() => setCopySuccess(''), 4000); return () => clearTimeout(timer); }, [copySuccess]);
   const menuRef = useRef<HTMLDivElement>(null);
   const contextTarget = useRef<HTMLElement | null>(null);
   const closeContext = () => { setContextMenu(null); contextTarget.current?.focus(); };
@@ -336,10 +344,42 @@ export function FileManagerTab({
         }}>
         <button role="menuitem" disabled={contextMenu.file.type === 'symlink'} onClick={() => { void handleFileDoubleClick(contextMenu.file); closeContext(); }}><Folder size={16} />Open</button>
         <button role="menuitem" disabled={contextMenu.file.type === 'symlink'} onClick={event => { void handleDownloadPath(contextMenu.file, event); closeContext(); }}><Download size={16} />Download</button>
+        {contextMenu.file.type === 'file' && <button role="menuitem" disabled={!canWriteFiles || !serverId} onClick={() => {
+          const name = contextMenu.file.name;
+          const dot = name.lastIndexOf('.');
+          const duplicate = dot > 0 ? `${name.slice(0, dot)}-copy${name.slice(dot)}` : `${name}-copy`;
+          const prefix = currentPath === '/' ? '' : currentPath;
+          setCopySource({ path: `${prefix}/${name}`, root: currentRoot });
+          setCopyDestination(`${prefix}/${duplicate}`); setCopyRoot(currentRoot); setCopyError(''); closeContext();
+        }}><Copy size={16} />Copy file</button>}
         <button role="menuitem" disabled={!canWriteFiles} onClick={event => { handleRenameFile(contextMenu.file, event); closeContext(); }}><Edit2 size={16} />Rename</button>
         {isExtractableArchive(contextMenu.file.name) && onExtractFile && <button role="menuitem" disabled={!canWriteFiles || isExtracting} onClick={() => { setPendingExtract(contextMenu.file.name); setUploadOptions({ extractZip: true, deleteArchive: false, overwrite: false }); closeContext(); }}><FileArchive size={16} />Extract</button>}
         <button role="menuitem" className="is-danger" disabled={!canWriteFiles} onClick={event => { handleDeleteFile(contextMenu.file, event); closeContext(); }}><Trash2 size={16} />Delete</button>
       </div>, document.body)}
+      {copySuccess && <div role="status" className="gp-server-toast">{copySuccess}</div>}
+      <AppModal open={copySource !== null} onOpenChange={open => { if (!open && !copyBusy) setCopySource(null); }}>
+        <AppModalContent>
+          <AppModalHeader><AppModalTitle>Copy file</AppModalTitle></AppModalHeader>
+          <AppModalBody>
+            <p className="mb-4 break-all text-sm opacity-70">{copySource?.path}</p>
+            {availableRoots.length > 1 && <AppOptionSelect aria-label="Destination directory" value={copyRoot} disabled={copyBusy} onChange={setCopyRoot}>{availableRoots.map(root => <option key={root.key} value={root.key}>{root.containerPath}</option>)}</AppOptionSelect>}
+            <label className="mt-3 block text-sm">Destination path<input autoFocus aria-label="Copy destination path" className="mt-2 w-full rounded-lg border border-gray-500 bg-transparent px-3 py-2" value={copyDestination} disabled={copyBusy} onChange={event => { setCopyDestination(event.target.value); setCopyError(''); }} /></label>
+            {copyError && <p role="alert" className="mt-3 text-sm text-red-400">{copyError}</p>}
+          </AppModalBody>
+          <AppModalFooter>
+            <AppButton tone="ghost" disabled={copyBusy} onClick={() => setCopySource(null)}>Cancel</AppButton>
+            <AppButton tone="primary" disabled={copyBusy || !copyDestination.startsWith('/') || !canWriteFiles} onClick={async () => {
+              if (!copySource || !serverId || copyBusy || !canWriteFiles) return;
+              setCopyBusy(true); setCopyError('');
+              try {
+                await apiClient.copyServerFile(serverId, copySource.path, copyDestination, copySource.root, copyRoot);
+                setCopySource(null); setCopySuccess('File copied.'); loadFiles(currentPath);
+              } catch (error: any) { setCopyError(error?.response?.data?.error || 'Could not confirm the copy. Refresh the destination before retrying.'); }
+              finally { setCopyBusy(false); }
+            }}>{copyBusy ? 'Copying…' : 'Copy'}</AppButton>
+          </AppModalFooter>
+        </AppModalContent>
+      </AppModal>
       <input {...getInputProps()} />
       <input type="file" multiple hidden aria-label="Upload folder" ref={element => {
         folderInput.current = element;

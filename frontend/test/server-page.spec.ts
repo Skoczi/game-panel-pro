@@ -892,3 +892,28 @@ test('copy notification floats without moving server tabs and can be dismissed',
   await page.getByRole('button', { name: 'Dismiss notification' }).click();
   await expect(page.locator('.gp-server-toast')).toHaveCount(0);
 });
+
+test('context copy preserves the source, reports conflicts and refreshes the listing', async ({ page }) => {
+  let copied = false; let payload: any;
+  await page.route('**/api/servers/7/files?**', route => route.fulfill({ json: { path: '/', entries: [{ name: 'server.cfg', type: 'file' }, ...(copied ? [{ name: 'server-copy.cfg', type: 'file' }] : [])] } }));
+  await page.route('**/api/servers/7/file/copy', route => {
+    payload = route.request().postDataJSON();
+    if (payload.to === '/server.cfg') return route.fulfill({ status: 409, json: { error: 'Choose a different destination filename' } });
+    copied = true; return route.fulfill({ status: 201, json: { ok: true } });
+  });
+  await page.goto('/test/server-page.fixture.html#/nodes/local/servers/7/filemanager');
+  await page.locator('[data-file-name="server.cfg"]').click({ button: 'right' });
+  await page.getByRole('menuitem', { name: 'Copy file', exact: true }).click();
+  const dialog = page.getByRole('dialog');
+  const destination = dialog.getByRole('textbox', { name: 'Copy destination path' });
+  await expect(destination).toHaveValue('/server-copy.cfg');
+  await destination.fill('/server.cfg');
+  await dialog.getByRole('button', { name: 'Copy', exact: true }).click();
+  await expect(dialog.getByRole('alert')).toContainText('different destination');
+  await destination.fill('/server-copy.cfg');
+  await dialog.getByRole('button', { name: 'Copy', exact: true }).click();
+  await expect(dialog).toHaveCount(0);
+  expect(payload).toEqual({ from: '/server.cfg', to: '/server-copy.cfg', root: 'data', toRoot: 'data' });
+  await expect(page.locator('[data-file-name="server.cfg"]')).toBeVisible();
+  await expect(page.locator('[data-file-name="server-copy.cfg"]')).toBeVisible();
+});

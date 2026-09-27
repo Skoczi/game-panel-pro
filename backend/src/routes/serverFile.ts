@@ -1,3 +1,4 @@
+import { copyServerFile } from '../services/copyServerFile.js';
 import { actionsRepository } from '../database/index.js';
 import path from 'node:path';
 import { getServerStoragePaths } from '../utils/storage.js';
@@ -25,6 +26,21 @@ router.use(rejectPrivateFileRoots);
 function getQueryRoot(value: unknown): string | undefined {
     return optionalQueryString(value as string | string[] | undefined);
 }
+
+router.post('/copy', requireServerPermission(PERMISSIONS.fs.read), requireServerPermission(PERMISSIONS.fs.write), async (req: AuthenticatedRequest, res: Response) => {
+    try {
+        const serverId = requirePositiveInt(req.params.id, 'Invalid server id');
+        const body = requireBodyObject(req.body);
+        const from = requireString(body.from, 'Missing source path');
+        const to = requireString(body.to, 'Missing destination path');
+        if (!from.startsWith('/') || !to.startsWith('/')) return res.status(400).json({ error: 'Use absolute paths within the selected directory' });
+        const result = await copyServerFile(serverId, from, to,
+            typeof body.root === 'string' ? body.root : undefined,
+            typeof body.toRoot === 'string' ? body.toRoot : undefined);
+        await actionsRepository.create(serverId, 'info', `File copied: ${result.sourceRoot}:${result.sourcePath} → ${result.root}:${result.path}`, req.user?.username || 'Unknown operator').catch(() => {});
+        return res.status(201).json({ ok: true, root: result.root, path: result.path });
+    } catch (error) { return sendRouteError(res, error, { route: 'FILE:COPY', fallbackMessage: 'Unable to copy file' }); }
+});
 
 router.get('/history', requireServerPermission(PERMISSIONS.fs.read), async (req, res) => {
     try {
