@@ -18,7 +18,7 @@ jobs:
           cache-dependency-path: |
             backend/package-lock.json
             frontend/package-lock.json
-      - run: npm ci --ignore-scripts
+      - run: npm ci --ignore-scripts && npm rebuild sqlite3
         working-directory: backend
       - run: npm test && npm run build
         working-directory: backend
@@ -48,7 +48,7 @@ jobs:
           node-version: '22'
           cache: npm
           cache-dependency-path: backend/package-lock.json
-      - run: npm ci --ignore-scripts
+      - run: npm ci --ignore-scripts && npm rebuild sqlite3
         working-directory: backend
       - name: Build actual agent runtime
         run: docker build -f backend/Dockerfile -t gamepanel-agent:ci .
