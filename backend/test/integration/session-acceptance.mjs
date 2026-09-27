@@ -14,6 +14,7 @@ const { default: auth } = await import('../../dist/routes/auth.js');
 const { authMiddleware, rootOnly, requireServerPermission } = await import('../../dist/middleware/auth.js');
 const { default: users } = await import('../../dist/routes/users.js');
 const { default: security } = await import('../../dist/routes/accountSecurity.js');
+const { serverSftpRoutes } = await import('../../dist/routes/serverSftp.js');
 const { totp } = await import('../../dist/services/mfa.js');
 const { setupWebSocket } = await import('../../dist/websocket/handler.js');
 const db = await initializeDatabase();
@@ -22,6 +23,7 @@ const password = randomBytes(18).toString('hex');
 const userId = await userRepository.create('SessionTest', await hashPassword(password));
 const app = express(); app.use(express.json()); app.use('/api/auth', auth); app.use('/api/auth/security', security);
 app.use('/api/auth/managed-users', authMiddleware, users);
+app.use('/api/auth/servers/:id/sftp', authMiddleware, serverSftpRoutes);
 app.get('/api/auth/probe-admin', authMiddleware, rootOnly, (_req, res) => res.json({ ok: true }));
 app.get('/api/auth/servers/:id/probe-terminal', authMiddleware, requireServerPermission('container.terminal'), (_req, res) => res.json({ ok: true }));
 const server = createServer(app), wss = new WebSocketServer({ server }); setupWebSocket(wss);
@@ -63,6 +65,21 @@ try {
   assert.equal((await call('probe-admin', { token: operatorToken })).status, 403);
   assert.equal((await call('me', { token: operatorToken })).data.user.role, 'user');
   console.log('PASS: Operator authority, assigned-user denial, protected owner and immediate HTTP demotion');
+  // Real SFTP route: reading files alone must not issue a persistent credential.
+  const stamp = new Date().toISOString();
+  await db.run("INSERT INTO game_servers(id,name,provider,docker_image,ports_json,created_at,updated_at) VALUES(987,'SftpTest','external','test','{}',?,?)", stamp, stamp);
+  await db.run('INSERT INTO server_members(server_id,user_id,permissions_json,created_at,updated_at) VALUES(987,?,?,?,?)', userId, '["fs.read"]', stamp, stamp);
+  assert.equal((await call('servers/987/sftp', { token })).status, 200);
+  for (const permissions of [['fs.read'], ['sftp.manage','fs.read'], ['sftp.manage','fs.write']]) {
+    await db.run('UPDATE server_members SET permissions_json=? WHERE server_id=987 AND user_id=?', JSON.stringify(permissions), userId);
+    assert.equal((await call('servers/987/sftp', { token, body: { action: 'enable' } })).status, 403);
+  }
+  await db.run('UPDATE server_members SET permissions_json=? WHERE server_id=987 AND user_id=?', '["sftp.manage","fs.read","fs.write"]', userId);
+  assert.equal((await call('servers/987/sftp', { token, body: { action: 'enable' } })).status, 409, 'Authorized, but isolated test has no SFTP service');
+  assert.equal((await call('servers/988/sftp', { token, body: { action: 'enable' } })).status, 403);
+  assert.equal((await call('servers/987/probe-terminal', { token })).status, 403);
+  await db.run('DELETE FROM game_servers WHERE id=987');
+  console.log('PASS: SFTP requires management plus file read/write permissions, cannot access another server or terminal');
   const legacy = generateToken({ userId, username: 'SessionTest', isRoot: false, tokenVersion: 0 });
   assert.equal((await call('me', { token: legacy })).status, 401);
   assert.equal((await call('session', { body: {}, cookie, origin: 'https://evil.example' })).status, 403);

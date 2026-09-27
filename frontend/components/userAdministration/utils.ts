@@ -17,15 +17,17 @@ export const SERVER_CORE_OPTIONS = [
   { value: 'scheduledtasks.write', label: 'Manage scheduled tasks' },
   { value: 'fs.read', label: 'Read files' },
   { value: 'fs.write', label: 'Write files' },
+  { value: 'sftp.manage', label: 'Enable SFTP and rotate its password' },
 ];
 
 export const SERVER_GENERAL_OPTIONS = SERVER_CORE_OPTIONS.filter((o) =>
-  !['fs.read', 'fs.write', 'scheduledtasks.read', 'scheduledtasks.write'].includes(o.value)
+  !['fs.read', 'fs.write', 'sftp.manage', 'scheduledtasks.read', 'scheduledtasks.write'].includes(o.value)
 );
 
 export const FILE_MANAGER_OPTIONS = [
   { value: 'fs.read', label: 'Read files' },
   { value: 'fs.write', label: 'Write files' },
+  { value: 'sftp.manage', label: 'Enable SFTP and rotate its password' },
 ];
 
 export const SCHEDULED_TASKS_OPTIONS = [
@@ -119,7 +121,7 @@ export const ASSIGNABLE_SERVER_PERMISSIONS: string[] = [
 export const SERVER_ADMIN_PERMISSIONS = [
   'server.power', 'container.logs.read', 'server.command.send', 'fs.read', 'fs.write',
   'backups.read', 'backups.create', 'backups.download', 'backups.restore', 'backups.rename',
-  'scheduledtasks.read', 'scheduledtasks.write',
+  'scheduledtasks.read', 'scheduledtasks.write', 'sftp.manage',
 ];
 
 export const SERVER_PRESETS = [

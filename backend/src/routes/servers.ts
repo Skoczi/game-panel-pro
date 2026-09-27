@@ -1,5 +1,6 @@
 import { serverCloneRoutes, cloneImportRoutes } from './serverClone.js';
 import { rehldsRoutes } from './rehlds.js';
+import { serverSftpRoutes } from './serverSftp.js';
 import { nativeGameConfigRoutes } from './nativeGameConfig.js';
 import { gameMonitoringRoutes } from './gameMonitoring.js';
 import { fastDownloadRoutes } from './fastDownload.js';
@@ -56,6 +57,7 @@ router.use('/:id/rehlds', rehldsRoutes);
 router.use('/:id/clone', serverCloneRoutes);
 router.use('/:id/monitoring', gameMonitoringRoutes);
 router.use('/:id/fastdownload', fastDownloadRoutes);
+router.use('/:id/sftp', serverSftpRoutes);
 router.use('/:id/file', serverFileRoutes);
 // /api/servers/:id/files
 router.use('/:id/files', serverFilesRoutes);

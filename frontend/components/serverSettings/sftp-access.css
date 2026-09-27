@@ -1,0 +1,19 @@
+.gp-sftp { margin-top: 20px; }
+.gp-sftp header, .gp-sftp-title, .gp-sftp-actions, .gp-sftp-footer { display: flex; align-items: center; gap: 12px; }
+.gp-sftp header, .gp-sftp-footer { justify-content: space-between; flex-wrap: wrap; }
+.gp-sftp-title > svg { color: #06b6d4; flex-shrink: 0; }
+.gp-sftp h4 { font-size: 16px; font-weight: 650; margin: 0; }
+.gp-sftp p { font-size: 13px; line-height: 1.6; margin: 10px 0; }
+.gp-sftp-title p { margin: 3px 0 0; opacity: .75; }
+.gp-sftp-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; margin: 20px 0; }
+.gp-sftp-field { min-width: 0; }
+.gp-sftp-field > span { display: block; font-size: 12px; opacity: .7; margin-bottom: 7px; }
+.gp-sftp-field > div { display: flex; align-items: center; gap: 6px; min-height: 46px; border: 1px solid #64748b55; border-radius: 10px; padding: 6px 10px; }
+.gp-sftp-field code, .gp-sftp-field input { flex: 1; min-width: 0; font: 13px ui-monospace, monospace; overflow-wrap: anywhere; }
+.gp-sftp-field input { width: 100%; border: 0; background: transparent; color: inherit; }
+.gp-sftp-field button { flex-shrink: 0; }
+.gp-sftp-footer, .gp-sftp-note, .gp-sftp-field > div > span { font-size: 12px; }
+.gp-sftp details { margin-top: 16px; font-size: 12px; }
+.gp-sftp details code { display: block; padding-top: 10px; overflow-wrap: anywhere; }
+.gp-sftp-error { color: #f87171; }
+@media (max-width: 700px) { .gp-sftp-grid { grid-template-columns: 1fr; } .gp-sftp-actions button { min-height: 44px; } }

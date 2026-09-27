@@ -1093,6 +1093,8 @@ export function ServerSettingsModal({
               setActiveTab('filemanager');
             } : undefined}
             canWriteFiles={canWriteFiles}
+            canReadFiles={canUseFileManager}
+            canManageSftp={Boolean(currentUser?.isRoot || ((serverPermissions.includes('*') || serverPermissions.includes('sftp.manage')) && canUseFileManager && canWriteFiles))}
             serverId={serverId!}
             serverName={serverName}
             canDelete={Boolean(currentUser?.isRoot || serverPermissions.includes('*') || serverPermissions.includes('server.delete'))}

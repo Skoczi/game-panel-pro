@@ -1,3 +1,4 @@
+import { SftpAccessCard } from './SftpAccessCard';
 import { CloneManager } from './CloneManager';
 import { ACTIVE_SERVER } from '../../utils/nodeContext';
 import { normalizeRehldsStartup } from '../../../backend/src/templates/rehldsStartup';
@@ -57,6 +58,8 @@ interface ContainerConfigTabProps {
   onSaved?: () => void;
   onOpenFileManagerDirectory?: (path:string)=>void;
   canWriteFiles?: boolean;
+  canReadFiles?: boolean;
+  canManageSftp?: boolean;
 }
 
 function parseField<T>(value: unknown, fallback: T): T {
@@ -182,6 +185,8 @@ export function ContainerConfigTab({
   onSaved,
   onOpenFileManagerDirectory,
   canWriteFiles,
+  canReadFiles = false,
+  canManageSftp = false,
 }: ContainerConfigTabProps) {
   const [cloneLoaded, setCloneLoaded] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -791,6 +796,7 @@ export function ContainerConfigTab({
             </AppButton>
           </div>
         )}
+        {serverId && (isRoot || canReadFiles) && <SftpAccessCard key={serverId} serverId={serverId} canManage={isRoot || canManageSftp} />}
         {nativeSnapshot && isRoot && serverId && ACTIVE_SERVER?.runtimeId === serverId && (
           <details className="gp-workflow gp-workflow-card" onToggle={event => { if (event.currentTarget.open) setCloneLoaded(true); }}>
             <summary className="font-semibold">Clone server</summary>

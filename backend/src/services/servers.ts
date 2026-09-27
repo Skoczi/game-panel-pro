@@ -1,3 +1,4 @@
+import { revokeServerSftp } from './serverSftp.js';
 import { installProgressRepository, actionsRepository, installInteractionRepository } from '../database/index.js';
 import * as dockerUtils from '../utils/docker.js';
 import { applyLinuxGsmConfigPatches } from '../providers/linuxgsm/adapters/linuxGsmConfig.js';
@@ -273,6 +274,7 @@ export async function deleteServerBestEffort(serverId: number): Promise<void> {
     }
 
     assertCanDeleteServer(server);
+    await revokeServerSftp(server);
 
     if (server.docker_container_id) {
         if (server.provider === 'ovhcloud') {
