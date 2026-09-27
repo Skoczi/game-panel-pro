@@ -1708,3 +1708,28 @@ body:has(.fixed.inset-0) {
 .dark .gp-option-select .gp-app-select-control { background: #111e30; border-color: #334258; color: #edf2f8; }
 .gp-option-select .gp-app-select-control:hover { border-color: #0891b2; }
 .gp-option-select .gp-app-select-control:focus-within { border-color: #06b6d4; box-shadow: 0 0 0 3px #06b6d41a; }
+@media (max-width: 700px) {
+  .gp-file-toolbar {
+    height: auto;
+    min-height: 52px;
+    flex-wrap: wrap;
+    padding: 10px 12px;
+    gap: 8px;
+  }
+  .gp-file-toolbar .gp-path-breadcrumb {
+    flex: 1 1 100%;
+    height: 40px;
+  }
+  .gp-file-toolbar .gp-file-toolbar-actions {
+    flex: 1 1 100%;
+    min-width: 0;
+    margin-left: 0;
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+  .gp-file-toolbar-actions button {
+    flex-shrink: 0;
+    min-width: 40px;
+    min-height: 40px !important;
+  }
+}

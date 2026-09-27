@@ -216,15 +216,16 @@
 @media (max-width: 700px) {
   .gp-server-heading-main {
     flex-basis: 100%;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     gap: 12px;
   }
   .gp-server-heading-divider {
     display: none;
   }
   .gp-server-identity {
-    flex-basis: 100%;
+    flex: 1;
   }
+  .gp-server-back { flex-shrink: 0; }
   .gp-server-heading h1 {
     font-size: 20px;
   }

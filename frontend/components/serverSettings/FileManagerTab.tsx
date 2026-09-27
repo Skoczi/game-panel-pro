@@ -427,7 +427,7 @@ export function FileManagerTab({
       </AppModal>
 
       <div
-        className={`h-[52px] px-3 border-b ${borderColor} ${contentBg} flex items-center gap-1 flex-shrink-0`}
+        className={`gp-file-toolbar h-[52px] px-3 border-b ${borderColor} ${contentBg} flex items-center gap-1 flex-shrink-0`}
       >
         {availableRoots.length > 1 && (
           <AppOptionSelect
@@ -482,7 +482,7 @@ export function FileManagerTab({
               })}
         </div>
 
-        <div className="ml-1 flex items-center gap-0.5 flex-shrink-0">
+        <div className="gp-file-toolbar-actions ml-1 flex items-center gap-0.5 flex-shrink-0">
           <AppButton
             tone="ghost"
             aria-label={fileView === 'list' ? 'Switch to tile view' : 'Switch to list view'}

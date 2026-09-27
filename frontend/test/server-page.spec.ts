@@ -37,6 +37,16 @@ test('server header is a compact toolbar and wraps cleanly on mobile', async ({ 
   await expect(power.getByRole('button', { name: 'Restart', exact: true })).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   if (process.env.PLAYWRIGHT_SCREENSHOTS === '1') await page.screenshot({ path: 'test-results/server-header-mobile.png', fullPage: true });
+  const mobileBack = (await back.boundingBox())!;
+  const mobileName = (await name.boundingBox())!;
+  expect(mobileName.x).toBeGreaterThan(mobileBack.x + mobileBack.width);
+  expect(Math.abs(mobileBack.y + mobileBack.height / 2 - mobileName.y - mobileName.height / 2)).toBeLessThan(5);
+  await page.getByRole('link', { name: 'File Editor', exact: true }).click();
+  const breadcrumb = page.locator('.gp-path-breadcrumb');
+  await expect(breadcrumb.getByTitle('Root', { exact: true })).toBeVisible();
+  expect((await breadcrumb.boundingBox())!.width).toBeGreaterThan(250);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  if (process.env.PLAYWRIGHT_SCREENSHOTS === '1') await page.screenshot({ path: 'test-results/file-toolbar-mobile.png', fullPage: true });
   await back.click();
   await expect(page).not.toHaveURL(/servers\/7/);
 });
