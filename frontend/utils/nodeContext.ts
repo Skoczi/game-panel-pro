@@ -70,13 +70,20 @@ export function openServer(context: ServerContext) {
     ? location.hash
     : '';
   const number = serverNumber(context.displayId);
-  const tab = shortServerRoute()?.tab || hash.split('/').pop() || 'console';
+  const requested = shortServerRoute();
+  const tab = requested?.tab || hash.split('/').pop() || 'console';
+  const destination = new URL(number ? shortServerUrl(number, tab) : `${appRootPath()}?server=${encodeURIComponent(context.id)}${hash}`, location.origin);
+  if (tab === 'filemanager' && (requested?.number === number || (!number && !!hash))) {
+    const query = new URLSearchParams(location.search);
+    for (const key of ['root', 'path']) {
+      const value = query.get(key);
+      if (value !== null) destination.searchParams.set(key, value);
+    }
+  }
   history.replaceState(
     null,
     '',
-    number
-      ? shortServerUrl(number, tab)
-      : `${appRootPath()}?server=${encodeURIComponent(context.id)}${hash}`
+    destination
   );
   clearAppCache();
   window.location.reload();

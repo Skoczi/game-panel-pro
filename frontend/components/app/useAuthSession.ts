@@ -84,7 +84,15 @@ export function useAuthSession() {
           )
             ? location.hash.split('/').pop()
             : undefined;
-          const canonical = shortServerUrl(number, shortRoute?.tab || legacyTab || 'console');
+          const tab = shortRoute?.tab || legacyTab || 'console';
+          const canonical = new URL(shortServerUrl(number, tab), location.origin);
+          if (tab === 'filemanager') {
+            const query = new URLSearchParams(location.search);
+            for (const key of ['root', 'path']) {
+              const value = query.get(key);
+              if (value !== null) canonical.searchParams.set(key, value);
+            }
+          }
           history.replaceState(null, '', canonical);
         }
       } catch {

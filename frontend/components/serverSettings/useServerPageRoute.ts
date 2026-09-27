@@ -1,3 +1,4 @@
+import { FILE_LOCATION_CHANGED, FILE_LOCATION_WRITTEN } from './useFileManagerLocation';
 import { confirmDialog } from '../../utils/confirmDialog';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ACTIVE_NODE, ACTIVE_SERVER, openFleet } from '../../utils/nodeContext';
@@ -86,8 +87,14 @@ export function useServerPageRoute() {
       if (location.href === acceptedUrl.current) return;
       checking = true;
       const destination = location.href;
-      if (dirty.current) history.replaceState(null, '', acceptedUrl.current);
-      const allowed = await allowLeave();
+      const before = new URL(acceptedUrl.current);
+      const after = new URL(destination);
+      const folderNavigation = readRoute()?.tab === 'filemanager' && before.pathname === after.pathname && before.hash === after.hash && (() => {
+        for (const url of [before, after]) { url.searchParams.delete('root'); url.searchParams.delete('path'); }
+        return before.search === after.search;
+      })();
+      if (dirty.current && !folderNavigation) history.replaceState(null, '', acceptedUrl.current);
+      const allowed = folderNavigation || await allowLeave();
       checking = false;
       if (!allowed) return;
       history.replaceState(null, '', destination);
@@ -108,6 +115,7 @@ export function useServerPageRoute() {
         return;
       }
       setRoute(readRoute());
+      window.dispatchEvent(new Event(FILE_LOCATION_CHANGED));
     };
     const unloading = (event: BeforeUnloadEvent) => {
       if (dirty.current) {
@@ -115,10 +123,13 @@ export function useServerPageRoute() {
         event.returnValue = '';
       }
     };
+    const written = () => { acceptedUrl.current = location.href; };
+    window.addEventListener(FILE_LOCATION_WRITTEN, written);
     window.addEventListener('popstate', changed);
     window.addEventListener('hashchange', changed);
     window.addEventListener('beforeunload', unloading);
     return () => {
+      window.removeEventListener(FILE_LOCATION_WRITTEN, written);
       window.removeEventListener('popstate', changed);
       window.removeEventListener('hashchange', changed);
       window.removeEventListener('beforeunload', unloading);

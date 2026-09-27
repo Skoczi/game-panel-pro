@@ -1,0 +1,45 @@
+import { test, expect } from '@playwright/test';
+
+test('folder history supports back, forward, reload and a shared URL over saved position', async ({ page }) => {
+  await page.route('**/api/servers/7/files/roots', route => route.fulfill({ json: { roots: [{ key: 'data', containerPath: '/data' }, { key: 'config', containerPath: '/config' }] } }));
+  await page.route('**/api/servers/7/files?**', route => {
+    const path = new URL(route.request().url()).searchParams.get('path') || '/';
+    return route.fulfill({ json: { path, entries: [{ name: path === '/' ? 'serverfiles' : path === '/serverfiles' ? 'cfg # żółć' : 'inside.cfg', type: path.startsWith('/serverfiles/') ? 'file' : 'dir' }] } });
+  });
+  await page.goto('/test/server-page.fixture.html#/nodes/local/servers/7/filemanager');
+  await expect.poll(() => new URL(page.url()).searchParams.get('path')).toBe('/');
+  await page.getByText('serverfiles', { exact: true }).click();
+  await expect.poll(() => new URL(page.url()).searchParams.get('path')).toBe('/serverfiles');
+  await page.getByText('cfg # żółć', { exact: true }).click();
+  await expect.poll(() => new URL(page.url()).searchParams.get('path')).toBe('/serverfiles/cfg # żółć');
+  await expect(page.getByText('inside.cfg', { exact: true })).toBeVisible();
+  await page.goBack();
+  await expect(page.getByText('cfg # żółć', { exact: true })).toBeVisible();
+  await expect.poll(() => new URL(page.url()).searchParams.get('path')).toBe('/serverfiles');
+  await page.goBack();
+  await expect(page.getByText('serverfiles', { exact: true })).toBeVisible();
+  await expect.poll(() => new URL(page.url()).searchParams.get('path')).toBe('/');
+  await page.goForward();
+  await expect(page.getByText('cfg # żółć', { exact: true })).toBeVisible();
+  await page.goForward();
+  await expect(page.getByText('inside.cfg', { exact: true })).toBeVisible();
+  const deepLink = page.url();
+  await page.evaluate(() => localStorage.setItem('gp_filemanager_positions', JSON.stringify({ 7: { root: 'data', path: '/other' } })));
+  await page.reload();
+  await expect(page.getByText('inside.cfg', { exact: true })).toBeVisible();
+  await expect(page).toHaveURL(deepLink);
+  await page.getByRole('combobox', { name: 'Data directory' }).click();
+  await page.getByRole('option', { name: '/config', exact: true }).click();
+  await expect.poll(() => new URL(page.url()).searchParams.get('root')).toBe('config');
+  await expect.poll(() => new URL(page.url()).searchParams.get('path')).toBe('/');
+  await page.goBack();
+  await expect(page.getByText('inside.cfg', { exact: true })).toBeVisible();
+  await expect(page).toHaveURL(deepLink);
+  await page.goForward();
+  await expect(page.getByText('serverfiles', { exact: true })).toBeVisible();
+  await page.getByText('serverfiles', { exact: true }).click();
+  await page.reload();
+  await expect(page.getByText('cfg # żółć', { exact: true })).toBeVisible();
+  await expect.poll(() => new URL(page.url()).searchParams.get('root')).toBe('config');
+  await expect.poll(() => new URL(page.url()).searchParams.get('path')).toBe('/serverfiles');
+});

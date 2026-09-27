@@ -834,3 +834,25 @@ test('assigned server administrator sees game console and files, with no termina
  await expect(page.getByPlaceholder('e.g. 4096', { exact: true })).toBeDisabled();
  await expect(page.getByRole('button', { name: 'Delete server', exact: true })).toHaveCount(0);
 });
+
+test('folder back and forward preserve an open dirty editor without a discard prompt', async ({ page }) => {
+  await page.route('**/api/servers/7/files?**', route => {
+    const path = new URL(route.request().url()).searchParams.get('path') || '/';
+    return route.fulfill({ json: { path, entries: [{ name: 'server.cfg', type: 'file' }, { name: 'configs', type: 'dir' }] } });
+  });
+  await page.goto('/test/server-page.fixture.html#/nodes/local/servers/7/filemanager');
+  await page.locator('[data-file-name="configs"]').click();
+  await expect.poll(() => new URL(page.url()).searchParams.get('path')).toBe('/configs');
+  await page.getByText('server.cfg', { exact: true }).dblclick();
+  const editor = page.locator('.monaco-editor');
+  await editor.click();
+  await page.keyboard.press('ControlOrMeta+a');
+  await page.keyboard.type('hostname keep my changes');
+  await page.goBack();
+  await expect.poll(() => new URL(page.url()).searchParams.get('path')).toBe('/');
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+  await expect(editor).toContainText('hostname keep my changes');
+  await page.goForward();
+  await expect.poll(() => new URL(page.url()).searchParams.get('path')).toBe('/configs');
+  await expect(editor).toContainText('hostname keep my changes');
+});

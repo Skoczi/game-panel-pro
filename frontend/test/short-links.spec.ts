@@ -103,3 +103,13 @@ test('a short destination survives sign-in', async ({ page }) => {
   await expect(page.locator('output')).toHaveText('containerconfig');
   await expect(page).toHaveURL(/\/s\/18\/settings$/);
 });
+
+test('file folder query survives authentication canonicalization and reload', async ({ page }) => {
+  await page.goto('/s/18/files?root=config&path=%2Fcfg+%23+test');
+  await expect(page.getByRole('heading')).toHaveText('Remote Arena');
+  await expect.poll(() => new URL(page.url()).searchParams.get('root')).toBe('config');
+  await expect.poll(() => new URL(page.url()).searchParams.get('path')).toBe('/cfg # test');
+  await page.reload();
+  await expect(page.getByRole('heading')).toHaveText('Remote Arena');
+  await expect.poll(() => new URL(page.url()).searchParams.get('path')).toBe('/cfg # test');
+});

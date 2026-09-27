@@ -260,6 +260,7 @@ export function ServerSettingsModal({
     setDeleteMultiNames,
     openDirectory,
   } = useFileManagerState({
+    syncLocation: !!pageTab,
     activeTab,
     isOpen,
     serverId,
