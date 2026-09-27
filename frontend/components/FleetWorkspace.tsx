@@ -653,9 +653,9 @@ export function FleetWorkspace({
       {power && (
         <ConfirmationModal
           isOpen
-          title={`${power.action} ${power.server.name}?`}
+          title={`${{ start: 'Start', stop: 'Stop', restart: 'Restart' }[power.action]} ${power.server.name}?`}
           message={`This will ${power.action} ${power.server.displayId || power.server.name}.${power.action === 'start' ? '' : ' Connected players may be disconnected.'}`}
-          confirmText={power.action}
+          confirmText={{ start: 'Start', stop: 'Stop', restart: 'Restart' }[power.action]}
           onClose={() => setPower(null)}
           onConfirm={async () => {
             const context = await fleetContext(power.server.id);
