@@ -68,4 +68,4 @@ mobile settings and fleet data scoping. Live deployment verification must also
 check service health, the migration ledger, game-container continuity and the
 target node's network/query path.
 
-See [monitoring details and limitations](GAME-MONITORING.md).
+See [monitoring details and limitations](../pro/GAME-MONITORING.md).

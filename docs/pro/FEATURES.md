@@ -1,13 +1,13 @@
 # Features and compatibility
 
-| Function | Native 2.0.59 | Existing providers |
+| Function | Native 2.1.0 | Existing providers |
 | --- | --- | --- |
 | Console, power, files | Supported through the installed runtime | Existing adapter behavior |
 | Backup | `data/serverfiles` only; archive in `data/backups` | Provider-specific archive or directory |
 | Online backup | Allowed, explicitly marked best-effort | Provider-specific |
 | Restore | Stopped server, staged validation, previous directory retained | Existing OVH adapter support; no new LinuxGSM restore |
 | Retention / off-node copies | Verified local retention and configured external storage | Existing LinuxGSM settings where supported |
-| Game Config | Declared file editor; ReHLDS maps/admins/plugins/addon catalogue | Specialized adapter forms |
+| Game Config | Declared file editor; ReHLDS maps/admins/plugins/addons; Source and CS2 framework controls | Specialized adapter forms |
 | Schedules | Backup/restart/custom plus Native maintenance workflow with verified backup and A2S | Existing operation-specific behavior |
 | Clone / transfer | Root-only, stopped source, single data mount, pinned images, reviewed target ports | Not supported |
 | API power | Scoped token + current server.power permission; durable admission | Same provider power implementation |
@@ -18,7 +18,7 @@ The Native backup layout currently requires a declared `data` mount containing `
 
 Archives created by earlier revisions in `<serverRoot>/.native-backups` remain on disk. They contain mount directories and are not automatically relocated or treated as the new `serverfiles` format. The Backups screen lists them as legacy downloads for manual recovery. Do not delete them during update.
 
-ReHLDS was exercised on isolated copies on WAW2: NFS restore, all six addons and rollback, maintenance, clone/transfer and scoped API power. Other games were not newly certified. Transfer acceptance used two agent processes with separate databases on one physical host, not a physical cross-host failover. See [runbook](ESERV-RUNBOOK.md) and feature-specific documents for limits.
+ReHLDS was exercised on isolated copies on WAW2: NFS restore, all six addons and rollback, maintenance, clone/transfer and scoped API power. Other games were not newly certified. Transfer acceptance used two agent processes with separate databases on one physical host, not a physical cross-host failover. See [runbook](../README.md) and feature-specific documents for limits.
 
 ## Node selection
 

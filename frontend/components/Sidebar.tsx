@@ -43,35 +43,17 @@ function LegalSection({
   title: string;
   children: ReactNode;
 }) {
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
   return (
-    <section className="space-y-4 border-b border-white/10 pb-7 last:border-b-0 last:pb-0">
+    <section className={`space-y-4 border-b pb-7 last:border-b-0 last:pb-0 ${isDark ? 'border-white/10' : 'border-slate-200'}`}>
       <div className="border-l-2 border-[var(--color-cyan-400)] pl-4">
-        <h3 className="text-lg font-semibold tracking-tight text-white">
+        <h3 className={`text-lg font-semibold tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>
           {number}. {title}
         </h3>
       </div>
-      <div className="space-y-3 text-sm leading-6 text-slate-200">{children}</div>
+      <div className={`space-y-3 text-sm leading-6 ${isDark ? 'text-slate-200' : 'text-slate-600'}`}>{children}</div>
     </section>
-  );
-}
-
-function LegalSubheading({ children }: { children: ReactNode }) {
-  return (
-    <h4 className="pt-1 text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
-      {children}
-    </h4>
-  );
-}
-
-function LegalList({ items }: { items: string[] }) {
-  return (
-    <ul className="space-y-1.5 pl-5 text-slate-200 marker:text-slate-500">
-      {items.map((item) => (
-        <li key={item} className="list-disc">
-          {item}
-        </li>
-      ))}
-    </ul>
   );
 }
 
@@ -203,9 +185,7 @@ export function Sidebar({
   const [isLegalModalOpen, setIsLegalModalOpen] = useState(false);
   const [isApiTokensOpen, setIsApiTokensOpen] = useState(false);
   const [isSecurityOpen, setIsSecurityOpen] = useState(false);
-  const [isEasterEggOpen, setIsEasterEggOpen] = useState(false);
-  useBodyScrollLock(isLegalModalOpen || isEasterEggOpen);
-  const [logoClickCount, setLogoClickCount] = useState(0);
+  useBodyScrollLock(isLegalModalOpen);
   const [isPanelUpdateOpen, setIsPanelUpdateOpen] = useState(false);
   const [updateInfo, setUpdateInfo] = useState<PanelUpdateCheck | null>(null);
   const { theme, toggleTheme } = useTheme();
@@ -258,15 +238,7 @@ export function Sidebar({
           <button
             type="button"
             className="min-w-0 max-w-full text-white text-center font-semibold"
-            onClick={() => {
-              const next = logoClickCount + 1;
-              if (next >= 5) {
-                setIsEasterEggOpen(true);
-                setLogoClickCount(0);
-              } else {
-                setLogoClickCount(next);
-              }
-            }}
+            onClick={() => onTabChange('game-servers')}
           >
             <PanelBrand appearance={appearance} />
           </button>
@@ -354,12 +326,12 @@ export function Sidebar({
               </span>
             )}
             <a
-              href="https://github.com/ovh/game-panel"
+              href="https://github.com/Skoczi/game-panel-skoczi"
               target="_blank"
               rel="noopener noreferrer"
               className="w-full rounded-sm text-[9px] text-gray-400 transition-colors hover:text-gray-200"
             >
-              Based on OVHcloud Game Panel <span aria-hidden="true">↗</span>
+              GitHub <span aria-hidden="true">↗</span>
             </a>
             <button
               type="button"
@@ -396,10 +368,10 @@ export function Sidebar({
               <AppModalTitle
                 className={`text-2xl font-semibold tracking-tight ${isDark ? 'text-white' : 'text-[#0f172a]'}`}
               >
-                Terms and Conditions, Terms of Use and Privacy Policy
+                License and acknowledgements
               </AppModalTitle>
               <AppModalDescription className={isDark ? 'text-slate-400' : 'text-[#64748b]'}>
-                Version in effect as of: 12/03/2026
+                Game Panel PRO · Apache License 2.0
               </AppModalDescription>
             </div>
             <AppButton
@@ -414,396 +386,20 @@ export function Sidebar({
           </AppModalHeader>
 
           <AppModalBody className="max-h-[85vh] overflow-y-auto p-0">
-            <div className="px-6 py-6">
-              <p className="mb-6 rounded border border-gray-600 p-3 text-sm">
-                Maintained by Skoczi. Not an official OVHcloud release. The notices below are
-                inherited from the original project. Operators must provide their own deployment
-                terms and privacy information. Fork modifications are documented at
-                github.com/Skoczi/game-panel-skoczi.
-              </p>
-              <div className="space-y-6">
-                <LegalSection number="1" title="Terms and conditions">
-                  <div className="grid gap-6 md:grid-cols-2">
-                    <div className="space-y-3">
-                      <LegalSubheading>Service editor</LegalSubheading>
-                      <p>The &quot;OVHcloud Game Panel&quot; is edited by:</p>
-                      <div className="space-y-1">
-                        <p className="font-semibold text-white">OVHcloud SAS</p>
-                        <p>SAS with a capital of EUR50 million</p>
-                        <p>RCS Lille Metropole 424 761 419 00045</p>
-                        <p>APE code 2620Z</p>
-                        <p>VAT NO: FR 22 424 761 419</p>
-                        <p>Head office: 2 rue Kellermann - 59100 Roubaix - France</p>
-                      </div>
-                    </div>
-
-                    <div className="space-y-3">
-                      <LegalSubheading>Hosting</LegalSubheading>
-                      <div className="space-y-1">
-                        <p className="font-semibold text-white">OVH</p>
-                        <p>2 rue Kellermann</p>
-                        <p>59100 Roubaix - France</p>
-                        <p>Website: https://www.ovhcloud.com</p>
-                      </div>
-                    </div>
-                  </div>
-
-                  <LegalSubheading>Technologies used</LegalSubheading>
-                  <p>The Game Panel uses open-source software, including:</p>
-                  <LegalList
-                    items={[
-                      'LinuxGSM for the installation and automated management of Linux game servers.',
-                    ]}
-                  />
-                  <p>Such software shall remain subject to their respective licenses.</p>
-                </LegalSection>
-
-                <LegalSection number="2" title="General Terms and Conditions of Use (GTC)">
-                  <LegalSubheading>Subject</LegalSubheading>
-                  <p>
-                    These General Terms and Conditions of Use govern access to and use of the
-                    OVHcloud Game Panel service, an interface for managing, administering and
-                    deploying game servers.
-                  </p>
-                  <p>Any use of the service implies full acceptance of these conditions.</p>
-                </LegalSection>
-
-                <LegalSection number="3" title="Account creation and management">
-                  <p>Access to the service requires:</p>
-                  <LegalList
-                    items={[
-                      'creating a user account',
-                      'the use of authentication credentials',
-                      'acceptance of these T&Cs',
-                    ]}
-                  />
-                  <p>The user is solely responsible for:</p>
-                  <LegalList
-                    items={[
-                      'the confidentiality of their login details',
-                      'the activity carried out from his account',
-                      'the security of its access.',
-                    ]}
-                  />
-                  <p>
-                    In the event of suspected unauthorized access, the user must immediately inform
-                    the publisher.
-                  </p>
-                </LegalSection>
-
-                <LegalSection number="4" title="User responsibility">
-                  <p>
-                    The user is fully responsible for the services, content and activities they
-                    deploy via the Game Panel.
-                  </p>
-                  <p>This includes:</p>
-                  <LegalList
-                    items={[
-                      'the game servers installed',
-                      'files transferred',
-                      'the plugins or mods used',
-                      'the content accessible from the servers',
-                    ]}
-                  />
-                  <p>The user guarantees that their use of the service complies with:</p>
-                  <LegalList
-                    items={[
-                      'the legislation in force',
-                      'intellectual property rights',
-                      'game publisher conditions.',
-                    ]}
-                  />
-                </LegalSection>
-
-                <LegalSection number="5" title="Prohibitions">
-                  <p>It is strictly forbidden to use the Game Panel to:</p>
-                  <LegalList
-                    items={[
-                      'Host or distribute illegal content',
-                      'infringe copyright or software licenses',
-                      'distribute malware or malware',
-                      'carry out cyber attacks (DDoS, scanning, intrusion)',
-                      'exploit servers for spam or phishing',
-                      'use pirated or unauthorized game servers',
-                      'bypass the technical limitations of the service.',
-                    ]}
-                  />
-                  <p>The publisher reserves the right to:</p>
-                  <LegalList
-                    items={[
-                      'immediately suspend a service',
-                      'restrict access to an account',
-                      'delete all illegal content',
-                      'Report abuse to the appropriate authorities.',
-                    ]}
-                  />
-                </LegalSection>
-
-                <LegalSection number="6" title="Responsibility for game servers">
-                  <p>The Game Panel only provides a technical management tool.</p>
-                  <p>The publisher does not intervene in:</p>
-                  <LegalList
-                    items={[
-                      'user administration of the servers',
-                      'game configuration',
-                      'hosted content',
-                      'managing communities or players.',
-                    ]}
-                  />
-                  <p>The user is solely responsible for:</p>
-                  <LegalList
-                    items={[
-                      'managing your server',
-                      'Gaming license compliance',
-                      'the activities of players connected to its servers',
-                      'hosted data',
-                    ]}
-                  />
-                </LegalSection>
-
-                <LegalSection number="7" title="Limitation of Liability">
-                  <p>The publisher cannot be held responsible, particularly in the event of:</p>
-                  <LegalList
-                    items={[
-                      'data loss',
-                      'incorrect server configuration',
-                      'accidental deletion of files',
-                      'improper use of the Game Panel (especially via the terminal)',
-                      'interruption of gaming services',
-                      'misuse by third parties',
-                      "IT attacks targeting users' servers.",
-                    ]}
-                  />
-                  <p>The user is responsible for setting up their own backups.</p>
-                </LegalSection>
-
-                <LegalSection number="8" title="Service availability">
-                  <p>The publisher is working hard to ensure that the Game Panel is available.</p>
-                  <p>However, the service may be interrupted for:</p>
-                  <LegalList
-                    items={[
-                      'maintenance',
-                      'updates',
-                      'technical incidents',
-                      'infrastructure constraints',
-                      'force majeure.',
-                    ]}
-                  />
-                  <p>No guarantee of permanent availability can be provided.</p>
-                </LegalSection>
-
-                <LegalSection number="9" title="Account suspension or deletion">
-                  <p>The publisher reserves the right to suspend or delete a user account if:</p>
-                  <LegalList
-                    items={[
-                      'breach of these conditions',
-                      'abuse of the service',
-                      'illegal activity',
-                      'risk to the security of the platform.',
-                    ]}
-                  />
-                  <p>This suspension may take place without notice.</p>
-                </LegalSection>
-
-                <LegalSection number="10" title="Intellectual property">
-                  <p>All Game Panel elements including:</p>
-                  <LegalList
-                    items={['source code', 'graphical user interface', 'design', 'documentation']}
-                  />
-                  <p>are protected by intellectual property laws.</p>
-                  <p>Unauthorized reproduction or modification is prohibited.</p>
-                  <p>
-                    The trademarks and licenses of the games remain the property of their respective
-                    publishers.
-                  </p>
-                </LegalSection>
-
-                <LegalSection number="11" title="Privacy Policy (GDPR)">
-                  <LegalSubheading>Collected data</LegalSubheading>
-                  <p>The Game Panel can collect the following data:</p>
-                  <LegalList
-                    items={[
-                      'IP address',
-                      'user ID',
-                      'email address',
-                      'system logs',
-                      'technical information related to the servers.',
-                    ]}
-                  />
-                  <p>This data is necessary for the operation and security of the service.</p>
-
-                  <LegalSubheading>Purposes of processing</LegalSubheading>
-                  <p>The data is used to:</p>
-                  <LegalList
-                    items={[
-                      'allow access to the Game Panel',
-                      'secure the platform',
-                      'manage servers',
-                      'Prevent abuse and intrusion',
-                      'improve service performance.',
-                    ]}
-                  />
-
-                  <LegalSubheading>Legal basis</LegalSubheading>
-                  <p>Treatments are based on:</p>
-                  <LegalList
-                    items={[
-                      'running the service',
-                      'the legitimate interest of securing the platform.',
-                    ]}
-                  />
-
-                  <LegalSubheading>Data conservation</LegalSubheading>
-                  <p>The data is stored:</p>
-                  <LegalList
-                    items={[
-                      "for the duration of the service's use",
-                      'then for a reasonable period of time for security and legal obligations.',
-                    ]}
-                  />
-
-                  <LegalSubheading>User rights</LegalSubheading>
-                  <p>
-                    In compliance with the General Data Protection Regulation (GDPR), users have the
-                    following rights:
-                  </p>
-                  <LegalList
-                    items={[
-                      'right of access',
-                      'right of rectification',
-                      'right of deletion',
-                      'right of opposition',
-                      'right to restriction of processing.',
-                    ]}
-                  />
-                  <p>Requests may be addressed to:</p>
-                  <p>[contact email]</p>
-                </LegalSection>
-
-                <LegalSection number="12" title="Cookies">
-                  <p>
-                    The Game Panel may use technical cookies necessary for the platform to work, in
-                    particular to:
-                  </p>
-                  <LegalList items={['authentication', 'Session management', 'security.']} />
-                  <p>No advertising cookies are used.</p>
-                </LegalSection>
-
-                <LegalSection number="13" title="Modification of the conditions">
-                  <p>The publisher reserves the right to modify these conditions at any time.</p>
-                  <p>The applicable version is the one published in the Game Panel.</p>
-                </LegalSection>
-
-                <LegalSection number="15" title="Network protection and abuse (DDoS, attacks)">
-                  <p>
-                    The user agrees not to use the resources provided via the Game Panel to carry
-                    out or facilitate computer attacks, including:
-                  </p>
-                  <LegalList
-                    items={[
-                      'Denial-of-service (DDoS or DoS) attacks',
-                      'port scans or intrusion attempts',
-                      'exploiting security vulnerabilities',
-                      'Using malicious scripts or bots.',
-                    ]}
-                  />
-                  <p>
-                    In the event of an attack originating from or targeting a server managed via the
-                    Game Panel, the publisher reserves the right to:
-                  </p>
-                  <LegalList
-                    items={[
-                      'temporarily suspend the service concerned',
-                      'limit network traffic',
-                      'block some connections',
-                      'suspend or terminate the user account.',
-                    ]}
-                  />
-                  <p>
-                    These measures can be taken without notice to protect infrastructure, other
-                    users, and third-party networks.
-                  </p>
-                  <p>
-                    The user acknowledges that the hosting infrastructure operated mainly via
-                    OVHcloud may apply their own security policies and network restrictions.
-                  </p>
-                </LegalSection>
-
-                <LegalSection number="16" title="3rd party mods, plugins and content">
-                  <p>
-                    The Game Panel allows users to install or use third-party mods, plugins,
-                    extensions or content for game servers.
-                  </p>
-                  <p>The user acknowledges that:</p>
-                  <LegalList
-                    items={[
-                      'these contents are installed under his sole responsibility',
-                      'the publisher does not guarantee compatibility, security or stability',
-                      'Some mods or plugins can compromise the security or operation of the servers.',
-                    ]}
-                  />
-                  <p>The publisher cannot be held liable for any damage resulting from:</p>
-                  <LegalList
-                    items={[
-                      'a faulty plugin',
-                      'a malicious mode',
-                      'a third-party script',
-                      'incorrect configuration by the user.',
-                    ]}
-                  />
-                  <p>The user also agrees not to use violating content:</p>
-                  <LegalList
-                    items={['copyright', 'software licenses', "game publishers' terms of use."]}
-                  />
-                </LegalSection>
-
-                <LegalSection number="17" title="Game licensing and publisher compliance">
-                  <p>
-                    The Game Panel enables the installation and management of video game servers,
-                    especially via LinuxGSM.
-                  </p>
-                  <p>
-                    However, the user remains fully responsible for complying with the licenses and
-                    conditions of use of the installed games, including:
-                  </p>
-                  <LegalList
-                    items={[
-                      'game publisher licenses',
-                      'Terms of use for distribution platforms',
-                      'rules related to public or commercial servers.',
-                    ]}
-                  />
-                  <p>The publisher of the Game Panel:</p>
-                  <LegalList
-                    items={[
-                      'provides no game licenses',
-                      'does not sell or distribute video games',
-                      'is not affiliated with the game publishers installed via the platform.',
-                    ]}
-                  />
-                  <p>
-                    Any use of unauthorized, pirated or non-compliant versions of games is strictly
-                    prohibited.
-                  </p>
-                  <p>
-                    In the event of a violation of the publisher&apos;s terms or applicable laws,
-                    the publisher reserves the right to:
-                  </p>
-                  <LegalList
-                    items={[
-                      'immediately suspend the server concerned',
-                      'delete disputed content',
-                      'suspend or delete the user account.',
-                    ]}
-                  />
-
-                  <LegalSubheading>Contact</LegalSubheading>
-                  <p>
-                    If you have any questions regarding the service: contact OVHcloud customer
-                    support via the OVHcloud Control Panel, or by calling 1007
-                  </p>
-                </LegalSection>
-              </div>
+            <div className="space-y-6 px-6 py-6">
+              <LegalSection number="1" title="Game Panel PRO">
+                <p>Maintained by Skoczi. Copyright 2026 Skoczi for modifications and continued development.</p>
+                <p>This software is distributed under the Apache License, Version 2.0, without warranties or conditions of any kind.</p>
+                <a className="text-cyan-500 underline" href="https://github.com/Skoczi/game-panel-skoczi/blob/main/LICENSE-2.0.txt" target="_blank" rel="noopener noreferrer">Read the license</a>
+              </LegalSection>
+              <LegalSection number="2" title="Acknowledgements">
+                <p>Derived from OVHcloud Game Panel 1.5.0. Copyright OVH 2026. This is an independent project, not an official OVHcloud release.</p>
+                <p>Third-party software and game assets remain subject to their respective licenses.</p>
+                <a className="text-cyan-500 underline" href="https://github.com/Skoczi/game-panel-skoczi/blob/main/NOTICE" target="_blank" rel="noopener noreferrer">Third-party notices</a>
+              </LegalSection>
+              <LegalSection number="3" title="Your deployment">
+                <p>The operator of this installation provides its service terms, privacy information and support contact. The software license does not define those deployment-specific policies.</p>
+              </LegalSection>
             </div>
           </AppModalBody>
         </AppModalContent>
@@ -817,38 +413,6 @@ export function Sidebar({
       {isApiTokensOpen && <ApiTokensModal key={currentUser?.username} onClose={() => setIsApiTokensOpen(false)} />}
       {isSecurityOpen && <AccountSecurityModal key={currentUser?.username} username={currentUser?.username || ''} onClose={() => setIsSecurityOpen(false)} />}
 
-      <AppModal open={isEasterEggOpen} onOpenChange={setIsEasterEggOpen}>
-        <AppModalContent
-          dismissible={false}
-          className="relative z-[61] w-[calc(100%-2rem)] max-w-2xl overflow-hidden rounded-lg p-0"
-        >
-          <div className="flex justify-end px-3 pt-3 pb-1">
-            <button
-              type="button"
-              onClick={() => setIsEasterEggOpen(false)}
-              className="rounded p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-700 dark:hover:bg-gray-700 dark:hover:text-white transition-colors"
-              aria-label="Close"
-            >
-              <X className="h-5 w-5" />
-            </button>
-          </div>
-          <AppModalBody className="!overflow-hidden px-6 pb-6 !pt-0">
-            <div className="flex flex-col items-center gap-4 text-center">
-              <div>
-                <AppModalDescription className="text-xl font-bold text-gray-900 dark:text-white">
-                  Meet the team behind the OVHcloud Game Panel!
-                </AppModalDescription>
-              </div>
-              <img
-                src="/GPteam.png"
-                alt="OVHcloud Game Panel team"
-                draggable={false}
-                className="w-full rounded-lg object-contain select-none"
-              />
-            </div>
-          </AppModalBody>
-        </AppModalContent>
-      </AppModal>
     </aside>
   );
 }

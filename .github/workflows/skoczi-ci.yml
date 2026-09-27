@@ -30,8 +30,10 @@ jobs:
         working-directory: frontend
       - run: npx playwright install --with-deps chromium
         working-directory: frontend
-      - run: npm run test:ui
+      - run: npm run test:ui -- --workers=2
         working-directory: frontend
+      - name: Check documentation links
+        run: python3 scripts/check-doc-links.py
       - name: Validate deployment shell syntax
         run: find deploy -name '*.sh' -exec bash -n {} \;
       - run: python3 -B deploy/agent/test_agent.py
@@ -58,6 +60,7 @@ jobs:
         run: python3 deploy/test/docker_smoke.py
         env:
           GP_DEPLOY_DOCKER_TEST: '1'
+          GP_TEST_FROM_VERSION: '2.0.59'
       - name: Test two independent runtimes on real Docker
         working-directory: backend
         # The fixture creates and restores files owned by game UID 101.

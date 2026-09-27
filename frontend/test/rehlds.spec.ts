@@ -26,7 +26,7 @@ test('configuration conflict retains draft and sends reviewed file version', asy
   await page.getByLabel('ReHLDS configuration').fill('de_inferno\n');
   await page.getByRole('button', { name: 'Review changes', exact: true }).click();
   expect(writes).toHaveLength(0);
-  await page.getByRole('button', { name: 'Save with snapshot' }).click();
+  await page.getByRole('button', { name: 'Save changes', exact: true }).click();
   await expect(page.getByRole('alert')).toContainText('Configuration changed');
   await expect(page.getByLabel('ReHLDS configuration')).toHaveValue('de_inferno\n');
   expect(writes).toEqual([{ content: 'de_inferno\n', version: 'original' }]);

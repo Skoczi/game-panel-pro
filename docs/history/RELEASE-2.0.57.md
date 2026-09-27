@@ -38,4 +38,4 @@ Backend template tests cover icon validation, immutable hashes and signed node t
 Browser checks cover list and card behavior, icon assets, mobile upload/save, long names,
 node scoping and older-agent rejection. Backend and frontend production builds pass.
 
-See [game icon behavior](GAME-ICONS.md) and [artwork sources](../../frontend/public/game-icons/SOURCES.md).
+See [game icon behavior](../pro/GAME-ICONS.md) and [artwork sources](../../frontend/public/game-icons/SOURCES.md).

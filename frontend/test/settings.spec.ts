@@ -246,8 +246,8 @@ test('global settings only edits appearance and preserves Local allocations', as
   const revision = page.getByTestId('panel-revision');
   await expect(footerName).toBeVisible();
   await expect(revision).toHaveText(formatDisplayVersion(packageInfo.version));
-  const upstream = page.getByRole('link', { name: 'Based on OVHcloud Game Panel' });
-  await expect(upstream).toHaveAttribute('href', 'https://github.com/ovh/game-panel');
+  const upstream = page.getByRole('link', { name: 'GitHub', exact: true });
+  await expect(upstream).toHaveAttribute('href', 'https://github.com/Skoczi/game-panel-skoczi');
   await expect(upstream).toHaveAttribute('rel', 'noopener noreferrer');
   await expect(revision.locator('..')).toHaveAttribute(
     'title',
@@ -333,7 +333,7 @@ test('non-root menu has no global Settings entry', async ({ page }) => {
   await expect(page.getByTestId('panel-revision')).toHaveText(
     formatDisplayVersion(packageInfo.version)
   );
-  await expect(page.getByRole('link', { name: 'Based on OVHcloud Game Panel' })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'GitHub', exact: true })).toBeVisible();
 });
 
 test('settings stays within a narrow viewport', async ({ page }) => {

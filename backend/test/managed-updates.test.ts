@@ -12,10 +12,14 @@ test('managed updates require standalone opt-in, no remote nodes and a local PRO
  assert.equal((await module.managedUpdateCapability()).enabled, false);
  env.GAMEPANEL_MANAGED_UPDATES = 'true'; env.GAMEPANEL_PRO_UPDATER_IMAGE = 'upstream/untrusted:latest';
  assert.equal((await module.managedUpdateCapability()).enabled, false);
- env.GAMEPANEL_PRO_UPDATER_IMAGE = 'gamepanel-pro-updater:2.0.50'; remote = [{ id: 'remote' }];
+ env.GAMEPANEL_PRO_UPDATER_IMAGE = 'gamepanel-pro-updater:2.1.0'; remote = [{ id: 'remote' }];
  assert.equal((await module.managedUpdateCapability()).enabled, false);
  remote = []; assert.equal((await module.managedUpdateCapability()).enabled, true);
- assert.equal(inspected, 'gamepanel-pro-updater:2.0.50');
+ assert.equal(inspected, 'gamepanel-pro-updater:2.1.0');
+ for (const tag of ['2.1.0-rc.1', '2.2.0', '3.0.0', 'latest']) {
+  env.GAMEPANEL_PRO_UPDATER_IMAGE = `gamepanel-pro-updater:${tag}`;
+  assert.equal((await module.managedUpdateCapability()).enabled, false);
+ }
 });
 
 test('starting an update rejects previews and duplicate jobs without pulling an upstream image', async () => {
@@ -28,9 +32,9 @@ test('starting an update rejects previews and duplicate jobs without pulling an 
   '../config.js': { getConfig: () => ({ gamepanelAppRoot: '/opt/gamepanel', composeProjectName: 'gamepanel', dockerSocket: '/var/run/docker.sock' }) },
   '../utils/logger.js': {}, '../utils/time.js': {},
  }, { process: { env: { GAMEPANEL_PRO_UPDATER_IMAGE: 'gamepanel-pro-updater:2.0.50' } }, AbortSignal,
-  fetch: async (url: string) => { assert.match(url, /Skoczi\/game-panel-skoczi/); return { ok: true, json: async () => [{ tag_name: 'v2.0.51' }, { tag_name: 'v2.0.52', prerelease: true }] }; } });
+  fetch: async (url: string) => { assert.match(url, /Skoczi\/game-panel-skoczi/); return { ok: true, json: async () => [{ tag_name: 'v2.1.0' }, { tag_name: 'v2.0.52', prerelease: true }] }; } });
  await assert.rejects(module.startPanelUpdate({ version: '2.0.52', startedBy: 'admin' }), /Unknown update/);
- await module.startPanelUpdate({ version: '2.0.51', startedBy: 'admin' });
- await assert.rejects(module.startPanelUpdate({ version: '2.0.51', startedBy: 'admin' }), /already running/);
- assert.equal(launched, 1); assert(env.includes('GP_UPDATE_VERSION=2.0.51'));
+ await module.startPanelUpdate({ version: '2.1.0', startedBy: 'admin' });
+ await assert.rejects(module.startPanelUpdate({ version: '2.1.0', startedBy: 'admin' }), /already running/);
+ assert.equal(launched, 1); assert(env.includes('GP_UPDATE_VERSION=2.1.0'));
 });

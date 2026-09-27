@@ -34,6 +34,10 @@ Thumbs.db
 .vscode/
 .idea/
 
+# ---- Release authoring outputs ----
+/output/
+/tmp/
+
 # ---- Misc ----
 *.pem
 *.key

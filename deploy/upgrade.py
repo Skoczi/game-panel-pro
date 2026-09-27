@@ -103,7 +103,7 @@ class Upgrade:
         if env.get('GAMEPANEL_APP_ROOT') != str(self.root) or not env.get('JWT_SECRET'):
             raise ValueError('Unexpected runtime root or missing JWT secret')
         current = version(self.root / 'app')
-        if current != '1.5.0' and not re.fullmatch(r'(?:1\.5\.0-skoczi\.\d+|2\.0\.\d+)', current):
+        if current != '1.5.0' and not re.fullmatch(r'(?:1\.5\.0-skoczi\.\d+|2\.(?:0|1)\.\d+)', current):
             raise ValueError('Unsupported source version: ' + current)
         images = {}
         for name in SERVICES:
@@ -136,7 +136,7 @@ class Upgrade:
 
     def drain(self, current):
         # New releases stop accepting changes and scheduling work before restart.
-        if current.startswith('2.0.'):
+        if current.startswith(('2.0.', '2.1.')):
             probe = "const http=require('http');http.get('http://127.0.0.1:'+(process.env.PORT||3001)+'/api/health',r=>{let b='';r.on('data',c=>b+=c);r.on('end',()=>{const d=JSON.parse(b).updateDrain;process.exit(d&&d.maintenance&&d.busy===0?0:1)})}).on('error',()=>process.exit(1))"
             for _ in range(60):
                 try:
@@ -191,9 +191,9 @@ class Upgrade:
             raise ValueError('An unfinished update requires recovery before another update can start')
         manifest = self.inspect()
         target_version = version(source)
-        if not re.fullmatch(r'2\.0\.\d+', target_version):
-            raise ValueError('Use a Game Panel PRO 2.0.X release')
-        if manifest['fromVersion'].startswith('2.0.') and int(target_version.split('.')[-1]) <= int(manifest['fromVersion'].split('.')[-1]):
+        if not re.fullmatch(r'2\.(?:0|1)\.\d+', target_version):
+            raise ValueError('Use a Game Panel PRO 2.0.x or 2.1.x release')
+        if manifest['fromVersion'].startswith('2.') and tuple(map(int, target_version.split('.'))) <= tuple(map(int, manifest['fromVersion'].split('.'))):
             raise ValueError('Choose a newer PRO release; use explicit rollback for recovery')
         if source == self.root / 'app' or self.root / 'app' in source.parents:
             raise ValueError('Run the release from a separate checkout outside the installation')

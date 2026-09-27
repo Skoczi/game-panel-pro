@@ -1,6 +1,6 @@
 # Daily operation and data protection
 
-For the current eserv.pl deployment, schedules, alerting, MFA and recovery receipts see the [26 September operator runbook](ESERV-RUNBOOK.md).
+For the current eserv.pl deployment, schedules, alerting, MFA and recovery receipts see the [26 September operator runbook](../README.md).
 
 ## Native backup layout
 
@@ -63,11 +63,11 @@ The maintenance lock lasts for the entire background extraction, not just the HT
 
 ## Recoverable browser drafts
 
-In a globally identified server workspace, the text editor retains local drafts for up to 24 hours. Reopen the same file to recover the draft. If the remote version changed, compare and merge before saving; recovery never writes to the server automatically. Explicit discard, successful save and logout clear the relevant drafts. The browser keeps at most 20 records / 2 MiB total, with a 512 KiB limit per record including the baseline. A visible note reports unavailable or full browser storage. Direct runtime views without a global server identity retain in-memory editing only. See [UX progress](UX-PROGRESS.md).
+In a globally identified server workspace, the text editor retains local drafts for up to 24 hours. Reopen the same file to recover the draft. If the remote version changed, compare and merge before saving; recovery never writes to the server automatically. Explicit discard, successful save and logout clear the relevant drafts. The browser keeps at most 20 records / 2 MiB total, with a 512 KiB limit per record including the baseline. A visible note reports unavailable or full browser storage. Direct runtime views without a global server identity retain in-memory editing only. See [UX progress](../README.md).
 
 ## Ochrona danych w kandydacie 2.0.49
 
-Podsumowanie miejsca, rekordy kontroli archiwów, ręczne sprzątanie z podglądem oraz limity historii edytora opisuje [raport etapu 3](DATA-PROTECTION-PROGRESS.md). Te funkcje wymagają aktualnego agenta. Kontrola struktury kopii nie zastępuje próby odtworzenia i uruchomienia gry.
+Podsumowanie miejsca, rekordy kontroli archiwów, ręczne sprzątanie z podglądem oraz limity historii edytora opisuje [raport etapu 3](../README.md). Te funkcje wymagają aktualnego agenta. Kontrola struktury kopii nie zastępuje próby odtworzenia i uruchomienia gry.
 
 ## Backup protection
 
@@ -77,4 +77,4 @@ requirements, failure behavior, import and the isolated WAW2 recovery rehearsal.
 
 ## Integration API
 
-Manage scoped tokens from the account menu. Read [API operation and retry rules](API-PROGRESS.md) before enabling automation. The [OpenAPI contract](openapi-v1.json) describes available endpoints. Keep one idempotency key per logical backup request and preserve it across lost responses. A 202 response is not a completed backup.
+Manage scoped tokens from the account menu. Read [API operation and retry rules](../README.md) before enabling automation. The [OpenAPI contract](openapi-v1.json) describes available endpoints. Keep one idempotency key per logical backup request and preserve it across lost responses. A 202 response is not a completed backup.

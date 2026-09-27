@@ -40,7 +40,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--candidate', required=True)
     parser.add_argument('--rollback', required=True)
-    parser.add_argument('--version', default='2.0.50')
+    parser.add_argument('--version', default='2.1.0')
     parser.add_argument('--output', required=True, type=Path)
     args = parser.parse_args()
     if git('status', '--porcelain').strip():

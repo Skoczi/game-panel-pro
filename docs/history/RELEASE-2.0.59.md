@@ -37,7 +37,7 @@ node. This release supports NFS/SMB, not direct S3. Configure timing in Schedule
 retention and external copying start disabled. This is game-data protection, not
 a complete backup of the panel database, accounts or node identities.
 
-See [configuration and recovery instructions](BACKUP-PROTECTION.md).
+See [configuration and recovery instructions](../pro/BACKUP-PROTECTION.md).
 
 ## Validation
 

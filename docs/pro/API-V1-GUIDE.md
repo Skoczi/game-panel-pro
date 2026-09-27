@@ -1,6 +1,6 @@
 # API v1 — integracja usług
 
-Baza: `https://eserv.pl/api/v1`. Kontrakt: [openapi-v1.json](./openapi-v1.json).
+Baza: `https://panel.example.com/api/v1`. Kontrakt: [openapi-v1.json](./openapi-v1.json). [English guide](API-V1-GUIDE.en.md).
 
 ## Token
 
@@ -33,11 +33,11 @@ Przykładowy payload; użyj rzeczywistych node/template/bindings zwróconych prz
 ```json
 {
   "nodeId": "NODE_UUID",
-  "templateId": "builtin-cs16-native",
+  "templateId": "TEMPLATE_ID",
   "templateVersion": 1,
   "name": "DD2",
   "resourceLimits": { "cpu": 1, "memoryMb": 1024 },
-  "bindings": [{ "key": "game", "hostIp": "51.83.150.145", "host": "auto" }],
+  "bindings": [{ "key": "game", "hostIp": "192.0.2.10", "host": "auto" }],
   "variables": {}
 }
 ```

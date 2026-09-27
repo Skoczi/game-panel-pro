@@ -61,7 +61,7 @@ No per-user IP ownership or quotas.
 git diff d0cbfcf19210ef44428c00656a6bbb599fd23861..v1.5.0-skoczi.8 -- backend frontend deploy
 ```
 
-See [limitations](LIMITATIONS.md) and the [release history](../../CHANGELOG-SKOCZI.md).
+See [limitations](LIMITATIONS.md) and the [release history](../history/CHANGELOG-SKOCZI.md).
 
 ## Multi-node additions in Revision 7
 

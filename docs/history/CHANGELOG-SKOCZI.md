@@ -1,6 +1,6 @@
 # Skoczi changelog
 
-This file describes **fork changes only**. [CHANGELOG.md](CHANGELOG.md) records upstream releases.
+This file describes **fork changes only**. [CHANGELOG.md](../../CHANGELOG.md) records upstream releases.
 
 ## 2.0.56 — Game monitoring and scheduler reliability — 2026-09-22
 
@@ -13,7 +13,7 @@ This file describes **fork changes only**. [CHANGELOG.md](CHANGELOG.md) records 
 - Configure a UDP query-port profile in game templates, or enable monitoring on existing servers in Settings without reinstalling. Default checks run every 30 seconds, allow 90 seconds for startup, and confirm an incident after 3 failures.
 - Record confirmed incidents/recoveries in Activity, suppress planned maintenance, and distinguish Docker observation errors from game failures. Monitoring configuration and current incident state persist in migration `0006_game_monitoring`.
 - Limit concurrent probes, expire UDP/Docker requests, and discard observations after configuration changes, container changes or worker shutdown.
-- See [release notes](docs/pro/RELEASE-2.0.56.md) and [monitoring behavior and validation](docs/pro/GAME-MONITORING.md).
+- See [release notes](RELEASE-2.0.56.md) and [monitoring behavior and validation](../pro/GAME-MONITORING.md).
 
 ## 2.0.55 — Server management, CPU binding and FastDownload — 2026-09-22
 
@@ -24,7 +24,7 @@ This file describes **fork changes only**. [CHANGELOG.md](CHANGELOG.md) records 
 - Consistent server pages, improved installation flow, metric bars, configuration cards and file/editor loading states.
 - Release packaging includes the BZIP2 runtime dependency and a documented optional per-node FDL proxy setup.
 
-See [full release notes](docs/pro/RELEASE-2.0.55.md) for compatibility and upgrade requirements.
+See [full release notes](RELEASE-2.0.55.md) for compatibility and upgrade requirements.
 
 ## 1.5.0-skoczi.10 — Game Templates (schema v1 preview) — 2026-09-18
 
@@ -33,7 +33,7 @@ See [full release notes](docs/pro/RELEASE-2.0.55.md) for compatibility and upgra
 - Added a review-before-publication CS 1.6 template using one UDP game/query/RCON port and an explicit LinuxGSM container-port setting; no public client port or TCP query binding.
 - Fixed remote container startup with long names: kernel hostnames are generated independently of full Docker names. Existing failed containers are not automatically recreated.
 - Decoupled upstream OVH image tags from fork package suffixes. Fork revisions are not upstream image releases.
-- Added regression and browser tests. This is not direct egg compatibility; lifecycle scripts, fleet-wide usage counts and automatic template migrations are not part of schema v1. See [Game Templates](docs/skoczi/GAME-TEMPLATES.md) for the rollout and test contract.
+- Added regression and browser tests. This is not direct egg compatibility; lifecycle scripts, fleet-wide usage counts and automatic template migrations are not part of schema v1. See [Game Templates](../skoczi/GAME-TEMPLATES.md) for the rollout and test contract.
 
 ## Revision 9 follow-up — remote realtime and IP dropdown
 
@@ -67,7 +67,7 @@ See [full release notes](docs/pro/RELEASE-2.0.55.md) for compatibility and upgra
 - Restricted local and remote server reads, metrics and events to assigned servers. Revocation closes live sockets and invalidates unused download links.
 - Added bounded inventory collection with unknown/offline state and no fallback to a different runtime.
 - Added identity-reuse, permissions and browser tests; extended real-Docker CI to exercise ordinary users across separate runtimes.
-- This release does not move games or implement migration. See [workspace and access](docs/skoczi/FLEET.md).
+- This release does not move games or implement migration. See [workspace and access](../skoczi/FLEET.md).
 
 ### Administrator node selector (included from post-Revision 7 patches)
 
@@ -88,7 +88,7 @@ See [full release notes](docs/pro/RELEASE-2.0.55.md) for compatibility and upgra
 - Updated the Docker client dependency and its UUID override; production dependency audits report no known vulnerabilities at release verification time.
 - Preserved stored branding, users and local server IDs. Node tables are additive; agents refuse databases belonging to another node or unadopted existing servers.
 
-**Scope:** root administrators only for remote nodes. No automatic migration, cross-node user delegation, fleet-wide server table or automatic placement. Provider-specific features retain the upstream support matrix. Read [Nodes](docs/skoczi/NODES.md) before installation; production acceptance tests are a separate step.
+**Scope:** root administrators only for remote nodes. No automatic migration, cross-node user delegation, fleet-wide server table or automatic placement. Provider-specific features retain the upstream support matrix. Read [Nodes](../skoczi/NODES.md) before installation; production acceptance tests are a separate step.
 
 ## 1.5.0-skoczi.6 — preview — 2026-09-17
 
@@ -125,7 +125,7 @@ See [full release notes](docs/pro/RELEASE-2.0.55.md) for compatibility and upgra
 - Changed the footer to **Game Panel by Skoczi** with the package version.
 - Added SQLite persistence, policy safety, authorization and browser settings tests.
 
-Upgrade creates `panel_settings`. After initialization, Settings replaces environment values as the source of allocation rules. Back up the database; see [Settings](docs/skoczi/SETTINGS.md) for downgrade notes. No live server deployment is included.
+Upgrade creates `panel_settings`. After initialization, Settings replaces environment values as the source of allocation rules. Back up the database; see [Settings](../skoczi/SETTINGS.md) for downgrade notes. No live server deployment is included.
 
 ## 1.5.0-skoczi.2 — preview — 2026-09-17
 

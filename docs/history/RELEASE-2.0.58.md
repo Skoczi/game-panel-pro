@@ -11,7 +11,7 @@ Game monitoring can now notify administrators through Discord and optionally res
 
 Panel and agents require an update. Migration `0007_monitoring_alerts` requires a pre-update database snapshot for rollback. Discord webhook configuration is optional; no messages are sent until enabled.
 
-See [behavior, limits and rollout notes](MONITORING-ALERTS.md).
+See [behavior, limits and rollout notes](../pro/MONITORING-ALERTS.md).
 
 ## Native Game Config
 
@@ -27,7 +27,7 @@ See [behavior, limits and rollout notes](MONITORING-ALERTS.md).
 Update the panel and node agents together to enable Game Config on remote servers.
 Existing game containers adopt the corrected startup script on their next panel
 start/restart; updating the panel itself does not restart games.
-See [configuration and compatibility](NATIVE-GAME-CONFIG.md).
+See [configuration and compatibility](../pro/NATIVE-GAME-CONFIG.md).
 
 ## Validation
 

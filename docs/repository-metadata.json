@@ -1,0 +1,16 @@
+{
+  "description": "Self-hosted game server control. Multi-node fleet, live console, file editing, recovery, mod frameworks and a scoped provisioning API. Built for your infrastructure.",
+  "topics": [
+    "game-server",
+    "game-panel",
+    "self-hosted",
+    "docker",
+    "counter-strike",
+    "cs2",
+    "sourcemod",
+    "server-management",
+    "typescript",
+    "react",
+    "rest-api"
+  ]
+}

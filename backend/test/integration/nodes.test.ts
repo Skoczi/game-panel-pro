@@ -481,7 +481,7 @@ test(
             await ok(runtime + `/api/servers/${id}/stop`, 'POST');
             await ok(runtime + `/api/servers/${id}/start`, 'POST');
             await exerciseNativeBackups({ root, id, runtime, agentName, gameContainer, docker, ok, request, waitFor });
-            // User workspace: same numeric ID on two runtimes, central UUIDs and single-server capabilities.
+            // New installations use fleet-wide numbers; grants still bind to central UUIDs.
             const localSettings = await ok(panel + '/api/nodes/local/allocations');
             assert.equal((await request(panel + '/api/nodes/local/allocations', 'PUT', {
                 revision: localSettings.revision,
@@ -516,11 +516,7 @@ test(
                 },
             );
             const localId = localInstalled.server.id;
-            assert.equal(
-                localId,
-                id,
-                'Fixture must exercise colliding runtime IDs',
-            );
+            assert.ok(localId > id, 'Local and remote installations must use distinct increasing fleet IDs');
             await waitFor(
                 async () =>
                     (await ok(panel + `/api/servers/${localId}`)).server

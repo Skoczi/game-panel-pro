@@ -1,4 +1,4 @@
-# Contributing to Game Panel
+# Contributing to Game Panel PRO
  
 This project accepts contributions. In order to contribute, you should
 pay attention to a few things:
@@ -88,3 +88,7 @@ then you just add a line saying
     Signed-off-by: Random J Developer <random@example.org>
  
 using your real name (sorry, no pseudonyms or anonymous contributions.)
+
+## Project workflow
+
+Branch from main, keep changes focused, add meaningful regression tests and update CHANGELOG.md plus the relevant guide under docs. Follow [Development](docs/pro/DEVELOPMENT.md) for checks. Never publish credentials, databases or private game data. Report security issues privately through GitHub private vulnerability reporting when available.

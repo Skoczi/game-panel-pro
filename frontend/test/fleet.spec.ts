@@ -384,7 +384,7 @@ test('global IDs, premium views and quick consoles stay scoped across identical 
   expect(new URL(mutations[0].url).pathname).toBe('/api/servers/1/console/commands');
   await first.getByRole('button', { name: 'restart Community Arena', exact: true }).click();
   expect(mutations).toHaveLength(1);
-  await page.getByRole('dialog').getByRole('button', { name: 'restart', exact: true }).click();
+  await page.getByRole('dialog').getByRole('button', { name: 'Restart', exact: true }).click();
   await expect.poll(() => mutations.length).toBe(2);
   expect(mutations[1].scope).toBe(serverId);
   expect(new URL(mutations[1].url).pathname).toBe(

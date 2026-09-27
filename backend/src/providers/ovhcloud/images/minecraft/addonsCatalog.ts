@@ -8,7 +8,7 @@ import { invalidInput } from './shared.js';
 
 const MODRINTH_API_BASE = (process.env.MODRINTH_API_BASE || 'https://api.modrinth.com/v2').replace(/\/+$/, '');
 const MODRINTH_USER_AGENT = process.env.MODRINTH_USER_AGENT
-    || `OVHcloud-GamePanel/${getAppVersion()} (+https://github.com/ovh/game-panel)`;
+    || `Game-Panel-PRO/${getAppVersion()} (+https://github.com/Skoczi/game-panel-skoczi)`;
 const MODRINTH_TIMEOUT_MS = 15_000;
 
 const TAGS_CACHE_TTL_MS = 60 * 60 * 1000;

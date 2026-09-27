@@ -290,7 +290,7 @@ export async function startPanelUpdate(input: {
   }
 
   const available = await fetchReleaseNotes();
-  if (!/^2\.0\.\d+$/.test(targetVersion) || !available.some(release => release.version === targetVersion && !release.prerelease)) {
+  if (!/^2\.(?:0|1)\.\d+$/.test(targetVersion) || !available.some(release => release.version === targetVersion && !release.prerelease)) {
     throw Object.assign(new Error(`Unknown update version: ${targetVersion}`), { statusCode: 400 });
   }
 

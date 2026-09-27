@@ -9,7 +9,7 @@ export async function managedUpdateCapability() {
   if (isAgent() || process.env.GAMEPANEL_MANAGED_UPDATES !== 'true') return { enabled: false, reason: 'This installation uses manual updates. Follow the deployment guide.' };
   if ((await nodes().list()).length) return { enabled: false, reason: 'Remote agents are configured. Update the panel and agents together using the deployment guide.' };
   const image = process.env.GAMEPANEL_PRO_UPDATER_IMAGE || '';
-  if (!/^gamepanel-pro-updater:2\.0\.\d+$/.test(image)) return { enabled: false, reason: 'The Game Panel PRO updater is not configured.' };
+  if (!/^gamepanel-pro-updater:2\.(?:0|1)\.\d+$/.test(image)) return { enabled: false, reason: 'The Game Panel PRO updater is not configured.' };
   try { await docker.getImage(image).inspect(); }
   catch { return { enabled: false, reason: 'The local updater image is missing. Repair it from the release sources.' }; }
   return { enabled: true, reason: 'A snapshot is created before the panel restarts. Running games are not restarted.' };

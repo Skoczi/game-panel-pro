@@ -70,7 +70,7 @@ test('Local and remote node settings open distinct allocation endpoints and prot
   await page.getByRole('button', { name: 'Node settings', exact: true }).first().click();
   await expect(page.getByText('No additional agent required', { exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'Network & IPs', exact: true }).click();
-  await expect(page.getByRole('heading', { name: 'Port policy' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: /Configured addresses/ })).toBeVisible();
   await page.getByLabel('Restrict published ports').uncheck();
   await page.getByRole('button', { name: '← Nodes' }).click();
   await page.getByRole('dialog').getByRole('button', { name: 'Cancel', exact: true }).click();
@@ -79,7 +79,7 @@ test('Local and remote node settings open distinct allocation endpoints and prot
   await page.getByRole('dialog').getByRole('button', { name: 'Continue', exact: true }).click();
   await page.getByRole('button', { name: 'Node settings', exact: true }).last().click();
   await page.getByRole('button', { name: 'Network & IPs', exact: true }).click();
-  await expect(page.getByRole('heading', { name: 'Port policy' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: /Configured addresses/ })).toBeVisible();
   await expect(page.getByLabel('Show Follow Us')).toHaveCount(0);
   expect(requested.some((url) => url.endsWith('/local/allocations'))).toBe(true);
   expect(requested.some((url) => url.endsWith(`/${id}/allocations`))).toBe(true);
