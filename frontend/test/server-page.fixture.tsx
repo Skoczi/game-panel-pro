@@ -5,6 +5,7 @@ import { createRoot } from 'react-dom/client';
 import { AppShell } from '../components/app/AppShell';
 import { ThemeProvider } from '../contexts/ThemeContext';
 import { BrandingProvider } from '../contexts/BrandingContext';
+import { cs16GameConfig } from '../../backend/src/templates/gameConfig';
 import '@ovhcloud/ods-react/normalize-css';
 import '@ovhcloud/ods-themes/default/css';
 import '@ovhcloud/ods-themes/default/fonts';
@@ -153,6 +154,31 @@ function Fixture() {
     handleOpenChangePassword: noop,
   };
   if (snapshot !== 'ready') props.gameServers = [];
+  if (new URLSearchParams(location.search).has('documentation')) {
+    props.currentUser.username = 'Operator';
+    const server = props.gameServers[0];
+    Object.assign(server, { name: 'Dust II Classic', connectionHost: '192.0.2.10', port: 27015,
+      monitoring: { enabled: true, state: 'online', checkedAt: new Date().toISOString(), staleAfterSeconds: 100, latencyMs: 5, failures: 0, info: { map: 'de_dust2', players: 18, maxPlayers: 32 } } });
+    const meta = JSON.parse(metadata);
+    meta.template.document.gameConfig = cs16GameConfig();
+    server.providerMetadataJson = JSON.stringify(meta);
+    const lines = [
+      'Protocol version 48', 'Exe version 1.1.2.7/Stdio (cstrike)',
+      'ReHLDS build: 3.15.0.896', 'Server IP address 192.0.2.10:27015',
+      'Metamod-r v1.3.0.149 loaded', 'AMX Mod X 1.10.0.5486 initialized',
+      '[AMXX] Loaded 24 plugins.', '[ReAPI] Module loaded successfully.',
+      'Loading map: de_dust2', 'Executing server configuration: server.cfg',
+      'VAC secure mode is activated.', 'Server ready for players',
+      '[AMXX] Map rotation loaded: 8 maps', '[Admin] Access list loaded: 3 administrators',
+      'Nova connected', 'Vortex connected', 'Echo connected', 'Frost connected',
+      'World triggered "Round_Start"', 'Nova killed Vortex with ak47',
+      'Echo killed Frost with m4a1', 'World triggered "Bomb_Planted"',
+      'World triggered "Terrorists_Win"', 'Team "TERRORIST" scored "4"',
+      'World triggered "Round_Start"', 'status',
+      'hostname: Dust II Classic', 'map: de_dust2   players: 18 active (32 max)',
+    ];
+    props.serverLogs['7'] = lines.map((message, id) => ({id, message, type:'info', timestamp:'2026-09-28T18:42:00Z'}));
+  }
   return <AppShell {...props} />;
 }
 createRoot(document.getElementById('root')!).render(
