@@ -1,6 +1,23 @@
 import { useState } from 'react';
+import { Pencil, Trash2, Shield } from 'lucide-react';
 import { AppButton } from '../../src/ui/components';
 
+const permissions = [
+  ['a', 'Immunity'],
+  ['b', 'Reserved slot'],
+  ['c', 'Kick'],
+  ['d', 'Ban'],
+  ['e', 'Slay'],
+  ['f', 'Change map'],
+  ['g', 'Cvars'],
+  ['h', 'Configs'],
+  ['i', 'Admin chat'],
+  ['j', 'Vote'],
+  ['k', 'Server password'],
+  ['l', 'RCON'],
+  ...'mnopqrst'.split('').map((flag) => [flag, `Custom ${flag}`]),
+  ['u', 'Menu'],
+];
 export function AdminEditor({
   value,
   disabled,
@@ -10,6 +27,8 @@ export function AdminEditor({
   disabled: boolean;
   onChange: (value: string) => void;
 }) {
+  const [editing, setEditing] = useState<number | null>(null);
+  const [search, setSearch] = useState('');
   const [steamId, setSteamId] = useState('');
   const [flags, setFlags] = useState('bcdefiju');
   const lines = value.split('\n');
@@ -20,31 +39,62 @@ export function AdminEditor({
   const valid =
     /^STEAM_[0-5]:[01]:\d+$/.test(steamId.trim()) &&
     /^[a-u]+$/.test(flags) &&
-    !entries.some((e) => e.id === steamId.trim());
+    !entries.some((e) => e.id === steamId.trim() && e.index !== editing);
   return (
     <section className="gp-workflow-card" aria-label="Game administrators">
-      <h3>Steam administrators</h3>
-      <p className="gp-workflow-muted">
-        Manage Steam ID access. Other authentication formats remain intact in the advanced editor.
-      </p>
-      {entries.map((entry) => (
-        <div className="gp-map-row" key={entry.index}>
-          <span>
-            {entry.id}
-            <br />
-            <small style={{ width: 'auto' }}>Permissions: {entry.flags}</small>
-          </span>
-          <AppButton
-            disabled={disabled}
-            onClick={() => onChange(lines.filter((_, i) => i !== entry.index).join('\n'))}
-          >
-            Remove {entry.id}
-          </AppButton>
-        </div>
-      ))}
-      {!entries.length && (
-        <p className="gp-workflow-notice">No Steam administrators in this format yet.</p>
-      )}
+      <h3>
+        <Shield size={18} aria-hidden="true" /> Steam administrators &middot; {entries.length}
+      </h3>
+      <input
+        aria-label="Search administrators"
+        placeholder="Search Steam ID..."
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
+      />
+      <div className="gp-map-list">
+        {entries
+          .filter((entry) => entry.id.toLowerCase().includes(search.toLowerCase()))
+          .map((entry) => (
+            <div className="gp-map-row" key={entry.index}>
+              <span>
+                <code>{entry.id}</code>
+                <small className="gp-admin-flags">{entry.flags}</small>
+              </span>
+              <button
+                type="button"
+                aria-label={`Edit ${entry.id}`}
+                disabled={disabled}
+                onClick={() => {
+                  setEditing(entry.index);
+                  setSteamId(entry.id);
+                  setFlags(entry.flags);
+                }}
+              >
+                <Pencil size={16} aria-hidden="true" />
+              </button>
+              <button
+                type="button"
+                aria-label={`Remove ${entry.id}`}
+                disabled={disabled}
+                onClick={() => {
+                  onChange(lines.filter((_, i) => i !== entry.index).join('\n'));
+                  setEditing(null);
+                  setSteamId('');
+                }}
+              >
+                <Trash2 size={16} aria-hidden="true" />
+              </button>
+            </div>
+          ))}
+      </div>
+      {!entries.length && <p className="gp-workflow-notice">No Steam administrators.</p>}
+      {entries.length > 0 &&
+        !entries.some((entry) => entry.id.toLowerCase().includes(search.toLowerCase())) && (
+          <p className="gp-workflow-muted">No matching administrators.</p>
+        )}
+      <h4 className="gp-admin-form-title">
+        {editing === null ? 'New administrator' : 'Edit administrator'}
+      </h4>
       <div className="gp-workflow-grid mt-4">
         <label>
           Steam ID
@@ -60,26 +110,63 @@ export function AdminEditor({
           <input value={flags} disabled={disabled} onChange={(e) => setFlags(e.target.value)} />
         </label>
       </div>
-      <details>
-        <summary>Permission guide</summary>
-        <p className="gp-workflow-muted">
-          a: immunity · b: reserved slot · c: kick · d: ban · e: slay · f: map · g: cvars · h:
-          configs · i: chat · j: vote · k: server password · l: RCON · m–t: custom access · u: menu.
-          Grant only the access needed.
-        </p>
-      </details>
-      <AppButton
-        disabled={disabled || !valid}
-        onClick={() => {
-          onChange(value.trimEnd() + `\n"${steamId.trim()}" "" "${flags}" "ce"\n`);
-          setSteamId('');
-        }}
-      >
-        Add administrator to draft
-      </AppButton>
-      <p className="gp-workflow-muted">
-        Changes take effect only after Review changes and Save with snapshot.
-      </p>
+      <fieldset className="gp-admin-permissions" disabled={disabled}>
+        <legend>Permissions</legend>
+        {permissions.map(([flag, label]) => (
+          <label key={flag}>
+            <input
+              type="checkbox"
+              checked={flags.includes(flag)}
+              onChange={(e) =>
+                setFlags(
+                  e.target.checked
+                    ? [...new Set(flags + flag)].sort().join('')
+                    : flags.split(flag).join('')
+                )
+              }
+            />
+            <span>{label}</span>
+            <code>{flag}</code>
+          </label>
+        ))}
+      </fieldset>
+      <div className="gp-workflow-actions">
+        <AppButton
+          disabled={disabled || !valid}
+          onClick={() => {
+            const row = `"${steamId.trim()}" "" "${flags}" "ce"`;
+            if (editing === null) onChange(value.trimEnd() + `\n${row}\n`);
+            else
+              onChange(
+                lines
+                  .map((line, index) =>
+                    index === editing
+                      ? line.replace(
+                          /^(\s*)"[^" ]+"\s+""\s+"[a-u]+"\s+"ce"/,
+                          (_, indent) => indent + row
+                        )
+                      : line
+                  )
+                  .join('\n')
+              );
+            setEditing(null);
+            setSteamId('');
+          }}
+        >
+          {editing === null ? 'Add administrator to draft' : 'Update administrator in draft'}
+        </AppButton>
+        {editing !== null && (
+          <AppButton
+            onClick={() => {
+              setEditing(null);
+              setSteamId('');
+              setFlags('bcdefiju');
+            }}
+          >
+            Cancel edit
+          </AppButton>
+        )}
+      </div>
     </section>
   );
 }

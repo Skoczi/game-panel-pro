@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Plus, ArrowUp, ArrowDown, X } from 'lucide-react';
 
 export function RotationEditor({
   value,
@@ -26,7 +27,7 @@ export function RotationEditor({
         <h3>
           Map library <span className="gp-workflow-muted">· {available.length}</span>
         </h3>
-        <p className="gp-workflow-muted">Add installed maps to your rotation.</p>
+
         <input
           aria-label="Search installed maps"
           placeholder="Search maps…"
@@ -45,7 +46,7 @@ export function RotationEditor({
                   aria-label={`Add ${name}`}
                   onClick={() => update([...lines, name])}
                 >
-                  +
+                  <Plus size={16} aria-hidden="true" />
                 </button>
               </div>
             ))}
@@ -58,7 +59,7 @@ export function RotationEditor({
         <h3>
           Rotation <span className="gp-workflow-muted">· {lines.length}</span>
         </h3>
-        <p className="gp-workflow-muted">Played from top to bottom. Review before saving.</p>
+
         <ol className="gp-map-list">
           {lines.map((name, index) => (
             <li className="gp-map-row" key={`${index}:${name}`}>
@@ -70,7 +71,7 @@ export function RotationEditor({
                 aria-label={`Move ${name} up ${index + 1}`}
                 onClick={() => move(index, -1)}
               >
-                ↑
+                <ArrowUp size={16} aria-hidden="true" />
               </button>
               <button
                 type="button"
@@ -78,7 +79,7 @@ export function RotationEditor({
                 aria-label={`Move ${name} down ${index + 1}`}
                 onClick={() => move(index, 1)}
               >
-                ↓
+                <ArrowDown size={16} aria-hidden="true" />
               </button>
               <button
                 type="button"
@@ -86,7 +87,7 @@ export function RotationEditor({
                 aria-label={`Remove ${name} ${index + 1}`}
                 onClick={() => update(lines.filter((_, i) => i !== index))}
               >
-                ×
+                <X size={16} aria-hidden="true" />
               </button>
             </li>
           ))}

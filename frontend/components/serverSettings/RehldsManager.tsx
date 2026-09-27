@@ -2,7 +2,7 @@ import { ConfirmationModal } from '../ConfirmationModal';
 import { AdminEditor } from './AdminEditor';
 import { PluginEditor } from './PluginEditor';
 import { RotationEditor } from './RotationEditor';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { apiClient, type BackupJob, type FileHistoryEntry } from '../../utils/api';
 import { AppButton } from '../../src/ui/components';
 type Snapshot = {
@@ -14,6 +14,7 @@ type Snapshot = {
   history: FileHistoryEntry[];
 };
 const sections = {
+  files: 'All files',
   rotation: 'Maps and rotation',
   admins: 'Administrators',
   plugins: 'AMXX plugins',
@@ -24,7 +25,11 @@ export function RehldsManager({
   canWrite,
   onOpen,
   onDirtyChange,
+  group = 'all',
+  children,
 }: {
+  group?: 'all' | 'configuration' | 'addons';
+  children?: ReactNode;
   serverId: number;
   canWrite: boolean;
   onOpen: (path: string, root: string) => void;
@@ -33,7 +38,9 @@ export function RehldsManager({
   const [confirmation, setConfirmation] = useState<{ message: string; action: () => void } | null>(
     null
   );
-  const [section, setSection] = useState<keyof typeof sections>('rotation');
+  const [section, setSection] = useState<keyof typeof sections>(
+    group === 'configuration' ? 'files' : group === 'addons' ? 'plugins' : 'rotation'
+  );
   const [snapshot, setSnapshot] = useState<Snapshot | null>(null),
     [draft, setDraft] = useState('');
   const [error, setError] = useState(''),
@@ -56,6 +63,10 @@ export function RehldsManager({
     setError('');
     setSnapshot(null);
     setReview(false);
+    if (section === 'files') {
+      setLoading(false);
+      return;
+    }
     const request =
       section === 'addons'
         ? apiClient.previewRehldsAddons(serverId, modules)
@@ -108,7 +119,7 @@ export function RehldsManager({
     };
   }, [serverId, job?.id, job?.status]);
   const save = async () => {
-    if (!snapshot) return;
+    if (!snapshot || section === 'files') return;
     setBusy(true);
     setError('');
     try {
@@ -116,10 +127,7 @@ export function RehldsManager({
         content: draft,
         version: snapshot.version,
       });
-      setMessage(
-        result.warning ||
-          'Saved with a recovery snapshot. Changes apply when the game reloads the configuration.'
-      );
+      setMessage(result.warning || 'Saved. Reload the game configuration to apply.');
       setReview(false);
       setRevision((v) => v + 1);
     } catch (e: any) {
@@ -129,7 +137,7 @@ export function RehldsManager({
     }
   };
   const restore = async (entry: FileHistoryEntry) => {
-    if (!snapshot) return;
+    if (!snapshot || section === 'files') return;
     setBusy(true);
     setError('');
     try {
@@ -150,24 +158,34 @@ export function RehldsManager({
   return (
     <section className="gp-workflow space-y-4" aria-label="ReHLDS tools">
       <nav className="gp-workflow-nav" aria-label="ReHLDS sections">
-        {Object.entries(sections).map(([key, title]) => (
-          <AppButton
-            key={key}
-            disabled={busy || job?.status === 'running'}
-            aria-pressed={section === key}
-            onClick={() => {
-              const action = () => {
-                setMessage('');
-                setSection(key as keyof typeof sections);
-              };
-              if (dirty) setConfirmation({ message: 'Discard this unsaved draft?', action });
-              else action();
-            }}
-          >
-            {title}
-          </AppButton>
-        ))}
+        {Object.entries(sections)
+          .filter(([key]) =>
+            group === 'configuration'
+              ? ['files', 'rotation', 'admins'].includes(key)
+              : group === 'addons'
+                ? ['plugins', 'addons'].includes(key)
+                : key !== 'files'
+          )
+          .map(([key, title]) => (
+            <AppButton
+              key={key}
+              disabled={busy || job?.status === 'running'}
+              aria-pressed={section === key}
+              onClick={() => {
+                if (section === key) return;
+                const action = () => {
+                  setMessage('');
+                  setSection(key as keyof typeof sections);
+                };
+                if (dirty) setConfirmation({ message: 'Discard this unsaved draft?', action });
+                else action();
+              }}
+            >
+              {title}
+            </AppButton>
+          ))}
       </nav>
+      {section === 'files' && children}
       {loading && <p role="status">Loading ReHLDS tools…</p>}
       {error && (
         <p role="alert" className="text-red-600">
@@ -179,7 +197,7 @@ export function RehldsManager({
         <>
           <header className="gp-workflow-intro">
             <h3>{sections[section]}</h3>
-            <p>Manage your game configuration. Every save includes a recovery snapshot.</p>
+            {dirty && <span className="gp-workflow-muted">Unsaved changes</span>}
           </header>
           {section === 'rotation' && (
             <RotationEditor
@@ -243,7 +261,7 @@ export function RehldsManager({
               </div>
             </details>
           )}
-          <div className="gp-workflow-actions">
+          <div className="gp-workflow-actions gp-editor-actions">
             <AppButton disabled={busy} onClick={() => onOpen(snapshot.path, snapshot.root)}>
               File Manager
             </AppButton>
