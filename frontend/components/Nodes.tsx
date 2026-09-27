@@ -7,6 +7,7 @@ import { nodesRequest, type ExecutionNode, type LocalNode } from '../utils/nodes
 import { LocalNodeProfile, LocalRuntimeInfo } from './LocalNodeProfile';
 import { ACTIVE_NODE, openFleet } from '../utils/nodeContext';
 import { GlobalSettings } from './GlobalSettings';
+import { HostNetwork } from './HostNetwork';
 import {
   AppModal,
   AppModalContent,
@@ -41,7 +42,7 @@ export function Nodes() {
   const [showCreate, setShowCreate] = useState(false);
   const [enrollment, setEnrollment] = useState<{ nodeId: string; token: string } | null>(null);
   const [selected, setSelected] = useState<{ id: string; name: string } | null>(null);
-  const [nodeTab, setNodeTab] = useState<'overview' | 'allocations'>('overview');
+  const [nodeTab, setNodeTab] = useState<'overview' | 'allocations' | 'network'>('overview');
   const [allocationDirty, setAllocationDirty] = useState(false);
   const [draft, setDraft] = useState({ name: '', origin: '', location: '' });
   const [deleting, setDeleting] = useState<ExecutionNode | null>(null);
@@ -123,9 +124,9 @@ export function Nodes() {
         </header>
         <nav
           aria-label="Node settings sections"
-          className="flex gap-2 rounded-xl border border-slate-200 p-2 dark:border-slate-700"
+          className="flex flex-wrap gap-2 rounded-xl border border-slate-200 p-2 dark:border-slate-700"
         >
-          {(['overview', 'allocations'] as const).map((tab) => (
+          {(['overview', 'network', 'allocations'] as const).map((tab) => (
             <button
               key={tab}
               aria-current={nodeTab === tab ? 'page' : undefined}
@@ -138,11 +139,11 @@ export function Nodes() {
                 }
               }}
             >
-              {tab === 'overview' ? 'Overview' : 'IP allocations'}
+              {tab === 'overview' ? 'Overview' : tab === 'network' ? 'Additional IPs' : 'IP allocations'}
             </button>
           ))}
         </nav>
-        {nodeTab === 'allocations' ? (
+        {nodeTab === 'network' ? <HostNetwork key={selected.id} nodeId={selected.id} onDirtyChange={setAllocationDirty} /> : nodeTab === 'allocations' ? (
           <GlobalSettings
             key={selected.id}
             nodeId={selected.id}

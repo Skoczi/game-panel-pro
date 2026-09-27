@@ -1,6 +1,6 @@
 # Host IPs and allowed ports
 
-Each TCP/UDP mapping selects a host IPv4 and host port. The container port is independent. Addresses must already be configured on the Docker host, including persistent interfaces and provider routing. The panel does not provision IPs or firewall rules.
+Each TCP/UDP mapping selects a host IPv4 and host port. The container port is independent. **Nodes → Node settings → Additional IPs** can now provision persistent macvlan IPv4 interfaces when the host network manager is installed. Provider IP/MAC assignment and routing must already be configured by the provider. The panel does not buy IPs or change firewall rules. See [persistent host networking](../pro/HOST-NETWORK-2026-09-27.md).
 
 ## Configure in Settings (recommended)
 

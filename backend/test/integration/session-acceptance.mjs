@@ -15,6 +15,7 @@ const { authMiddleware, rootOnly, requireServerPermission } = await import('../.
 const { default: users } = await import('../../dist/routes/users.js');
 const { default: security } = await import('../../dist/routes/accountSecurity.js');
 const { serverSftpRoutes } = await import('../../dist/routes/serverSftp.js');
+const { default: systemRoutes } = await import('../../dist/routes/system.js');
 const { totp } = await import('../../dist/services/mfa.js');
 const { setupWebSocket } = await import('../../dist/websocket/handler.js');
 const db = await initializeDatabase();
@@ -24,6 +25,7 @@ const userId = await userRepository.create('SessionTest', await hashPassword(pas
 const app = express(); app.use(express.json()); app.use('/api/auth', auth); app.use('/api/auth/security', security);
 app.use('/api/auth/managed-users', authMiddleware, users);
 app.use('/api/auth/servers/:id/sftp', authMiddleware, serverSftpRoutes);
+app.use('/api/auth/system', authMiddleware, systemRoutes);
 app.get('/api/auth/probe-admin', authMiddleware, rootOnly, (_req, res) => res.json({ ok: true }));
 app.get('/api/auth/servers/:id/probe-terminal', authMiddleware, requireServerPermission('container.terminal'), (_req, res) => res.json({ ok: true }));
 const server = createServer(app), wss = new WebSocketServer({ server }); setupWebSocket(wss);
@@ -52,6 +54,10 @@ try {
   assert.equal(operatorMe.data.user.role, 'operator');
   assert.equal(operatorMe.data.user.isRoot, true);
   assert.equal((await call('probe-admin', { token: operatorToken })).status, 200);
+  assert.equal((await call('system/host-network', { token: operatorToken })).status, 200);
+  assert.equal((await call('system/host-network', { token })).status, 403);
+  assert.equal((await call('system/host-network', { token, method: 'PUT', body: { revision: 0, entries: [] } })).status, 403);
+  assert.equal((await call('system/host-network/preview', { token, body: { revision: 0, entries: [] } })).status, 403);
   assert.equal((await call('servers/987/probe-terminal', { token: operatorToken })).status, 200);
   assert.equal((await call('probe-admin', { token })).status, 403);
   assert.equal((await call('servers/987/probe-terminal', { token })).status, 403);
