@@ -24,7 +24,7 @@ test('saved host addresses feed allocation selection immediately without losing 
   await expect(page.getByLabel('TCP ports', { exact: true })).toHaveValue('27015-27030');
   await select.selectOption(ip.ip); await page.getByRole('button', { name: 'Add to list', exact: true }).click();
   await page.getByRole('button', { name: 'Save changes', exact: true }).click();
-  await expect(page.getByText('Settings saved. Changes are active.', { exact: true })).toBeVisible();
+  await expect(page.getByText('Saved.', { exact: true }).last()).toBeVisible();
   expect(saved.network.allocations).toEqual([{ ip: ip.ip, tcp: '27015-27030', udp: '', alias: '' }]);
   await page.screenshot({ path: 'test-results/node-network-desktop.png', fullPage: true });
   await page.setViewportSize({ width: 390, height: 844 });

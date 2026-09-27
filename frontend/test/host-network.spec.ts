@@ -14,8 +14,8 @@ test('imports live addresses only after preview and save, restores saved state a
   expect(writes).toBe(0); await page.getByRole('button', { name: 'Review changes' }).click();
   await expect(page.getByRole('region', { name: 'Network changes preview' })).toContainText(ip.ip);
   expect(writes).toBe(0); await page.getByRole('button', { name: 'Save on machine', exact: true }).click();
-  await expect(page.getByRole('status')).toContainText('Saved on the machine'); expect(writes).toBe(1);
-  await page.reload(); await expect(page.getByText('Active · saved for boot', { exact: true })).toBeVisible();
+  await expect(page.getByRole('status')).toContainText('Saved.'); expect(writes).toBe(1);
+  await page.reload(); await expect(page.getByText('Active', { exact: true })).toBeVisible();
   await page.screenshot({ path: 'test-results/host-network-desktop.png', fullPage: true });
   await page.setViewportSize({ width: 390, height: 844 });
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
@@ -33,6 +33,6 @@ test('in-use removal is blocked and stale edits can be discarded without writing
   await page.getByRole('button', { name: 'Review changes' }).click();
   await expect(page.getByRole('alert')).toContainText('IP is in use');
   await expect(page.getByRole('button', { name: 'Save on machine', exact: true })).toHaveCount(0);
-  await page.getByRole('button', { name: 'Discard changes and reload' }).click();
+  await page.getByRole('button', { name: 'Discard changes' }).click();
   await expect(page.getByText(ip.ip, { exact: true })).toBeVisible(); expect(writes).toBe(0);
 });

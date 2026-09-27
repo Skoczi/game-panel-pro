@@ -137,7 +137,7 @@ export function GlobalSettings({
         setPending(saved.pending);
       } else setSettings(await apiClient.saveGlobalSettings(settings));
       setDirty(false);
-      setNotice('Settings saved. Changes are active.');
+      setNotice(embedded ? 'Saved.' : 'Settings saved. Changes are active.');
       if (!nodeId) window.dispatchEvent(new Event('panel-settings-changed'));
     } catch (reason) {
       const message = (reason as { response?: { data?: { error?: string } } }).response?.data
@@ -461,7 +461,7 @@ export function GlobalSettings({
           {nodeId && (
             <>
               <section className="space-y-4">
-                <div>
+                {!embedded && <div>
                   <h2 className="flex items-center gap-2 text-lg font-semibold">
                     <Network size={20} />
                     IP allocations
@@ -469,7 +469,7 @@ export function GlobalSettings({
                   <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
                     {embedded ? 'Select a saved host address and define which game ports it can publish.' : 'IPs must already exist on the host. Adding one here does not create an interface or firewall rule.'}
                   </p>
-                </div>
+                </div>}
                 <div className={card}>
                   <label className="flex items-center gap-2 font-medium">
                     <input
@@ -485,8 +485,7 @@ export function GlobalSettings({
                     Restrict published ports to these allocations
                   </label>
                   <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
-                    When enabled, every port needs an explicit IP. Empty TCP or UDP ranges deny that
-                    protocol. Existing server bindings must fit before saving.
+                    Empty TCP or UDP ranges block that protocol.
                   </p>
                   {!settings.network.restrictPorts && (
                     <p className="mt-2 text-sm text-amber-700 dark:text-amber-400">
@@ -595,7 +594,7 @@ export function GlobalSettings({
                     </div>
                     {!settings.network.allocations.length && (
                       <p className="py-8 text-center text-sm text-gray-500">
-                        No IP allocations yet. Add an address and its allowed ports.
+                        No allocations.
                       </p>
                     )}
                   </div>
@@ -634,9 +633,7 @@ export function GlobalSettings({
                       </label>
                     ))}
                     <p className="text-xs text-gray-500">
-                      {managedAddresses !== undefined && <>IP addresses come from the saved Host addresses list above. Existing allocations are preserved. </>}
-                      Comma-separated ports or inclusive ranges, 1025–65535. Alias is a label, not a
-                      DNS name.
+                      Ports 1025–65535 · e.g. 27015–27030,28015
                     </p>
                     <div className="flex gap-2">
                       <button className={`${button} flex items-center gap-2`} type="submit">
@@ -656,15 +653,13 @@ export function GlobalSettings({
                         </button>
                       )}
                     </div>
-                    <p className="text-xs text-gray-500">Use Save changes to apply the list.</p>
                   </form>
                 </div>
               </section>
               <section className={card}>
                 <h2 className="mb-4 text-lg font-semibold">Assigned ports</h2>
                 <p className="mb-4 text-sm text-gray-500">
-                  Saved panel bindings, including stopped servers. Other host services are not
-                  listed.
+                  Includes stopped servers.
                 </p>
                 <div className="overflow-x-auto">
                   <table className="w-full text-left text-sm">
