@@ -38,3 +38,13 @@ Operator is persisted as the explicit global marker `panel.operator`; no schema 
 This protects account-management operations within the panel. An Operator is a trusted infrastructure administrator, not an untrusted tenant isolated from the panel's host. Writable game files/plugins can execute game code; hiding the terminal does not sandbox plugin code. Previously authorized scheduled jobs remain server automation; changing the creator's role does not automatically delete those jobs. This change prevents unauthorized creation/edit/re-enabling, not retroactive revocation of existing jobs. Existing grants are never silently rewritten.
 
 Deployment uses the existing rollback-capable helpers on FR1, WAW1 and WAW2, with candidate HTTP acceptance and checks that game containers remain unchanged. Deployment result is recorded separately after verification.
+
+## Deployment verified
+
+Released commit `c333c10e1a37add6e607eb4aa40ce1386dcd8e43`, patch `20260927-roles-c333c10`:
+
+- FR1 backend/frontend: candidate HTTP account/session acceptance, nginx and HTTP route/header verification passed; other containers unchanged.
+- WAW1 and WAW2 agents: health/identity verification passed; all game containers unchanged.
+- Rollback directories: `/opt/gamepanel-pro/local-patches/20260927-roles-c333c10/rollback`, `/srv/eserv-agent/local-patches/20260927-roles-c333c10/rollback`, `/srv/gamepanel-agent/local-patches/20260927-roles-c333c10/rollback`.
+- Post-deploy owner and legacy account grants unchanged. WAW2 game remained running with original start timestamp `2026-09-22T15:26:40.006758795Z`.
+- No authenticated live-browser session was available; browser checks used fixture accounts, while real authorization checks ran against the candidate image with an isolated SQLite database.
