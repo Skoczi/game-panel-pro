@@ -1,4 +1,5 @@
 import { clearAppCache } from './appStorage';
+import { fileLocationUrl } from './fileLocationUrl';
 import { appRootPath, serverNumber, shortServerRoute, shortServerUrl } from './serverLinks';
 
 const KEY = 'gamepanel_active_node';
@@ -83,7 +84,7 @@ export function openServer(context: ServerContext) {
   history.replaceState(
     null,
     '',
-    destination
+    fileLocationUrl(destination)
   );
   clearAppCache();
   window.location.reload();

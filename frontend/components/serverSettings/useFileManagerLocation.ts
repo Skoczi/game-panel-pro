@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react';
+import { fileLocationUrl } from '../../utils/fileLocationUrl';
 
 interface Position { root: string; path: string }
 export const FILE_LOCATION_WRITTEN = 'gp:file-location-written';
@@ -20,6 +21,11 @@ export function useFileManagerLocation(enabled: boolean, root: string, path: str
 
   useEffect(() => {
     if (!enabled) { initialized.current = false; restoring.current = null; return; }
+    const readableUrl = fileLocationUrl(new URL(location.href));
+    if (readableUrl !== location.href) {
+      history.replaceState(history.state, '', readableUrl);
+      window.dispatchEvent(new Event(FILE_LOCATION_WRITTEN));
+    }
     const first = !initialized.current;
     initialized.current = true;
     const urlPosition = readPosition();
@@ -36,8 +42,8 @@ export function useFileManagerLocation(enabled: boolean, root: string, path: str
     const url = new URL(location.href);
     url.searchParams.set('root', root);
     url.searchParams.set('path', path);
-    if (first) history.replaceState(history.state, '', url);
-    else history.pushState(history.state, '', url);
+    if (first) history.replaceState(history.state, '', fileLocationUrl(url));
+    else history.pushState(history.state, '', fileLocationUrl(url));
     window.dispatchEvent(new Event(FILE_LOCATION_WRITTEN));
   }, [enabled, root, path]);
 
