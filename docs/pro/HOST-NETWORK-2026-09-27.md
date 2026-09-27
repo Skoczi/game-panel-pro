@@ -1,6 +1,8 @@
 # Persistent additional IPs
 
-Nodes → Node settings → Additional IPs manages public IPv4 /32 macvlan interfaces in bridge mode. Enter the provider-assigned IP and virtual MAC, select an allowed physical parent, add to the draft, review, then Save on machine. Existing compatible interfaces can be imported without taking them down. IP allocations remains the separate port-allocation policy; an address must also be added there before restricted game publishing can use it.
+Nodes → Node settings → Network & IPs combines host addresses and game-port allocations in one workspace. Host addresses manages public IPv4 /32 macvlan interfaces in bridge mode. Enter the provider-assigned IP and virtual MAC, select an allowed physical parent, add to the draft, review, then Save on machine. Existing compatible interfaces can be imported without taking them down. The allocations section below selects addresses from the saved host list and sets their allowed TCP/UDP ranges.
+
+The IP selector updates after host save/import without remounting the allocations editor or discarding port drafts. Unsaved host entries are not offered. Existing allocations absent from the host list remain editable, including when the host manager is unavailable; new arbitrary IPs cannot be entered in this workspace. New staged allocations are checked against the current saved list again before submitting. Either section's unsaved draft triggers the existing leave-page confirmation. Host configuration and port-policy saves remain explicit, separate operations.
 
 ## Persistence and authority
 

@@ -6,8 +6,7 @@ import { Server, Plus, RefreshCw, ExternalLink, Network } from 'lucide-react';
 import { nodesRequest, type ExecutionNode, type LocalNode } from '../utils/nodesApi';
 import { LocalNodeProfile, LocalRuntimeInfo } from './LocalNodeProfile';
 import { ACTIVE_NODE, openFleet } from '../utils/nodeContext';
-import { GlobalSettings } from './GlobalSettings';
-import { HostNetwork } from './HostNetwork';
+import { NodeNetwork } from './NodeNetwork';
 import {
   AppModal,
   AppModalContent,
@@ -42,7 +41,7 @@ export function Nodes() {
   const [showCreate, setShowCreate] = useState(false);
   const [enrollment, setEnrollment] = useState<{ nodeId: string; token: string } | null>(null);
   const [selected, setSelected] = useState<{ id: string; name: string } | null>(null);
-  const [nodeTab, setNodeTab] = useState<'overview' | 'allocations' | 'network'>('overview');
+  const [nodeTab, setNodeTab] = useState<'overview' | 'network'>('overview');
   const [allocationDirty, setAllocationDirty] = useState(false);
   const [draft, setDraft] = useState({ name: '', origin: '', location: '' });
   const [deleting, setDeleting] = useState<ExecutionNode | null>(null);
@@ -126,7 +125,7 @@ export function Nodes() {
           aria-label="Node settings sections"
           className="flex flex-wrap gap-2 rounded-xl border border-slate-200 p-2 dark:border-slate-700"
         >
-          {(['overview', 'network', 'allocations'] as const).map((tab) => (
+          {(['overview', 'network'] as const).map((tab) => (
             <button
               key={tab}
               aria-current={nodeTab === tab ? 'page' : undefined}
@@ -139,17 +138,12 @@ export function Nodes() {
                 }
               }}
             >
-              {tab === 'overview' ? 'Overview' : tab === 'network' ? 'Additional IPs' : 'IP allocations'}
+              {tab === 'overview' ? 'Overview' : 'Network & IPs'}
             </button>
           ))}
         </nav>
-        {nodeTab === 'network' ? <HostNetwork key={selected.id} nodeId={selected.id} onDirtyChange={setAllocationDirty} /> : nodeTab === 'allocations' ? (
-          <GlobalSettings
-            key={selected.id}
-            nodeId={selected.id}
-            nodeName={local ? localNode?.name || 'Local' : selected.name}
-            onDirtyChange={setAllocationDirty}
-          />
+        {nodeTab === 'network' ? (
+          <NodeNetwork key={selected.id} nodeId={selected.id} nodeName={local ? localNode?.name || 'Local' : selected.name} onDirtyChange={setAllocationDirty} />
         ) : (
           <section className={`${card} space-y-4`}>
             <h2 className="text-lg font-semibold">Runtime information</h2>

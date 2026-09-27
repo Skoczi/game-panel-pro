@@ -5,10 +5,11 @@ import { AppButton } from '../src/ui/components';
 import './host-network.css';
 
 type Entry = { name: string; parent: string; ip: string; mac: string; status?: string; persistent?: boolean };
-type State = { available: boolean; reason?: string; revision: number; parents: string[]; entries: Entry[]; discovered: Entry[]; autostart: boolean };
+export type HostNetworkState = { available: boolean; reason?: string; revision: number; parents: string[]; entries: Entry[]; discovered: Entry[]; autostart: boolean };
+type State = HostNetworkState;
 type Plan = { add: Entry[]; remove: Entry[]; keep: Entry[] };
 const clean = ({ name, parent, ip, mac }: Entry) => ({ name, parent, ip, mac });
-export function HostNetwork({ nodeId, onDirtyChange }: { nodeId: string; onDirtyChange: (dirty: boolean) => void }) {
+export function HostNetwork({ nodeId, onDirtyChange, onSnapshot }: { nodeId: string; onDirtyChange: (dirty: boolean) => void; onSnapshot?: (state: State | null) => void }) {
   const endpoint = (nodeId === 'local' ? '' : `/api/nodes/${nodeId}/runtime`) + '/api/system/host-network';
   const [state, setState] = useState<State | null>(null), [entries, setEntries] = useState<Entry[]>([]);
   const [error, setError] = useState(''), [notice, setNotice] = useState(''), [busy, setBusy] = useState(false), [plan, setPlan] = useState<Plan | null>(null);
@@ -16,6 +17,7 @@ export function HostNetwork({ nodeId, onDirtyChange }: { nodeId: string; onDirty
   const changed = Boolean(state && JSON.stringify(entries.map(clean)) !== JSON.stringify(state.entries.map(clean)));
   const dirty = changed || Boolean(draft.ip || draft.mac);
   useEffect(() => { onDirtyChange(dirty); }, [dirty, onDirtyChange]);
+  useEffect(() => { onSnapshot?.(state); }, [state, onSnapshot]);
   useEffect(() => { let active = true; nodesRequest<State>(endpoint).then(value => { if (active) { setState(value); setEntries(value.entries); setDraft({ ip: '', mac: '', parent: value.parents[0] || '' }); } }).catch(e => { if (active) setError(e.message); }); return () => { active = false; }; }, [endpoint]);
   async function refresh() {
     setBusy(true); setError(''); setPlan(null);

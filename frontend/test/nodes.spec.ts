@@ -69,8 +69,8 @@ test('Local and remote node settings open distinct allocation endpoints and prot
   await page.goto('/test/nodes.fixture.html');
   await page.getByRole('button', { name: 'Node settings', exact: true }).first().click();
   await expect(page.getByText('No additional agent required', { exact: true })).toBeVisible();
-  await page.getByRole('button', { name: 'IP allocations', exact: true }).click();
-  await expect(page.getByRole('heading', { name: 'Local · Allocations' })).toBeVisible();
+  await page.getByRole('button', { name: 'Network & IPs', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Port policy' })).toBeVisible();
   await page.getByLabel('Restrict published ports').uncheck();
   await page.getByRole('button', { name: '← Nodes' }).click();
   await page.getByRole('dialog').getByRole('button', { name: 'Cancel', exact: true }).click();
@@ -78,8 +78,8 @@ test('Local and remote node settings open distinct allocation endpoints and prot
   await page.getByRole('button', { name: '← Nodes' }).click();
   await page.getByRole('dialog').getByRole('button', { name: 'Continue', exact: true }).click();
   await page.getByRole('button', { name: 'Node settings', exact: true }).last().click();
-  await page.getByRole('button', { name: 'IP allocations', exact: true }).click();
-  await expect(page.getByRole('heading', { name: 'Warsaw test · Allocations' })).toBeVisible();
+  await page.getByRole('button', { name: 'Network & IPs', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Port policy' })).toBeVisible();
   await expect(page.getByLabel('Show Follow Us')).toHaveCount(0);
   expect(requested.some((url) => url.endsWith('/local/allocations'))).toBe(true);
   expect(requested.some((url) => url.endsWith(`/${id}/allocations`))).toBe(true);
@@ -90,6 +90,7 @@ test('Local and remote node settings open distinct allocation endpoints and prot
   if (process.env.PLAYWRIGHT_SCREENSHOTS === '1') await page.screenshot({ path: 'test-results/node-allocations-dark-mobile.png', fullPage: true });
 });
 test.beforeEach(async ({ page }) => {
+  await page.route('**/api/system/host-network', r => r.fulfill({ json: { available: true, revision: 1, entries: [], discovered: [], parents: ['eno1'], autostart: true } }));
   await page.route('**/api/system/appearance', (r) =>
     r.fulfill({ json: { appearance: { siteName: 'Example' } } })
   );

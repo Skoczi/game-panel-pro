@@ -32,7 +32,9 @@ export function GlobalSettings({
   nodeId,
   nodeName,
   onDirtyChange,
-}: { nodeId?: string; nodeName?: string; onDirtyChange?: (dirty: boolean) => void } = {}) {
+  managedAddresses,
+  embedded = false,
+}: { nodeId?: string; nodeName?: string; onDirtyChange?: (dirty: boolean) => void; managedAddresses?: { ip: string; status?: string }[] | null; embedded?: boolean } = {}) {
   const [settings, setSettings] = useState<Settings | null>(null);
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [dirty, setDirty] = useState(false);
@@ -42,9 +44,10 @@ export function GlobalSettings({
   const [draft, setDraft] = useState<Allocation>(blank);
   const [editing, setEditing] = useState<number | null>(null);
   const [pending, setPending] = useState(false);
+  const [savedAllocationIps, setSavedAllocationIps] = useState<string[]>([]);
   useEffect(() => {
-    onDirtyChange?.(dirty);
-  }, [dirty, onDirtyChange]);
+    onDirtyChange?.(dirty || Object.values(draft).some(Boolean));
+  }, [dirty, draft, onDirtyChange]);
 
   async function load() {
     setBusy(true);
@@ -58,6 +61,7 @@ export function GlobalSettings({
           appearance: DEFAULT_APPEARANCE,
         });
         setAssignments(value.assignments);
+        setSavedAllocationIps(value.network.allocations.map(a => a.ip));
         setPending(value.pending);
       } else {
         const { assignments: used, ...value } = await apiClient.getGlobalSettings();
@@ -114,6 +118,9 @@ export function GlobalSettings({
   }
   async function save() {
     if (!settings) return;
+    if (managedAddresses !== undefined && settings.network.allocations.some(a => !savedAllocationIps.includes(a.ip) && !managedAddresses?.some(e => e.ip === a.ip))) {
+      setError('A new allocation no longer has a saved host address. Refresh Host addresses and review the list before saving.'); return;
+    }
     setBusy(true);
     setError('');
     setNotice('');
@@ -126,6 +133,7 @@ export function GlobalSettings({
         );
         setSettings({ ...settings, revision: saved.revision, network: saved.network });
         setAssignments(saved.assignments);
+        setSavedAllocationIps(saved.network.allocations.map(a => a.ip));
         setPending(saved.pending);
       } else setSettings(await apiClient.saveGlobalSettings(settings));
       setDirty(false);
@@ -165,6 +173,7 @@ export function GlobalSettings({
         appearance: DEFAULT_APPEARANCE,
       });
       setAssignments(saved.assignments);
+      setSavedAllocationIps(saved.network.allocations.map(a => a.ip));
       setPending(saved.pending);
       setDirty(false);
       setNotice('Pending save resolved. Current node settings loaded.');
@@ -185,6 +194,10 @@ export function GlobalSettings({
     const row = Object.fromEntries(
       Object.entries(draft).map(([key, value]) => [key, value.trim()])
     ) as Allocation;
+    const unchangedExisting = editing !== null && settings.network.allocations[editing]?.ip === row.ip;
+    if (managedAddresses !== undefined && !unchangedExisting && !managedAddresses?.some(e => e.ip === row.ip)) {
+      setError('Choose an address saved in Host addresses above. Save or import the IP there first.'); return;
+    }
     if (
       settings.network.allocations.some((item, index) => item.ip === row.ip && index !== editing)
     ) {
@@ -205,7 +218,7 @@ export function GlobalSettings({
       <header className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <h1 className="gp-page-title">
-            {nodeId ? `${nodeName || 'Node'} · Allocations` : 'Panel Settings'}
+            {embedded ? 'Port policy' : nodeId ? `${nodeName || 'Node'} · Allocations` : 'Panel Settings'}
           </h1>
 
         </div>
@@ -454,8 +467,7 @@ export function GlobalSettings({
                     IP allocations
                   </h2>
                   <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                    IPs must already exist on the host. Adding one here does not create an interface
-                    or firewall rule.
+                    {embedded ? 'Select a saved host address and define which game ports it can publish.' : 'IPs must already exist on the host. Adding one here does not create an interface or firewall rule.'}
                   </p>
                 </div>
                 <div className={card}>
@@ -488,7 +500,7 @@ export function GlobalSettings({
                     </p>
                   )}
                 </div>
-                <div className="grid min-w-0 gap-5 xl:grid-cols-[minmax(0,1fr)_340px]">
+                <div className="gp-allocation-grid grid min-w-0 gap-5 xl:grid-cols-[minmax(0,1fr)_340px]">
                   <div className={`${card} min-w-0`}>
                     <h3 className="mb-4 font-semibold">
                       Configured addresses{' '}
@@ -601,7 +613,11 @@ export function GlobalSettings({
                             udp: 'UDP ports',
                           }[key]
                         }
-                        <input
+                        {key === 'ip' && managedAddresses !== undefined ? <select aria-label="IP address" className={`${field} mt-1`} value={draft.ip} required onChange={event => setDraft({ ...draft, ip: event.target.value })}>
+                          <option value="">{managedAddresses === null ? 'Host address list unavailable' : 'Choose a saved IP address'}</option>
+                          {managedAddresses?.filter(e => !settings.network.allocations.some((a, i) => a.ip === e.ip && i !== editing)).map(e => <option key={e.ip} value={e.ip}>{e.ip}{e.status === 'needs-attention' ? ' · Needs attention' : ''}</option>)}
+                          {editing !== null && !managedAddresses?.some(e => e.ip === settings.network.allocations[editing].ip) && <option value={settings.network.allocations[editing].ip}>{settings.network.allocations[editing].ip} · Existing allocation</option>}
+                        </select> : <input
                           className={`${field} mt-1`}
                           value={draft[key]}
                           required={key === 'ip'}
@@ -614,10 +630,11 @@ export function GlobalSettings({
                                 : '27015-27030,28015'
                           }
                           onChange={(event) => setDraft({ ...draft, [key]: event.target.value })}
-                        />
+                        />}
                       </label>
                     ))}
                     <p className="text-xs text-gray-500">
+                      {managedAddresses !== undefined && <>IP addresses come from the saved Host addresses list above. Existing allocations are preserved. </>}
                       Comma-separated ports or inclusive ranges, 1025–65535. Alias is a label, not a
                       DNS name.
                     </p>
