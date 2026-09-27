@@ -14,6 +14,7 @@ export function HostNetwork({ nodeId, onDirtyChange, onSnapshot }: { nodeId: str
   const [state, setState] = useState<State | null>(null), [entries, setEntries] = useState<Entry[]>([]);
   const [error, setError] = useState(''), [notice, setNotice] = useState(''), [busy, setBusy] = useState(false), [plan, setPlan] = useState<Plan | null>(null);
   const [draft, setDraft] = useState({ ip: '', mac: '', parent: '' });
+  useEffect(() => { if (!notice) return; const timer = window.setTimeout(() => setNotice(''), 4000); return () => window.clearTimeout(timer); }, [notice]);
   const changed = Boolean(state && JSON.stringify(entries.map(clean)) !== JSON.stringify(state.entries.map(clean)));
   const dirty = changed || Boolean(draft.ip || draft.mac);
   useEffect(() => { onDirtyChange(dirty); }, [dirty, onDirtyChange]);
@@ -62,7 +63,7 @@ export function HostNetwork({ nodeId, onDirtyChange, onSnapshot }: { nodeId: str
         <AppButton type="submit" disabled={busy || !draft.ip || !draft.mac || !draft.parent}><Plus size={16} /> Add to changes</AppButton>
       </form>
       {plan && <div className="gp-host-network-preview" role="region" aria-label="Network changes preview"><h3>Review network changes</h3><p>Add or import: {plan.add.map(e => e.ip).join(', ') || 'none'}</p><p>Remove: {plan.remove.map(e => e.ip).join(', ') || 'none'}</p><p>Unchanged: {plan.keep.length}</p><AppButton tone="primary" disabled={busy} onClick={() => void submit(false)}>Save on machine</AppButton><AppButton disabled={busy} onClick={() => setPlan(null)}>Cancel review</AppButton></div>}
-      {!plan && <AppButton tone="primary" disabled={busy || Boolean(draft.ip || draft.mac)} onClick={() => void submit(true)}>{changed ? 'Review changes' : 'Restore interfaces'}</AppButton>}
+      {!plan && <AppButton tone={changed ? 'primary' : 'neutral'} disabled={busy || Boolean(draft.ip || draft.mac)} onClick={() => void submit(true)}>{changed ? 'Review changes' : 'Restore interfaces'}</AppButton>}
       {dirty && <AppButton disabled={busy} onClick={() => void refresh()}>Discard changes</AppButton>}
       {notice && <p role="status">{notice}</p>}
     </>}

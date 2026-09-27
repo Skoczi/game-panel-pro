@@ -12,7 +12,7 @@ import {
 } from '../types/globalSettings';
 import { PanelBrand } from './PanelBrand';
 import { nodesRequest } from '../utils/nodesApi';
-import { AppSelect } from '../src/ui/components';
+import { AppSelect, AppModal, AppModalContent, AppModalHeader, AppModalTitle, AppModalBody } from '../src/ui/components';
 import type { LoginTheme } from '../types/globalSettings';
 import './login-theme.css';
 
@@ -34,15 +34,18 @@ export function GlobalSettings({
   onDirtyChange,
   managedAddresses,
   embedded = false,
-}: { nodeId?: string; nodeName?: string; onDirtyChange?: (dirty: boolean) => void; managedAddresses?: { ip: string; status?: string }[] | null; embedded?: boolean } = {}) {
+}: { nodeId?: string; nodeName?: string; onDirtyChange?: (dirty: boolean) => void; managedAddresses?: { ip: string; status?: string; mac?: string }[] | null; embedded?: boolean } = {}) {
   const [settings, setSettings] = useState<Settings | null>(null);
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [dirty, setDirty] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
+  useEffect(() => { if (notice !== 'Saved.') return; const timer = window.setTimeout(() => setNotice(''), 4000); return () => window.clearTimeout(timer); }, [notice]);
   const [draft, setDraft] = useState<Allocation>(blank);
   const [editing, setEditing] = useState<number | null>(null);
+  const [allocationOpen, setAllocationOpen] = useState(false);
+  const closeAllocation = () => { setAllocationOpen(false); setEditing(null); setDraft(blank); };
   const [pending, setPending] = useState(false);
   const [savedAllocationIps, setSavedAllocationIps] = useState<string[]>([]);
   useEffect(() => {
@@ -210,6 +213,7 @@ export function GlobalSettings({
     update({ ...settings, network: { ...settings.network, allocations } });
     setDraft(blank);
     setEditing(null);
+    setAllocationOpen(false);
     setError('');
   }
 
@@ -218,7 +222,7 @@ export function GlobalSettings({
       <header className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <h1 className="gp-page-title">
-            {embedded ? 'Port policy' : nodeId ? `${nodeName || 'Node'} · Allocations` : 'Panel Settings'}
+            {embedded ? 'Network & IPs' : nodeId ? `${nodeName || 'Node'} · Allocations` : 'Panel Settings'}
           </h1>
 
         </div>
@@ -230,7 +234,7 @@ export function GlobalSettings({
             className={button}
             disabled={busy}
             onClick={async () => {
-              if (!dirty || await confirmDialog('Discard unsaved changes and reload?')) {
+              if ((!dirty && !Object.values(draft).some(Boolean)) || await confirmDialog('Discard unsaved changes and reload?')) {
                 setNotice('');
                 void load();
               }
@@ -483,19 +487,19 @@ export function GlobalSettings({
                     </p>
                   )}
                 </div>
-                <div className="gp-allocation-grid grid min-w-0 gap-5 xl:grid-cols-[minmax(0,1fr)_340px]">
+                <div className="gp-allocation-grid grid min-w-0 gap-5">
                   <div className={`${card} min-w-0`}>
-                    <h3 className="mb-4 font-semibold">
+                    <div className="gp-network-table-heading"><h3 className="font-semibold">
                       Configured addresses{' '}
                       <span className="ml-2 text-sm font-normal text-gray-500">
-                        {settings.network.allocations.length}
+                        {new Set([...settings.network.allocations.map(row => row.ip), ...(managedAddresses || []).map(row => row.ip)]).size}
                       </span>
-                    </h3>
+                    </h3><button className={button} onClick={() => setAllocationOpen(true)}><Plus size={16} /> {Object.values(draft).some(Boolean) ? 'Continue editing' : 'Add allocation'}</button></div>
                     <div className="overflow-x-auto">
-                      <table className="w-full text-left text-sm">
+                      <table className="gp-network-address-table w-full text-left text-sm" data-managed={managedAddresses !== undefined}>
                         <thead className="text-xs uppercase text-gray-500">
                           <tr>
-                            {['IP / alias', 'TCP ports', 'UDP ports', 'Actions'].map(
+                            {['IP / alias', ...(managedAddresses !== undefined ? ['MAC / status'] : []), 'TCP ports', 'UDP ports', 'Actions'].map(
                               (heading) => (
                                 <th
                                   key={heading}
@@ -516,9 +520,10 @@ export function GlobalSettings({
                               <td className="px-2 py-3">
                                 <span className="whitespace-nowrap font-mono">{row.ip}</span>
                                 <span className="block text-xs text-gray-500">
-                                  {row.alias || 'No alias'}
+                                  {row.alias || ''}
                                 </span>
                               </td>
+                              {managedAddresses !== undefined && <td className="px-2 py-3"><code className="text-xs">{managedAddresses?.find(host => host.ip === row.ip)?.mac || '—'}</code><span className="block text-xs text-gray-500">{managedAddresses === null ? 'Unavailable' : managedAddresses?.find(host => host.ip === row.ip)?.status === 'active' ? 'Active' : 'Needs attention'}</span></td>}
                               <td className="max-w-48 break-words px-2 py-3 font-mono text-xs">
                                 {row.tcp || 'None'}
                               </td>
@@ -534,6 +539,7 @@ export function GlobalSettings({
                                     onClick={async () => {
                                       setEditing(index);
                                       setDraft({ ...row });
+                                      setAllocationOpen(true);
                                     }}
                                   >
                                     <Pencil size={16} />
@@ -564,19 +570,20 @@ export function GlobalSettings({
                               </td>
                             </tr>
                           ))}
+                          {managedAddresses?.filter(host => !settings.network.allocations.some(row => row.ip === host.ip)).map(host => <tr key={host.ip} className="border-b border-gray-100 dark:border-gray-800"><td className="px-2 py-3 font-mono">{host.ip}</td><td className="px-2 py-3"><code className="text-xs">{host.mac || '—'}</code><span className="block text-xs text-gray-500">{host.status === 'active' ? 'Active' : 'Needs attention'}</span></td><td colSpan={2} className="px-2 py-3 text-sm text-gray-500">No port ranges</td><td className="px-2 py-3"><button className={button} aria-label={`Configure ports for ${host.ip}`} onClick={() => { setEditing(null); setDraft({ ...blank, ip: host.ip }); setAllocationOpen(true); }}><Plus size={16} /></button></td></tr>)}
                         </tbody>
                       </table>
                     </div>
-                    {!settings.network.allocations.length && (
+                    {!settings.network.allocations.length && !managedAddresses?.length && (
                       <p className="py-8 text-center text-sm text-gray-500">
                         No allocations.
                       </p>
                     )}
                   </div>
-                  <form className={`${card} space-y-4`} onSubmit={addAllocation}>
-                    <h3 className="font-semibold">
-                      {editing === null ? 'Add allocation' : 'Edit allocation'}
-                    </h3>
+                  <AppModal open={allocationOpen} onOpenChange={setAllocationOpen} positionerStyle={{ justifyContent: 'flex-end', padding: 0 }}>
+                  <AppModalContent className="gp-network-drawer"><AppModalHeader><AppModalTitle>{editing === null ? 'Add allocation' : 'Edit allocation'}</AppModalTitle></AppModalHeader><AppModalBody>
+                  <form className="space-y-4" onSubmit={addAllocation}>
+                    {error && <p role="alert" className="text-sm text-red-500">{error}</p>}
                     {(['ip', 'alias', 'tcp', 'udp'] as const).map((key) => (
                       <label key={key} className="block text-sm">
                         {
@@ -615,23 +622,21 @@ export function GlobalSettings({
                         <Plus size={16} />
                         {editing === null ? 'Add to list' : 'Update entry'}
                       </button>
-                      {editing !== null && (
                         <button
                           className={button}
                           type="button"
                           onClick={async () => {
-                            setEditing(null);
-                            setDraft(blank);
+                            closeAllocation();
                           }}
                         >
                           Cancel
                         </button>
-                      )}
                     </div>
                   </form>
+                  </AppModalBody></AppModalContent></AppModal>
                 </div>
               </section>
-              <section className={card}>
+              {assignments.length > 0 && <section className={card}>
                 <h2 className="mb-4 text-lg font-semibold">Assigned ports</h2>
                 <p className="mb-4 text-sm text-gray-500">
                   Includes stopped servers.
@@ -662,10 +667,7 @@ export function GlobalSettings({
                     </tbody>
                   </table>
                 </div>
-                {!assignments.length && (
-                  <p className="py-4 text-sm text-gray-500">No server ports assigned.</p>
-                )}
-              </section>
+              </section>}
             </>
           )}
         </fieldset>

@@ -225,7 +225,6 @@ export function RehldsManager({
         <>
           <header className="gp-workflow-intro">
             <h3>{sections[section]}</h3>
-            {dirty && <span className="gp-workflow-muted">Unsaved changes</span>}
           </header>
           {section === 'rotation' && (
             <RotationEditor
@@ -290,10 +289,11 @@ export function RehldsManager({
             </details>
           )}
           <div className="gp-workflow-actions gp-editor-actions">
+            {dirty && <span className="gp-editor-dirty" role="status">Unsaved changes</span>}
             <AppButton disabled={busy} onClick={() => onOpen(snapshot.path, snapshot.root)}>
               File Manager
             </AppButton>
-            <AppButton
+            {!dirty && <AppButton
               disabled={busy}
               onClick={() => {
                 const action = () => setRevision((v) => v + 1);
@@ -302,14 +302,15 @@ export function RehldsManager({
               }}
             >
               Reload
-            </AppButton>
+            </AppButton>}
+            {dirty && <AppButton disabled={busy} onClick={() => setConfirmation({ message: 'Discard this unsaved draft?', action: () => { setDraft(snapshot.content); setReview(false); } })}>Discard</AppButton>}
             {canWrite && (
               <AppButton
                 tone="primary"
                 disabled={!dirty || busy}
                 onClick={() => (review ? void save() : setReview(true))}
               >
-                {review ? 'Save with snapshot' : 'Review changes'}
+                {review ? 'Save changes' : 'Review changes'}
               </AppButton>
             )}
           </div>

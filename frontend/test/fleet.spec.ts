@@ -696,7 +696,7 @@ test('administrator can assign and revoke scoped server permissions', async ({ p
   await page.evaluate(() => document.documentElement.classList.add('dark'));
   await expect(
     accessDialog.locator('.gp-app-modal-footer').getByRole('button', { name: 'Close', exact: true })
-  ).toHaveCSS('background-color', 'rgb(17, 24, 39)');
+  ).toHaveCSS('background-color', 'rgb(12, 21, 35)');
   if (process.env.PLAYWRIGHT_SCREENSHOTS === '1') await page.screenshot({ path: 'test-results/server-access-dark.png' });
   await page.setViewportSize({ width: 390, height: 844 });
   await expect(page.getByRole('button', { name: 'Save access' })).toBeVisible();

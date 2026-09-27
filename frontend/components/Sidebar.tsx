@@ -116,7 +116,7 @@ function UserMenuRow({
         {currentUserInitial}
       </div>
       <p
-        className="min-w-0 flex-1 truncate text-sm font-semibold text-gray-100"
+        className="min-w-0 flex-1 truncate text-sm font-semibold text-gray-800 dark:text-gray-100"
         title={currentUserLabel}
       >
         {currentUserLabel}
@@ -124,7 +124,7 @@ function UserMenuRow({
       <button
         type="button"
         onClick={toggleTheme}
-        className={`cursor-pointer shrink-0 rounded-md p-1 transition-colors ${isDark ? 'text-gray-400 hover:bg-gray-700 hover:text-gray-200' : 'text-white/70 hover:bg-white/10 hover:text-white'}`}
+        className={`cursor-pointer shrink-0 rounded-md p-1 transition-colors ${isDark ? 'text-gray-400 hover:bg-gray-700 hover:text-gray-200' : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'}`}
         aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
         title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
       >
@@ -250,7 +250,7 @@ export function Sidebar({
 
   return (
     <aside
-      className={`${widthClasses} border-r flex flex-col ${layoutClasses} overflow-y-auto ${isDark ? 'border-white/10 bg-[#111827]' : 'border-[#000b82] bg-[#000e9c]'}`}
+      className={`gp-sidebar ${widthClasses} border-r flex flex-col ${layoutClasses} overflow-y-auto ${isDark ? 'border-white/10 bg-[#111827]' : 'border-gray-200 bg-white'}`}
     >
       <div className={`border-b px-4 py-3 ${isDark ? 'border-white/10' : 'border-white/40'}`}>
         <div className="flex items-center justify-center">

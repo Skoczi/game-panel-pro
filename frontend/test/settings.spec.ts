@@ -274,6 +274,7 @@ test('node allocation editor saves only the selected node, not panel appearance'
   await page.goto('/test/settings.fixture.html?node=local');
   await expect(page.getByLabel('Show Follow Us')).toHaveCount(0);
   await expect(page.getByRole('button', { name: 'Remove 192.0.2.10' })).toBeDisabled();
+  await page.getByRole('button', { name: 'Add allocation', exact: true }).click();
   await page.getByLabel('IP address', { exact: true }).fill('192.0.2.11');
   await page.getByLabel('Alias (optional)').fill('Second address');
   await page.getByLabel('TCP ports', { exact: true }).fill('28015-28020');

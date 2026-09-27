@@ -13,13 +13,16 @@ test('saved host addresses feed allocation selection immediately without losing 
     return route.fulfill({ json: { revision: 1, network: { restrictPorts: true, allocations }, assignments: [], pending: false } });
   });
   await page.goto('/test/node-network.fixture.html');
+  await page.getByRole('button', { name: 'Add allocation', exact: true }).click();
   const select = page.getByLabel('IP address', { exact: true });
   await expect(select.locator('option')).toHaveCount(1);
   await page.getByLabel('TCP ports', { exact: true }).fill('27015-27030');
+  await page.keyboard.press('Escape');
+  await page.getByText('Host interfaces', { exact: true }).click();
   await page.getByRole('button', { name: 'Import existing interfaces' }).click();
-  await expect(select.locator('option')).toHaveCount(1); // Unsaved imports aren't selectable.
   await page.getByRole('button', { name: 'Review changes', exact: true }).click();
   await page.getByRole('button', { name: 'Save on machine', exact: true }).click();
+  await page.getByRole('button', { name: 'Continue editing', exact: true }).click();
   await expect(select.locator(`option[value="${ip.ip}"]`)).toHaveCount(1);
   await expect(page.getByLabel('TCP ports', { exact: true })).toHaveValue('27015-27030');
   await select.selectOption(ip.ip); await page.getByRole('button', { name: 'Add to list', exact: true }).click();
@@ -41,5 +44,6 @@ test('unavailable host inventory preserves existing allocations for editing with
   await page.getByLabel('TCP ports', { exact: true }).fill('27015-27020');
   await page.getByRole('button', { name: 'Update entry', exact: true }).click();
   await expect(page.getByText('27015-27020', { exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Add allocation', exact: true }).click();
   await expect(page.getByLabel('IP address', { exact: true }).locator('option')).toHaveCount(1);
 });

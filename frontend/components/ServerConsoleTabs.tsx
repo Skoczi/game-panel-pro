@@ -107,6 +107,22 @@ export function ServerConsoleTabs({
   canSendCommandByServer,
   onSendCommand,
 }: ServerConsoleTabsProps) {
+  const tabStripRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const strip = tabStripRef.current;
+    if (!strip) return;
+    const reveal = () => {
+      const selected = strip.querySelector<HTMLElement>('[data-active="true"]');
+      if (!selected) return;
+      const outer = strip.getBoundingClientRect(), inner = selected.getBoundingClientRect();
+      if (inner.left < outer.left) strip.scrollLeft += inner.left - outer.left;
+      else if (inner.right > outer.right) strip.scrollLeft += Math.min(inner.right - outer.right, inner.left - outer.left);
+    };
+    reveal();
+    const observer = new ResizeObserver(reveal);
+    observer.observe(strip);
+    return () => observer.disconnect();
+  }, [activeTab, openTabs.length]);
   const heightStorageKey = singleServer ? 'gp_server_console_height' : CONSOLE_HEIGHT_STORAGE_KEY;
   const [isMinimized] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -617,9 +633,9 @@ export function ServerConsoleTabs({
       }`}
     >
       <div
-        className={`flex min-h-[44px] shrink-0 items-stretch justify-between border-b ${borderColor} ${isFullscreen ? '' : 'rounded-t-lg'} overflow-hidden bg-gp-surface-input`}
+        className={`gp-console-toolbar flex min-h-[44px] shrink-0 items-stretch justify-between border-b ${borderColor} ${isFullscreen ? '' : 'rounded-t-lg'} overflow-hidden bg-gp-surface-input`}
       >
-        <div className="flex min-w-0 flex-1 items-stretch overflow-x-auto hide-scrollbar">
+        <div ref={tabStripRef} className="gp-console-tab-strip flex min-w-0 flex-1 items-stretch overflow-x-auto hide-scrollbar">
           {!singleServer && !hideActivity && <div
             className={`flex h-full shrink-0 items-center gap-2 border-l px-4 transition-colors cursor-pointer select-none ${
               activeTab === 'cli-console'
@@ -655,6 +671,7 @@ export function ServerConsoleTabs({
               return (
                 <div
                   key={server.id}
+                  data-active={isActiveServerTab}
                   onClick={() => onSetActiveTab(server.id)}
                   className={`relative flex h-full shrink-0 items-center gap-2 px-4 transition-colors group cursor-pointer select-none ${
                     isActiveServerTab
@@ -685,7 +702,7 @@ export function ServerConsoleTabs({
               );
             })}
         </div>
-        <div className="flex min-h-full self-stretch flex-shrink-0 items-center gap-1 sm:gap-2 bg-gp-surface-input px-2 sm:px-4 py-0">
+        <div className="gp-console-tools flex min-h-full self-stretch flex-shrink-0 items-center gap-1 sm:gap-2 bg-gp-surface-input px-2 sm:px-4 py-0">
           <div className="flex h-full items-center justify-center gap-2">
             <span className={`gp-console-tool-label hidden sm:inline text-xs ${textSecondary}`}>Date/Time</span>
             <AppToggle

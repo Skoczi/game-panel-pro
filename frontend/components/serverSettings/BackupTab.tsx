@@ -5,7 +5,7 @@ import { NativeProtectionCard } from './NativeProtectionCard';
 import { AppSectionHeader } from '../../src/ui/layout';
 import { OperationList } from './OperationList';
 import { apiClient, type BackupJob } from '../../utils/api';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { AppButton, AppInput, AppSlider, AppToggle } from '../../src/ui/components';
 import {
   AlertTriangle,
@@ -13,6 +13,7 @@ import {
   Check,
   Download,
   HardDrive,
+  MoreHorizontal,
   Pencil,
   RefreshCw,
   RotateCcw,
@@ -77,12 +78,24 @@ interface BackupTabProps {
   hideManualBackup?: boolean;
 }
 
+function BackupActions({ label, children }: { label: string; children: ReactNode }) {
+  const ref = useRef<HTMLDetailsElement>(null);
+  useEffect(() => {
+    const outside = (event: PointerEvent) => { if (ref.current?.open && !ref.current.contains(event.target as Node)) ref.current.open = false; };
+    document.addEventListener('pointerdown', outside);
+    return () => document.removeEventListener('pointerdown', outside);
+  }, []);
+  return <details ref={ref} className="gp-backup-menu" onKeyDown={event => { if (event.key === 'Escape' && ref.current?.open) { event.stopPropagation(); ref.current.open = false; ref.current.querySelector('summary')?.focus(); } }}>
+    <summary aria-label={label}><MoreHorizontal size={18} /></summary>
+    <div className="gp-backup-menu-items" onClick={event => { if ((event.target as HTMLElement).closest('button:not(:disabled)') && ref.current) ref.current.open = false; }}>{children}</div>
+  </details>;
+}
+
 export function BackupTab({
   serverId,
   serverStatus,
   contentBg,
   borderColor,
-  hoverBg,
   inputBg: _inputBg,
   inputBorder: _inputBorder,
   textPrimary,
@@ -320,11 +333,11 @@ export function BackupTab({
               {!backupsLoading && backups.map((backup) => (
                 <div
                   key={backup.path}
-                  className={`border ${borderColor} rounded-lg p-3 md:p-4 flex flex-col sm:flex-row sm:items-center gap-3 sm:justify-between transition-colors ${hoverBg}`}
+                  className={`gp-backup-row border-b ${borderColor} py-4 flex flex-col sm:flex-row sm:items-center gap-3 sm:justify-between`}
                 >
                   <div className="flex items-center gap-3 md:gap-4 min-w-0 flex-1">
-                    <div className="p-2 md:p-3 bg-[#0050D7]/10 rounded flex-shrink-0">
-                      <HardDrive className="w-5 h-5 md:w-6 md:h-6 text-[var(--color-cyan-400)]" />
+                    <div className="gp-backup-icon p-2 rounded flex-shrink-0">
+                      <HardDrive className="w-5 h-5 text-[var(--color-cyan-400)]" />
                     </div>
                     <div className="min-w-0 flex-1">
                       {renamingPath === backup.path ? (
@@ -363,6 +376,7 @@ export function BackupTab({
                           </h5>
                           {canRenameBackups && (
                             <AppButton
+                              tone="ghost"
                               aria-label={`Rename ${backupLabel(backup.name)}`}
                               onClick={() => startRename(backup)}
                               className="p-1 rounded text-gray-400 hover:text-[var(--color-cyan-400)] hover:bg-[var(--color-cyan-400)]/10 flex-shrink-0"
@@ -372,23 +386,23 @@ export function BackupTab({
                           )}
                         </div>
                       )}
-                      <p className="mb-2 text-xs text-gray-500">{backupAge(backup.verification?.createdAt || backup.modifiedAt)} · Local copy{backup.verification ? ` · ${backup.verification.mode === 'live' ? 'Captured while running' : 'Captured while stopped'} · Archive validated` : ' · Verification unavailable'}</p>
-                      <details className="mb-2 text-xs text-gray-500"><summary className="cursor-pointer">Archive details</summary><p className="break-all">{backup.name}</p>{backup.verification && <p>Validated: {new Date(backup.verification.validatedAt).toLocaleString()}. Live copies may need game-specific recovery.</p>}</details>
-                      <div className="flex items-center gap-3 md:gap-4 text-xs text-gray-500 flex-wrap">
+                      <div className="gp-backup-meta flex items-center gap-3 text-xs flex-wrap">
                         <div className="flex items-center gap-1">
                           <Calendar className="w-3 h-3" />
-                          <span className="whitespace-nowrap">
-                            {new Date(backup.modifiedAt).toLocaleString()}
+                          <span title={new Date(backup.modifiedAt).toLocaleString()}>
+                            {backupAge(backup.verification?.createdAt || backup.modifiedAt)}
                           </span>
                         </div>
                         <div className="flex items-center gap-1">
                           <HardDrive className="w-3 h-3" />
                           {formatBytes(backup.size)}
                         </div>
+                        <span className={backup.verification ? 'gp-backup-verified' : ''}>{backup.verification ? 'Verified' : 'Unverified'}</span>
                       </div>
+                      <details className="gp-backup-details"><summary>Details</summary><p className="break-all">{backup.name}</p><p>{new Date(backup.modifiedAt).toLocaleString()} · Local copy</p>{backup.verification && <><p>{backup.verification.mode === 'live' ? 'Captured while running' : 'Captured while stopped'} · Validated {new Date(backup.verification.validatedAt).toLocaleString()}</p>{backup.verification.mode === 'live' && <p>Live copies may need game-specific recovery.</p>}</>}</details>
                     </div>
                   </div>
-                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
+                  <div className="gp-backup-actions flex items-center gap-2">
                     <AppButton
                       tone="neutral"
                       onClick={() => handleDownloadBackup(backup)}
@@ -398,6 +412,7 @@ export function BackupTab({
                       <Download className="w-4 h-4" />
                       {backupDownloadLoading === backup.name ? 'Downloading...' : 'Download'}
                     </AppButton>
+                    <BackupActions label={`Actions for ${backupLabel(backup.name)}`}>
                     {canRestoreBackups && !isLinuxGSMGame && (
                       <AppButton
                         tone="ghost"
@@ -412,14 +427,15 @@ export function BackupTab({
                       </AppButton>
                     )}
                     <AppButton
-                      tone="critical"
+                      tone="ghost"
                       onClick={() => handleDeleteBackup(backup)}
                       disabled={!canDeleteBackups || backupDeleteLoading === backup.name}
-                      className="flex items-center justify-center gap-2 px-4 py-2.5 whitespace-nowrap w-full sm:w-auto"
+                      className="gp-backup-delete flex items-center justify-center gap-2 px-4 py-2.5 whitespace-nowrap w-full sm:w-auto"
                     >
                       <Trash2 className="w-4 h-4" />
                       {backupDeleteLoading === backup.name ? 'Deleting...' : 'Delete'}
                     </AppButton>
+                    </BackupActions>
                   </div>
                 </div>
               ))}

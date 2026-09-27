@@ -7,6 +7,7 @@ export function backupAge(date: string, now = Date.now()) {
   const elapsed = now - Date.parse(date);
   if (!Number.isFinite(elapsed) || elapsed < 0) return 'Age unavailable';
   const hours = Math.floor(elapsed / 3600000);
-  return hours < 1 ? 'Less than an hour ago' : hours < 24 ? `${hours} hours ago` : `${Math.floor(hours / 24)} days ago`;
+  const days = Math.floor(hours / 24);
+  return hours < 1 ? 'Less than an hour ago' : hours < 24 ? `${hours} ${hours === 1 ? 'hour' : 'hours'} ago` : `${days} ${days === 1 ? 'day' : 'days'} ago`;
 }
 export type BackupVerification = { mode: 'live' | 'offline'; createdAt: string; validatedAt: string } | null;

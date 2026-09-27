@@ -538,6 +538,34 @@
   grid-column: 1 / -1;
   min-width: 0;
 }
+.gp-server-performance { grid-column: 1 / -1; min-width: 0; }
+.gp-server-performance > summary { cursor: pointer; color: var(--gp-muted); font-size: 13px; padding: 8px 0 16px; }
+.gp-server-performance .gp-server-charts { gap: 16px; }
+.gp-server-resources { border: 1px solid var(--gp-border); border-radius: 12px; background: var(--gp-surface); overflow: hidden; }
+html .gp-server-page .gp-server-stats .gp-server-resources .gp-server-stat { border: 0; border-radius: 0; min-height: 72px; }
+html .gp-server-page .gp-server-stats .gp-server-resources .gp-server-stat + .gp-server-stat { border-top: 1px solid var(--gp-border); }
+html .gp-server-page .gp-server-stats .gp-server-resources .gp-server-stat strong { font-size: 15px; }
+@media (min-width: 1101px) {
+  .gp-server-overview-tall .gp-server-performance { grid-column: 2; grid-row: 2; }
+}
+@media (max-width: 700px) {
+  .gp-server-overview { gap: 12px; }
+  .gp-server-overview .gp-server-stats { display: contents; }
+  .gp-server-runtime-status { order: -3; }
+  .gp-server-connection { order: -2; }
+  .gp-server-overview .gp-server-console { order: -1; }
+  .gp-server-uptime { order: 1; }
+  .gp-server-resources { order: 2; display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); }
+  html .gp-server-page .gp-server-stats .gp-server-resources .gp-server-stat { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; padding: 14px; }
+  html .gp-server-page .gp-server-stats .gp-server-resources .gp-server-stat + .gp-server-stat { border-top: 0; }
+  html .gp-server-page .gp-server-stats .gp-server-resources .gp-server-stat:nth-child(n+3) { border-top: 1px solid var(--gp-border); }
+  html .gp-server-page .gp-server-stats .gp-server-resources .gp-server-stat:nth-child(even) { border-left: 1px solid var(--gp-border); }
+  .gp-server-resources .gp-stat-icon { display: none; }
+  .gp-server-performance { order: 3; border: 1px solid var(--gp-border); border-radius: 12px; padding: 14px; }
+  .gp-server-performance > summary { padding: 4px 0; }
+  .gp-server-performance[open] > summary { margin-bottom: 12px; }
+  .gp-server-performance .gp-server-charts { grid-template-columns: minmax(0,1fr); }
+}
 .gp-server-chart-canvas {
   height: 180px;
 }

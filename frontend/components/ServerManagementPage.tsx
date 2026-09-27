@@ -184,6 +184,13 @@ export function ServerManagementPage({
   const [feedback, setFeedback] = useState('');
   const consoleSectionRef = useRef<HTMLElement>(null);
   const [tallConsole, setTallConsole] = useState(false);
+  const [chartsOpen, setChartsOpen] = useState(() => window.matchMedia('(min-width: 701px)').matches);
+  useEffect(() => {
+    const media = window.matchMedia('(min-width: 701px)');
+    const change = () => setChartsOpen(media.matches);
+    media.addEventListener('change', change);
+    return () => media.removeEventListener('change', change);
+  }, []);
   useEffect(() => {
     const panel = consoleSectionRef.current?.querySelector<HTMLElement>('.gp-console-panel');
     if (!panel) return;
@@ -380,12 +387,12 @@ export function ServerManagementPage({
                     <span className={`gp-server-status ${status.className}`}><span className="gp-runtime-dot" aria-hidden="true" />{status.label}</span>
                     {server.monitoring?.enabled && <div className="gp-server-game-response" aria-label="Game response"><GameMonitoringStatus summary={server.monitoring} runtimeStatus={server.status} detailed /></div>}
                   </div>
-                  <div className="gp-server-stat" title={uptime === null ? 'Uptime unavailable from this runtime' : 'Time since the server container started'}>
+                  <div className="gp-server-stat gp-server-uptime" title={uptime === null ? 'Uptime unavailable from this runtime' : 'Time since the server container started'}>
                     <Clock className="gp-stat-icon" size={19} aria-hidden="true" />
                     <small>Uptime</small>
                     <strong>{uptimeLabel}</strong>
                   </div>
-                  <div className="gp-server-stat">
+                  <div className="gp-server-stat gp-server-connection">
                     <Globe className="gp-stat-icon" size={19} aria-hidden="true" />
                     <small>Connection address</small>
                     <div className="gp-server-address-row"><strong className="gp-server-address">{address}</strong>
@@ -403,31 +410,35 @@ export function ServerManagementPage({
                       </button>
                     )}</div>
                   </div>
+                  <div className="gp-server-resources" aria-label="Resource usage">
                   <div className="gp-server-stat">
                     <Cpu className="gp-stat-icon" size={19} aria-hidden="true" />
-                    <small>CPU · used / assigned vCPU</small>
+                    <small>CPU</small>
                     <strong>{resourceLabel(server.resources, 'cpu')}</strong>
                   </div>
                   <div className="gp-server-stat">
                     <MemoryStick className="gp-stat-icon" size={19} aria-hidden="true" />
-                    <small>Memory · used / assigned</small>
+                    <small>Memory</small>
                     <strong>{resourceLabel(server.resources, 'memory')}</strong>
                   </div>
                   <div className="gp-server-stat">
                     <HardDrive className="gp-stat-icon" size={19} aria-hidden="true" />
-                    <small>Game data · node free: {resourceBytes(server.resources?.nodeFreeBytes)}</small>
+                    <small title={`Node free: ${resourceBytes(server.resources?.nodeFreeBytes)}`}>Disk</small>
                     <strong>{resourceLabel(server.resources, 'disk')}</strong>
                   </div>
                   <div className="gp-server-stat">
                     <Network className="gp-stat-icon" size={19} aria-hidden="true" />
-                    <small>Network · inbound / outbound</small>
+                    <small>Network ↓ / ↑</small>
                     <strong>
                       {formatNetworkSpeed(server.networkIn)} /{' '}
                       {formatNetworkSpeed(server.networkOut)}
                     </strong>
                   </div>
+                  </div>
                 </aside>
-                <div className="gp-server-charts">
+                <details className="gp-server-performance" open={chartsOpen} onToggle={event => setChartsOpen(event.currentTarget.open)}>
+                  <summary>Performance history</summary>
+                  <div className="gp-server-charts">
                   {(['resources.cpuCores', 'resources.memoryBytes', 'networkIn'] as const).map((metric, index) => (
                     <section className="gp-server-stat" key={metric}>
                       <h2>{['CPU usage', 'Memory usage', 'Network traffic'][index]}</h2>
@@ -473,7 +484,8 @@ export function ServerManagementPage({
                       )}
                     </section>
                   ))}
-                </div>
+                  </div>
+                </details>
               </div>
             </>
           )}

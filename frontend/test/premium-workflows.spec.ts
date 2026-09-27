@@ -101,7 +101,7 @@ test('map library edits a draft with keyboard and preserves snapshot review', as
   await page.getByRole('button', { name: 'Move de_inferno up 2', exact: true }).press('Enter');
   await page.getByRole('button', { name: 'Review changes', exact: true }).click();
   expect(submitted).toBeUndefined();
-  await page.getByRole('button', { name: 'Save with snapshot' }).click();
+  await page.getByRole('button', { name: 'Save changes' }).click();
   await expect(page.getByRole('alert')).toContainText('Configuration changed');
   expect(submitted).toEqual({ content: 'de_inferno\nde_dust2\n', version: 'v1' });
 });
@@ -137,7 +137,7 @@ test('plugin toggles and Steam administrators preserve other configuration lines
   await page.getByRole('button', { name: 'AMXX plugins', exact: true }).click();
   await page.getByRole('checkbox', { name: /admin.amxx/ }).check();
   await page.getByRole('button', { name: 'Review changes', exact: true }).click();
-  await page.getByRole('button', { name: 'Save with snapshot' }).click();
+  await page.getByRole('button', { name: 'Save changes' }).click();
   await expect(page.getByRole('alert')).toBeVisible();
   expect(requests[0].content).toBe('; keep this comment\nadmin.amxx debug\nother.amxx\n');
   await page.getByRole('button', { name: 'Administrators', exact: true }).click();
@@ -145,7 +145,7 @@ test('plugin toggles and Steam administrators preserve other configuration lines
   await page.getByLabel('Steam ID', { exact: true }).fill('STEAM_0:1:123456');
   await page.getByRole('button', { name: 'Add administrator to draft' }).click();
   await page.getByRole('button', { name: 'Review changes', exact: true }).click();
-  await page.getByRole('button', { name: 'Save with snapshot' }).click();
+  await page.getByRole('button', { name: 'Save changes' }).click();
   await expect.poll(() => requests.length).toBe(2);
   expect(requests[1].content).toBe(
     '; keep legacy entries\n"name" "password" "b" "a"\n"STEAM_0:1:123456" "" "bcdefiju" "ce"\n'

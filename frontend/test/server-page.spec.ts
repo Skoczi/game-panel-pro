@@ -67,8 +67,12 @@ test('console height is independent, persisted, and moves charts beside a tall c
   await page.keyboard.press('Escape');
   await expect(panel).toHaveAttribute('data-fullscreen', 'false');
   await page.setViewportSize({ width: 390, height: 844 });
+  const performance = page.locator('.gp-server-performance');
+  await expect(performance).not.toHaveAttribute('open', '');
+  await performance.locator('summary').click();
+  await expect(charts).toBeVisible();
   await expect
-    .poll(async () => Math.abs((await charts.boundingBox())!.x - (await panel.boundingBox())!.x))
+    .poll(async () => Math.abs((await performance.boundingBox())!.x - (await panel.boundingBox())!.x))
     .toBeLessThan(2);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
 });
@@ -704,6 +708,7 @@ for (const status of ['running', 'stopped', 'unknown']) {
     await page.route('**/backups/compatibility', route => route.fulfill({ json: { native: true, capabilities: { backupJobs: 1, nativeRestoreRecovery: 1 }, layoutReady: true, legacy: [], recoveryCount: 0 } }));
     await page.goto(`/test/server-page.fixture.html?status=${status}#/nodes/local/servers/7/backup`);
     await expect(page.getByRole('button', { name: 'Create backup now' })).toBeEnabled();
+    await page.getByLabel('Actions for manual.tar.gz').click();
     const restore = page.getByRole('button', { name: 'Restore', exact: true });
     if (status === 'stopped') await expect(restore).toBeEnabled();
     else {
@@ -815,7 +820,7 @@ for (const width of [390, 1440]) for (const monitoring of [false, true]) test(`c
     });
   }));
   expect(overlaps.some(Boolean)).toBe(false);
-  await page.locator('.gp-server-stats').screenshot({path:`test-results/console-details-${width}-${monitoring}.png`});
+  await page.locator(width === 390 ? '.gp-server-overview' : '.gp-server-stats').screenshot({path:`test-results/console-details-${width}-${monitoring}.png`});
 });
 
 
