@@ -30,7 +30,7 @@ import { startMixqueueBroker } from "./mixqueueBroker.js";
 import { mixqueueRcon } from "./mixqueueRcon.js";
 import { matchbotPreview, startMatchbotInstall, matchbotJob, MATCHBOT_VERSION } from './matchbotInstaller.js';
 import { MATCHBOT_ENTRY } from './matchbotFiles.js';
-import { sourceHashes } from './mixqueueNode.js';
+import { matchbotVersionForHash, MATCHBOT_MIN_WEB_VERSION } from './matchbotRelease.js';
 
 type Binding = {
   serverId: string;
@@ -395,6 +395,7 @@ export async function mixqueueStatus(id: number) {
     Date.now() - state.checkedAt >= 0 &&
     Date.now() - state.checkedAt < 15000;
   let pluginInstalled = false;
+  let installedPluginVersion: string | null = null;
   const profile = mixqueueProfile(server);
   try {
     const p = mixqueueProfile(server),
@@ -405,7 +406,8 @@ export async function mixqueueStatus(id: number) {
     );
     pluginInstalled = (await fs.stat(file)).isFile();
     if (p.game === 'cs16') {
-      pluginInstalled = createHash('sha256').update(await fs.readFile(file)).digest('hex') === sourceHashes['matchbot_csco_mm.so'];
+      installedPluginVersion = matchbotVersionForHash(createHash('sha256').update(await fs.readFile(file)).digest('hex'));
+      pluginInstalled = installedPluginVersion !== null;
       const list = await safePath(root, 'addons/metamod/plugins.ini');
       pluginInstalled = pluginInstalled && (await fs.readFile(list, 'utf8')).split(/\r?\n/).some(line => line.trim() === MATCHBOT_ENTRY);
     }
@@ -438,14 +440,14 @@ export async function mixqueueStatus(id: number) {
     enabled: assigned?.enabled || false,
     serverId: assigned?.serverId || null,
     pluginInstalled,
-    plugin: profile.game === 'cs16' ? { name: 'MatchBot CSCO', version: MATCHBOT_VERSION } : { name: 'MixQueue bridge', version: '0.2.3' },
+    plugin: profile.game === 'cs16' ? { name: 'MatchBot CSCO', version: MATCHBOT_VERSION, installedVersion: pluginInstalled ? installedPluginVersion : null, updateAvailable: pluginInstalled && installedPluginVersion !== MATCHBOT_VERSION, minimumWebVersion: MATCHBOT_MIN_WEB_VERSION } : { name: 'MixQueue bridge', version: '0.2.3' },
     pluginOperation: profile.game === 'cs16' ? await matchbotJob(id) : null,
     process: running ? "running" : "stopped",
     runtimeUpdateRequired,
     rcon: fresh && state.rcon === true,
     journal: fresh && state.journal === true,
     heartbeat: fresh && state.heartbeat === true,
-    ready: fresh && state.ready === true && pluginInstalled && !runtimeUpdateRequired,
+    ready: fresh && state.ready === true && pluginInstalled && (profile.game !== 'cs16' || installedPluginVersion === MATCHBOT_VERSION) && !runtimeUpdateRequired,
     lastCheck: fresh ? state.checkedAt : null,
     error: errors.get(key) || (running ? null : supervisor.status(key).error),
     logs,

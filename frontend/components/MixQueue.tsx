@@ -63,6 +63,8 @@ const words = {
     matchbot_assignment_active: 'End the assigned session in csco.gg and wait for confirmed cleanup.',
     stage: 'Installation',
     pluginInstalled: 'Plugin installed',
+    updatePlugin: 'Review update',
+    requiresWeb: 'Requires CSCO',
     pluginMissing: 'Not installed',
     plugin_not_installed: 'Install the game plugin before enabling MixQueue.',
     nodeRequired: 'Install MixQueue in this node’s settings.',
@@ -143,6 +145,8 @@ const words = {
     matchbot_assignment_active: 'Zakończ przypisaną sesję w csco.gg i poczekaj na potwierdzenie jej wyczyszczenia.',
     stage: 'Instalacja',
     pluginInstalled: 'Plugin zainstalowany',
+    updatePlugin: 'Przejrzyj aktualizację',
+    requiresWeb: 'Wymaga CSCO',
     pluginMissing: 'Nie zainstalowano',
     plugin_not_installed: 'Zainstaluj plugin gry przed włączeniem MixQueue.',
     nodeRequired: 'Zainstaluj MixQueue w ustawieniach tego węzła.',
@@ -540,20 +544,21 @@ export function MixQueueServer({ serverId }: { serverId: number }) {
       )}
       <div className="mq-plugin">
         <div>
-          <strong>{data?.plugin?.name || t.plugin} {data?.plugin?.version || ''}</strong>
-          <p>{data?.pluginInstalled ? t.pluginInstalled : t.pluginMissing}</p>
+          <strong>{data?.plugin?.name || t.plugin} {data?.plugin?.installedVersion || data?.plugin?.version || ''}</strong>
+          <p>{data?.plugin?.updateAvailable ? `${t.available}: ${data.plugin.version}` : data?.pluginInstalled ? t.pluginInstalled : t.pluginMissing}</p>
         </div>
         <AppButton
-          disabled={busy || !data || data.pluginInstalled || data.pluginOperation?.status === 'running'}
+          disabled={busy || !data || (data.pluginInstalled && !data.plugin?.updateAvailable) || data.pluginOperation?.status === 'running'}
           onClick={() => void action({ action: data?.plugin?.name === 'MatchBot CSCO' ? 'plugin-preview' : 'plugin' })}
         >
           <Download size={16} />
-          {data?.plugin?.name === 'MatchBot CSCO' ? t.reviewPlugin : t.installPlugin}
+          {data?.plugin?.updateAvailable ? t.updatePlugin : data?.plugin?.name === 'MatchBot CSCO' ? t.reviewPlugin : t.installPlugin}
         </AppButton>
       </div>
       {preview && (
         <section className="mq-install-preview" aria-label={t.reviewPlugin}>
           <h3>MatchBot CSCO {preview.version}</h3>
+          {preview.minimumWebVersion && <p>{t.requiresWeb} {preview.minimumWebVersion}+</p>}
           <span className="mq-muted-label">{t.dependencies}</span>
           <div className="mq-dependencies">{preview.dependencies?.map((item: any) => <span key={item.name}>{item.name} <b>{item.version}</b></span>)}</div>
           <strong>{t.conflicts}</strong>

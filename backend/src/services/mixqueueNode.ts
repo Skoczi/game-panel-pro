@@ -1,4 +1,5 @@
 import Docker from "dockerode";
+import { matchbotReleaseHashes } from "./matchbotRelease.js";
 import fs from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -15,6 +16,7 @@ export const mqSources = fileURLToPath(
 let installation: "idle" | "installing" | "failed" = "idle";
 export const MIXQUEUE_VERSION = "0.4.0";
 export const sourceHashes: Record<string, string> = {
+  ...matchbotReleaseHashes,
   "mq_agent.py":
     "f28b4b6c4fb754bd08fdf4517095b97f0ff3b0a3589ce2c6a9b929e118d558d3",
   "matchbot_csco_mm.so":
