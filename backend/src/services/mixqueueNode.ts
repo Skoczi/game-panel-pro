@@ -15,9 +15,9 @@ export const mqSources = fileURLToPath(
 let installation: "idle" | "installing" | "failed" = "idle";
 export const sourceHashes: Record<string, string> = {
   "mq_agent.py":
-    "ca88f35c1c7ae905ec3b4e7e9f9e6b83653c3ceee57b901fb77782cc6ddb9b72",
+    "90ee2cc8ad515c6972ec89ef339af9ec93b7fc66ac6eae8f4e98327cc790b58b",
   "mq2_match.amxx":
-    "9d35397d96fa6e643cf4ea83a52d6d3a84207099d309c0fd136252e014a1731d",
+    "28ba83817d8aeb9ccd2cc9bb9929dcf7a1974d98e68d1a7dafef089f86c90ca4",
   "mq2_bridge.smx":
     "b86938870e03f318a0eb708864edf327c9a5c7b53a67ef2bb6a3302d728dbf45",
 };
@@ -67,7 +67,7 @@ export async function mixqueueNodeStatus() {
   return {
     installed: Boolean(await mixqueueImage()),
     installation,
-    version: "0.2.3",
+    version: "0.3.0",
     supervisor: "eserv",
     error: installation === "failed" ? "installation_failed" : null,
   };

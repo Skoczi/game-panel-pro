@@ -136,13 +136,15 @@ class Get5Adapter:
         value = json.loads(raw)
         if value.get('bridge') != 1:
             raise RuntimeError('MixQueue2 SourceMod bridge is not installed')
-        return value
+        return {**value, 'agent_protocol': 2}
 
     @staticmethod
     def build(payload):
         if payload['game'] not in ('csgo', 'csco') or not re.fullmatch(r'de_[a-z0-9_]+', payload['map']):
             raise ValueError('Unsupported Source match')
         size = int(payload['team_size'])
+        if payload['rules'].get('test'):
+            raise ValueError('Solo tests are not supported by the Source adapter yet')
         if size not in (2, 5) or len(payload['players']) != size * 2:
             raise ValueError('Invalid roster size')
         if len({p['steam_id'] for p in payload['players']}) != size * 2:
@@ -238,9 +240,11 @@ class AmxxAdapter(Get5Adapter):
         if payload['game'] != 'cs16' or not re.fullmatch(r'de_[a-z0-9_]+', payload['map']):
             raise ValueError('Invalid GoldSrc match')
         size = int(payload['team_size'])
-        if size not in (2, 5) or len(payload['players']) != size * 2:
+        test = payload['rules'].get('test') is True
+        count = len(payload['players'])
+        if size not in (2, 5) or count != (1 if test else size * 2):
             raise ValueError('Invalid roster')
-        lines = [f"{payload['match_id']} {payload['generation']} {payload['map']} {size} {payload['rules']['mr']} {payload['rules']['ot_mr']} {payload['config_hash']}"]
+        lines = [f"{payload['match_id']} {payload['generation']} {payload['map']} {size} {payload['rules']['mr']} {payload['rules']['ot_mr']} {payload['config_hash']} {1 if test else 0}"]
         seen = set()
         teams = {1: 0, 2: 0}
         for player in payload['players']:
@@ -256,7 +260,7 @@ class AmxxAdapter(Get5Adapter):
             teams[team] += 1
             seen.add(steam)
             lines.append(f'STEAM_0:{account % 2}:{account // 2} {steam} {team}')
-        if teams[1] != size or teams[2] != size:
+        if teams != ({1: 1, 2: 0} if test else {1: size, 2: size}):
             raise ValueError('Unbalanced roster')
         return '\n'.join(lines) + '\n'
 
@@ -275,6 +279,8 @@ class AmxxAdapter(Get5Adapter):
             if active:
                 return
             p = command['payload']
+            if p['rules'].get('test') is True and status.get('solo_test') is not True:
+                raise RuntimeError('Controller does not support solo tests')
             if p['match_id'] != match_id or int(p['generation']) != generation:
                 raise ValueError('Payload assignment mismatch')
             path = self.root / 'addons/amxmodx/configs/mq2' / (match_id + '-' + str(generation) + '.txt')
