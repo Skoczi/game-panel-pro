@@ -1,5 +1,15 @@
 # MixQueue node integration
 
+## MixQueue2 0.3.0
+
+The bundled Python agent reports `agent_protocol: 2` in the original observation forwarded by the Unix broker. The CS 1.6 controller reports `solo_test: true` and `controller_version: "0.3.0"`. Both capabilities are required for a solo test; upgrading only the plugin is insufficient. Source/Get5 deliberately rejects solo-test payloads, and ordinary matches still require complete rosters.
+
+Build/install the node executor image after an upgrade, then recreate enabled server executors using the server's MixQueue restart action. Restarting the old container alone retains its old Python code. Preserve the encrypted binding, configuration, plugin journal and private SQLite spool. The Source bridge, ESERV runner schedule, broker command allowlist and sandbox remain unchanged.
+
+Before updating a game plugin, disable new allocations through CSCO's server controls, preserve the prior availability, and verify no lease and no connected players. Back up the plugin, replace only its binary, and load it through a supported game restart or map change. Restore the prior availability after fresh health is confirmed. If the matching plugin is already loaded, no game restart is needed. Roll back the plugin and executor image together; never reset the event spool or remove a lease manually.
+
+The included 14 Python tests cover the upstream 0.3.0 contract plus ESERV readiness, durable spools and forwarding both capability fields. Solo-test load/abort acceptance does not verify Steam client connection, team assignment, `/ready`, or a complete match; those require a real connected player and a separate match acceptance.
+
 ## Runtime ownership
 
 One MixQueue supervisor belongs to the existing ESERV backend on each node. There is no second ESERV agent, systemd daemon, enrollment or node credential. Installing MixQueue installs a verified executor image once on that node. Per-server actions attach a matchmaking identity and start or stop an executor using that image.
