@@ -41,6 +41,7 @@ test('start/restart reject disallowed saved bindings before calling Docker', asy
     let starts = 0, restarts = 0;
     let binding: any = { NetworkMode: 'bridge', PortBindings: { '8080/tcp': [{ HostIp: '192.0.2.10', HostPort: '8080' }] } };
     const module = loadWithMocks('../src/utils/docker/containers.ts', {
+        '../../services/mixqueue.js': { suspendMixqueueContainer: async () => {} },
         '../../services/cpuTopology.js': { assertCpuBinding: async () => {}, parseCpuList: () => [] },
         '../../services/gracefulGameStop.js': { tryGracefulGameStop: async () => false, restoreGracefulRestartPolicy: async () => {} },
         './ownership.js': ownership,

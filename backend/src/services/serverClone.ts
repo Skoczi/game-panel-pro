@@ -111,6 +111,7 @@ export async function populateClone(targetId: number, sourceArchive: string, che
   await serverRepository.updateDockerInfo(targetId, created.id, created.name);
   const restored = await restoreNativeBackup({ ...server, docker_container_id: created.id }, name, true);
   if (!restored.ok) throw new Error('Clone restore failed');
+  await (await import('./mixqueue.js')).resetClonedMixqueue(server);
   const runtime = JSON.parse(server.runtime_config_json || '{}'); delete runtime.nativeOperation; delete runtime.cloneImport;
   await serverRepository.update(targetId, { status: 'stopped', container_status: 'created', runtime_config_json: JSON.stringify(runtime) });
   await actionsRepository.create(targetId, 'success', `Clone/transfer completed; backup checksum ${checksum}; unique identity and reviewed ports. Target remains stopped.`, actor);

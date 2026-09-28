@@ -1,4 +1,5 @@
 import { operationalHealthStore } from '../services/operationalHealth.js';
+import { mixqueueNodeRoutes } from './mixqueue.js';
 import { hostNetworkSnapshot, changeHostNetwork } from '../services/hostNetwork.js';
 import { alertStore } from '../services/alerts.js';
 // Modified by Skoczi: expose the configured IPv4 allowlist to authenticated UI clients.
@@ -15,6 +16,7 @@ import { nowIso } from '../utils/time.js';
 import { isAgent } from '../agent/identity.js';
 
 const router = Router();
+router.use('/mixqueue', mixqueueNodeRoutes);
 router.use('/shared-files', sharedFilesRoutes);
 
 router.get('/host-network', rootOnly, async (_req, res) => {

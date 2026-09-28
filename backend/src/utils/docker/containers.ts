@@ -357,6 +357,7 @@ export async function startContainer(containerId: string): Promise<void> {
 }
 
 export async function stopContainer(containerId: string, timeoutSeconds = 30): Promise<void> {
+    await (await import('../../services/mixqueue.js')).suspendMixqueueContainer(containerId);
     if (await tryGracefulGameStop(containerId, timeoutSeconds)) return;
     await docker.getContainer(containerId).stop({ t: timeoutSeconds });
 }
@@ -365,6 +366,7 @@ export async function restartContainer(containerId: string, timeoutSeconds = 30)
     const info = await docker.getContainer(containerId).inspect();
     if (info.HostConfig.CpusetCpus) await assertCpuBinding({ cpuSet: parseCpuList(info.HostConfig.CpusetCpus), ...(info.HostConfig.NanoCpus ? { cpu: info.HostConfig.NanoCpus / 1e9 } : {}) });
     await assertContainerPortPolicy(containerId);
+    await (await import('../../services/mixqueue.js')).suspendMixqueueContainer(containerId);
     if (await tryGracefulGameStop(containerId, timeoutSeconds)) {
         await startContainer(containerId);
         return;
@@ -387,6 +389,7 @@ export async function updateContainerResourceLimits(
 }
 
 export async function removeContainer(containerId: string): Promise<void> {
+    await (await import('../../services/mixqueue.js')).suspendMixqueueContainer(containerId);
     const c = docker.getContainer(containerId);
 
     try {

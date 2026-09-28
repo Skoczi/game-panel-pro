@@ -131,6 +131,7 @@ export function runtimePath(path: string): boolean {
             '/api/health',
             '/api/version',
             '/api/system/metrics',
+            '/api/system/mixqueue',
             '/api/system/info',
               '/api/system/settings',
               '/api/system/host-network',

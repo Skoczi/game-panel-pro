@@ -24,6 +24,7 @@ test('settings routes require root; appearance exposes no allocations', async ()
         network: { restrictPorts: true, allocations: [] },
     };
     const { default: router } = loadWithMocks('../src/routes/system.ts', {
+        './mixqueue.js': { mixqueueNodeRoutes: express.Router() },
         './sharedFiles.js': { sharedFilesRoutes: express.Router() },
         '../services/hostNetwork.js': { hostNetworkSnapshot: async () => ({ available: false }), changeHostNetwork: async () => ({}) },
         '../services/operationalHealth.js': { operationalHealthStore: async () => ({ snapshot: async () => ({ checks: [] }) }) },

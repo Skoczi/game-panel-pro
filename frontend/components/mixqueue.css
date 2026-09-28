@@ -1,0 +1,349 @@
+.mq-panel {
+  --mq-border: #d8e0eb;
+  --mq-muted: #64748b;
+  --mq-surface: #f8fafc;
+  color: #142032;
+  border: 1px solid var(--mq-border);
+  border-radius: 18px;
+  padding: 24px;
+  background: white;
+  display: grid;
+  gap: 22px;
+  min-width: 0;
+}
+.dark .mq-panel {
+  --mq-border: #27374d;
+  --mq-muted: #93a6bf;
+  --mq-surface: #0b1625;
+  background: #101d2e;
+  color: #e9f0fa;
+}
+.mq-header,
+.mq-title,
+.mq-header-actions,
+.mq-actions,
+.mq-node-row,
+.mq-plugin {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.mq-header,
+.mq-node-row,
+.mq-plugin {
+  justify-content: space-between;
+}
+.mq-title {
+  min-width: 0;
+}
+.mq-title h2 {
+  font-size: 20px;
+  font-weight: 700;
+  margin: 0;
+}
+.mq-title p,
+.mq-node-row p,
+.mq-plugin p {
+  margin: 4px 0 0;
+  font-size: 13px;
+  color: var(--mq-muted);
+  overflow-wrap: anywhere;
+}
+.mq-symbol {
+  display: grid;
+  place-items: center;
+  width: 46px;
+  height: 46px;
+  flex-shrink: 0;
+  border-radius: 13px;
+  color: #12bfd6;
+  background: #12bfd612;
+}
+.mq-language {
+  display: flex;
+  border: 1px solid var(--mq-border);
+  padding: 3px;
+  border-radius: 9px;
+}
+.mq-language button {
+  font-size: 11px;
+  font-weight: 700;
+  border-radius: 6px;
+  padding: 5px 7px;
+  color: var(--mq-muted);
+}
+.mq-language button[aria-pressed='true'] {
+  background: #12bfd61c;
+  color: #089ab2;
+}
+.dark .mq-language button[aria-pressed='true'] {
+  color: #5adceb;
+}
+.mq-switch {
+  width: 42px;
+  height: 24px;
+  border-radius: 30px;
+  background: #64748b;
+  display: flex;
+  align-items: center;
+  padding: 3px;
+  flex-shrink: 0;
+}
+.mq-switch span {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: white;
+  transition: transform 0.16s;
+}
+.mq-switch[aria-checked='true'] {
+  background: #089eb5;
+}
+.mq-switch[aria-checked='true'] span {
+  transform: translateX(18px);
+}
+.mq-switch:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.mq-switch-label {
+  font-size: 12px;
+  color: var(--mq-muted);
+}
+.mq-checks {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+.mq-check {
+  background: var(--mq-surface);
+  border: 1px solid var(--mq-border);
+  padding: 17px;
+  border-radius: 12px;
+  display: grid;
+  grid-template-columns: 18px 1fr;
+  column-gap: 9px;
+  row-gap: 14px;
+  min-width: 0;
+}
+.mq-check > svg {
+  color: var(--mq-muted);
+}
+.mq-check > span {
+  font-size: 12px;
+  color: var(--mq-muted);
+}
+.mq-check strong {
+  grid-column: 1/-1;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.mq-check i {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #64748b;
+}
+.mq-check .mq-ok {
+  color: #059669;
+}
+.dark .mq-check .mq-ok {
+  color: #48dca8;
+}
+.mq-ok i {
+  background: currentColor;
+}
+.mq-readiness {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  color: var(--mq-muted);
+  margin-top: -7px;
+}
+.mq-readiness time {
+  margin-left: auto;
+  font-variant-numeric: tabular-nums;
+  font-size: 12px;
+}
+.mq-actions {
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.mq-import {
+  display: grid;
+  gap: 18px;
+  background: var(--mq-surface);
+  padding: 20px;
+  border: 1px solid var(--mq-border);
+  border-radius: 14px;
+}
+.mq-file {
+  display: flex;
+  position: relative;
+  align-items: center;
+  gap: 14px;
+  cursor: pointer;
+  padding: 18px;
+  border: 1px dashed #49849b;
+  border-radius: 10px;
+  color: #089eb5;
+  overflow: hidden;
+  min-width: 0;
+}
+.mq-file strong {
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+.mq-file small {
+  display: block;
+  margin-top: 4px;
+  color: var(--mq-muted);
+  font-size: 11px;
+}
+.mq-file input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+}
+.mq-file:focus-within {
+  outline: 2px solid #13bfd8;
+  outline-offset: 3px;
+}
+.mq-import-bottom {
+  display: flex;
+  align-items: flex-start;
+  gap: 20px;
+}
+.mq-import-bottom > label {
+  flex: 1;
+  display: grid;
+  gap: 7px;
+  font-size: 12px;
+}
+.mq-import-bottom input {
+  width: 100%;
+  background: transparent;
+  border: 1px solid var(--mq-border);
+  border-radius: 9px;
+  padding: 10px;
+  font-size: 14px;
+  min-width: 0;
+}
+.mq-import-bottom small {
+  color: var(--mq-muted);
+  font-size: 11px;
+}
+.mq-import-bottom > button {
+  margin-top: 23px;
+}
+.mq-plugin {
+  padding-top: 20px;
+  border-top: 1px solid var(--mq-border);
+}
+.mq-plugin strong {
+  font-size: 13px;
+}
+.mq-events {
+  border-top: 1px solid var(--mq-border);
+  padding-top: 16px;
+  font-size: 12px;
+  color: var(--mq-muted);
+}
+.mq-events summary {
+  cursor: pointer;
+}
+.mq-events p {
+  display: flex;
+  gap: 16px;
+  margin: 12px 0 0;
+}
+.mq-events time {
+  font-variant-numeric: tabular-nums;
+}
+.mq-error,
+.mq-notice {
+  border-radius: 10px;
+  padding: 12px 14px;
+  font-size: 13px;
+  margin: 0;
+}
+.mq-error {
+  background: #ef444412;
+  color: #c24141;
+}
+.dark .mq-error {
+  color: #fca5a5;
+}
+.mq-notice {
+  background: #0bbfd911;
+  color: var(--mq-muted);
+}
+.mq-muted {
+  color: #94a3b8;
+  padding: 16px;
+}
+.mq-panel button:focus-visible,
+.mq-panel summary:focus-visible {
+  outline: 2px solid #13bfd8;
+  outline-offset: 3px;
+}
+@media (max-width: 700px) {
+  .mq-panel {
+    padding: 17px;
+    gap: 18px;
+  }
+  .mq-header {
+    flex-wrap: wrap;
+    gap: 18px;
+  }
+  .mq-header-actions {
+    margin-left: auto;
+    gap: 9px;
+  }
+  .mq-checks {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 9px;
+  }
+  .mq-check {
+    padding: 13px;
+    row-gap: 12px;
+  }
+  .mq-import {
+    padding: 13px;
+  }
+  .mq-import-bottom {
+    flex-direction: column;
+    gap: 12px;
+  }
+  .mq-import-bottom > label {
+    width: 100%;
+  }
+  .mq-import-bottom > button {
+    margin-top: 0;
+    width: 100%;
+  }
+  .mq-plugin,
+  .mq-node-row {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .mq-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+  .mq-actions > button:first-child {
+    grid-column: 1/-1;
+  }
+  .mq-actions > button {
+    width: 100%;
+  }
+  .mq-switch-label {
+    min-width: 60px;
+  }
+}
