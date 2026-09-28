@@ -21,6 +21,10 @@ const words = {
     enabled: 'Enabled',
     disabled: 'Disabled',
     install: 'Install runtime',
+    update: 'Update runtime',
+    available: 'Available',
+    restartRequired: 'Runtime updated. Restart this agent after the current session ends.',
+    unknownVersion: 'Previous version',
     installed: 'Installed on this node',
     installing: 'Installing…',
     refresh: 'Refresh',
@@ -45,6 +49,19 @@ const words = {
     setup: 'Connection',
     plugin: 'Game plugin',
     installPlugin: 'Install plugin',
+    reviewPlugin: 'Review installation',
+    cancel: 'Cancel',
+    installMatchbot: 'Install MatchBot CSCO',
+    dependencies: 'Dependencies',
+    conflicts: 'Plugins to disable',
+    noConflicts: 'No conflicting plugins detected',
+    pluginScope: 'Verified backup · Server stays stopped',
+    plugin_preview_changed: 'Configuration changed. Review the installation again.',
+    incompatible_game_image: 'The game image needs Linux i386 support and glibc 2.36 or newer.',
+    matchbot_install_failed: 'Installation failed. Check the operation log before retrying.',
+    matchbot_backup_failed: 'Backup failed. Game files were not changed.',
+    matchbot_assignment_active: 'End the assigned session in csco.gg and wait for confirmed cleanup.',
+    stage: 'Installation',
     pluginInstalled: 'Plugin installed',
     pluginMissing: 'Not installed',
     plugin_not_installed: 'Install the game plugin before enabling MixQueue.',
@@ -84,6 +101,10 @@ const words = {
     enabled: 'Włączony',
     disabled: 'Wyłączony',
     install: 'Zainstaluj runtime',
+    update: 'Aktualizuj runtime',
+    available: 'Dostępna',
+    restartRequired: 'Runtime zaktualizowany. Zrestartuj agenta po zakończeniu bieżącej sesji.',
+    unknownVersion: 'Poprzednia wersja',
     installed: 'Zainstalowany na węźle',
     installing: 'Instalowanie…',
     refresh: 'Odśwież',
@@ -108,6 +129,19 @@ const words = {
     setup: 'Połączenie',
     plugin: 'Plugin gry',
     installPlugin: 'Zainstaluj plugin',
+    reviewPlugin: 'Przejrzyj instalację',
+    cancel: 'Anuluj',
+    installMatchbot: 'Zainstaluj MatchBot CSCO',
+    dependencies: 'Zależności',
+    conflicts: 'Pluginy do wyłączenia',
+    noConflicts: 'Nie wykryto kolidujących pluginów',
+    pluginScope: 'Zweryfikowany backup · Serwer pozostaje wyłączony',
+    plugin_preview_changed: 'Konfiguracja się zmieniła. Otwórz ponownie podgląd instalacji.',
+    incompatible_game_image: 'Obraz gry wymaga obsługi Linux i386 i glibc co najmniej 2.36.',
+    matchbot_install_failed: 'Instalacja nieudana. Sprawdź dziennik operacji przed kolejną próbą.',
+    matchbot_backup_failed: 'Backup nieudany. Pliki gry nie zostały zmienione.',
+    matchbot_assignment_active: 'Zakończ przypisaną sesję w csco.gg i poczekaj na potwierdzenie jej wyczyszczenia.',
+    stage: 'Instalacja',
     pluginInstalled: 'Plugin zainstalowany',
     pluginMissing: 'Nie zainstalowano',
     plugin_not_installed: 'Zainstaluj plugin gry przed włączeniem MixQueue.',
@@ -241,18 +275,19 @@ export function MixQueueNode({ nodeId }: { nodeId: string }) {
                 : t.disabled}
           </strong>
           <p>
-            {t.version} {data?.version || '0.2.3'} · ESERV
+            {data?.installed ? `${t.version} ${data.installedVersion || t.unknownVersion}` : `${t.available} ${data?.version || '—'}`}
+            {data?.updateAvailable && ` → ${data.version}`}
           </p>
         </div>
         <AppButton
           tone="primary"
           onClick={install}
-          disabled={busy || !data || data.installation === 'installing' || data.installed}
+          disabled={busy || !data || data.installation === 'installing' || (data.installed && !data.updateAvailable)}
         >
           <Download size={16} />
           {data?.installation === 'installing'
             ? t.installing
-            : data?.installed
+            : data?.updateAvailable ? t.update : data?.installed
               ? t.installed
               : t.install}
         </AppButton>
@@ -275,6 +310,7 @@ export function MixQueueServer({ serverId }: { serverId: number }) {
     [error, setError] = useState(''),
     [notice, setNotice] = useState(''),
     [showImport, setShowImport] = useState(false),
+    [preview, setPreview] = useState<any>(null),
     [confirm, setConfirm] = useState(false);
   const [configuration, setConfiguration] = useState<unknown>(null),
     [filename, setFilename] = useState(''),
@@ -316,7 +352,9 @@ export function MixQueueServer({ serverId }: { serverId: number }) {
     try {
       const result = await apiClient.changeMixqueue(serverId, body);
       if (!active.current) return;
+      if (body.action === 'plugin-preview') { setPreview(result); return; }
       setData(result);
+      if (body.action === 'plugin') setPreview(null);
       if (body.action === 'import') {
         setConfiguration(null);
         setFilename('');
@@ -396,6 +434,7 @@ export function MixQueueServer({ serverId }: { serverId: number }) {
         </p>
       )}
       {data && !data.node?.installed && <p className="mq-notice">{t.nodeRequired}</p>}
+      {data?.runtimeUpdateRequired && <p className="mq-notice">{t.restartRequired}</p>}
       <div className="mq-checks">
         {checks.map((check) => (
           <div className="mq-check" key={check.name}>
@@ -480,17 +519,39 @@ export function MixQueueServer({ serverId }: { serverId: number }) {
       )}
       <div className="mq-plugin">
         <div>
-          <strong>{t.plugin}</strong>
+          <strong>{data?.plugin?.name || t.plugin} {data?.plugin?.version || ''}</strong>
           <p>{data?.pluginInstalled ? t.pluginInstalled : t.pluginMissing}</p>
         </div>
         <AppButton
-          disabled={busy || !data || data.pluginInstalled}
-          onClick={() => void action({ action: 'plugin' })}
+          disabled={busy || !data || data.pluginInstalled || data.pluginOperation?.status === 'running'}
+          onClick={() => void action({ action: data?.plugin?.name === 'MatchBot CSCO' ? 'plugin-preview' : 'plugin' })}
         >
           <Download size={16} />
-          {t.installPlugin}
+          {data?.plugin?.name === 'MatchBot CSCO' ? t.reviewPlugin : t.installPlugin}
         </AppButton>
       </div>
+      {preview && (
+        <section className="mq-install-preview" aria-label={t.reviewPlugin}>
+          <h3>MatchBot CSCO {preview.version}</h3>
+          <span className="mq-muted-label">{t.dependencies}</span>
+          <div className="mq-dependencies">{preview.dependencies?.map((item: any) => <span key={item.name}>{item.name} <b>{item.version}</b></span>)}</div>
+          <strong>{t.conflicts}</strong>
+          {preview.conflicts?.length ? <ul>{preview.conflicts.map((item: any) => <li key={item.file + item.plugin}><code>{item.plugin}</code><small>{item.file}</small></li>)}</ul> : <p>{t.noConflicts}</p>}
+          <small>{t.pluginScope}</small>
+          {!preview.stopped && <p className="mq-notice">{t.stop_game_before_plugin_install}</p>}
+          {preview.activeAssignment && <p className="mq-notice">{t.matchbot_assignment_active}</p>}
+          <div className="mq-actions">
+            <AppButton tone="primary" disabled={busy || !preview.stopped || preview.activeAssignment} onClick={() => void action({ action: 'plugin', fingerprint: preview.fingerprint })}><Download size={16} />{t.installMatchbot}</AppButton>
+            <AppButton disabled={busy} onClick={() => setPreview(null)}>{t.cancel}</AppButton>
+          </div>
+        </section>
+      )}
+      {data?.pluginOperation?.status === 'running' && <div className="mq-install-progress" role="status">
+        <strong>{t.stage} · {data.pluginOperation.progress?.stage || t.working}</strong>
+        <progress max={100} value={data.pluginOperation.progress?.percent ?? undefined} aria-label={t.stage} />
+        {data.pluginOperation.progress?.percent != null && <span>{data.pluginOperation.progress.percent}%</span>}
+      </div>}
+      {data?.pluginOperation?.error && <p className="mq-error" role="alert">{message(data.pluginOperation.error, lang)}</p>}
       {data?.error && (
         <p role="alert" className="mq-error">
           {message(data.error, lang)}

@@ -103,13 +103,14 @@ export class MixqueueDockerRuntime implements MixqueueRuntime {
   }
 
   async list() {
-    const result = new Map<string, { generation: string; running: boolean }>();
+    const result = new Map<string, { generation: string; running: boolean; image: string }>();
     for (const item of await this.containers()) {
       const key = item.Labels[identity];
       if (result.has(key)) throw new Error("duplicate_mixqueue_executor");
       result.set(key, {
         generation: item.Labels[generation],
         running: item.State === "running",
+        image: item.ImageID,
       });
     }
     return result;

@@ -122,6 +122,7 @@ test("framework transaction keeps settings, verifies dependencies, and removes o
       "./nativeRestore.js": {},
       "./rehldsPackages.js": { addonPath },
       "./nativeRestoreJournal.js": {},
+      "./addonFiles.js": await import('../src/services/addonFiles.js'),
     },
     { Buffer },
   );

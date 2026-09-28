@@ -6,6 +6,7 @@ import os from 'node:os';
 import { loadWithMocks } from './loadWithMocks.js';
 import { addonPath, REHLDS_MODULES } from '../src/services/rehldsPackages.js';
 const safe = loadWithMocks('../src/services/rehldsAddons.ts', {
+  './addonFiles.js': await import('../src/services/addonFiles.js'),
  'node:fs': { promises: fs }, 'node:path': path, 'node:crypto': await import('node:crypto'),
  './servers.js': {}, './rehldsContent.js': {}, '../utils/storage.js': {}, '../utils/docker.js': {}, './nativeBackups.js': {}, './nativeRestore.js': {},
  './rehldsPackages.js': { addonPath, REHLDS_MODULES }, './nativeRestoreJournal.js': { syncDirectory: async () => {} },

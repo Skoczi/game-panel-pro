@@ -139,6 +139,29 @@ class Get5Adapter:
         return {**value, 'agent_protocol': 2}
 
     @staticmethod
+    def cleanup_complete(status):
+        # An empty/malformed response or a quarantined controller is not proof.
+        return (status.get('matchid') == '' and status.get('idle') is True
+                and status.get('healthy') is True)
+
+    def cleanup(self, command, status):
+        # Retry may arrive after clear succeeded but its RCON reply was lost.
+        # Confirm the fresh idle observation instead of clearing the server again.
+        if not self.cleanup_complete(status):
+            try:
+                self.rcon.command('mq2_clear')
+            except Exception:
+                # Transport outcome is ambiguous. Only an independent status
+                # read can prove completion; otherwise preserve the failure.
+                if not self.cleanup_complete(self.status()):
+                    raise
+            else:
+                if not self.cleanup_complete(self.status()):
+                    return
+        self.spool.put({'event_id': 'idle-' + command['id'], 'match_id': command['match_id'],
+                        'generation': int(command['generation']), 'type': 'idle', 'data': {}})
+
+    @staticmethod
     def build(payload):
         if payload['game'] not in ('csgo', 'csco') or not re.fullmatch(r'de_[a-z0-9_]+', payload['map']):
             raise ValueError('Unsupported Source match')
@@ -195,11 +218,7 @@ class Get5Adapter:
                 self.rcon.command('get5_loadmatch ' + relative)
             # The journal bridge emits loaded only after map change and reads the Get5 identity.
         elif command['type'] in ('abort', 'cleanup'):
-            self.rcon.command('mq2_clear')
-            current = self.status()
-            if current.get('matchid') or not current.get('idle'):
-                return
-            self.spool.put({'event_id': 'idle-' + command['id'], 'match_id': match_id, 'generation': generation, 'type': 'idle', 'data': {}})
+            self.cleanup(command, status)
         else:
             raise ValueError('Unsupported command')
 
@@ -275,7 +294,12 @@ class AmxxAdapter(Get5Adapter):
             raise RuntimeError('Foreign server assignment')
         if command['type'] == 'load':
             if not status.get('healthy', False):
-                raise RuntimeError('AMXX recovery quarantine')
+                raise RuntimeError('CS 1.6 recovery quarantine')
+            version = str(status.get('controller_version', ''))
+            if (status.get('controller') != 'matchbot'
+                    or not re.fullmatch(r'\d+\.\d+\.\d+', version)
+                    or tuple(map(int, version.split('.'))) < (0, 4, 0)):
+                raise RuntimeError('MatchBot CSCO 0.4.0 or later is required')
             if active:
                 return
             p = command['payload']
@@ -292,10 +316,7 @@ class AmxxAdapter(Get5Adapter):
                 stream.write(content); stream.flush(); os.fsync(stream.fileno())
             self.rcon.command(f'mq2_load {match_id} {generation}')
         elif command['type'] in ('abort', 'cleanup'):
-            self.rcon.command('mq2_clear')
-            status = self.status()
-            if status.get('idle') and not status.get('matchid'):
-                self.spool.put({'event_id': 'idle-' + command['id'], 'match_id': match_id, 'generation': generation, 'type': 'idle', 'data': {}})
+            self.cleanup(command, status)
         else:
             raise ValueError('Unsupported command')
 
