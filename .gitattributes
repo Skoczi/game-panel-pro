@@ -1,1 +1,3 @@
 * text=auto eol=lf
+runtime/mixqueue/mq_agent.py -text
+runtime/mixqueue/matchbot-language.txt -text
