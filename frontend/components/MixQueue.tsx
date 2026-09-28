@@ -207,6 +207,27 @@ const errorCode = (error: any) => error?.response?.data?.error || error?.message
 function message(code: string, lang: Language) {
   return (words[lang] as Record<string, string>)[code] || words[lang].error;
 }
+function installationStage(stage: string | undefined, lang: Language) {
+  const labels: Record<string, [string, string]> = {
+    compatibility: ['Sprawdzanie obrazu gry', 'Checking game image'],
+    'backup-scan': ['Przygotowanie backupu', 'Preparing backup'],
+    backup: ['Tworzenie backupu', 'Creating backup'],
+    'backup-verify': ['Weryfikacja backupu', 'Verifying backup'],
+    'backup-protection': ['Zabezpieczanie backupu', 'Protecting backup'],
+    'backup-ready': ['Backup gotowy', 'Backup ready'],
+    'packages-ready': ['Pakiety zweryfikowane', 'Packages verified'],
+    staging: ['Przygotowanie plików', 'Preparing files'],
+    configure: ['Konfiguracja pluginów', 'Configuring plugins'],
+    commit: ['Zapisywanie zmian', 'Applying changes'],
+    completed: ['Zainstalowano', 'Installed'],
+  };
+  const dependency = /^(download|install)-(rehlds|regamedll|metamod)$/.exec(stage || '');
+  if (dependency) {
+    const verb = dependency[1] === 'download' ? (lang === 'pl' ? 'Pobieranie' : 'Downloading') : (lang === 'pl' ? 'Instalowanie' : 'Installing');
+    return `${verb} ${{ rehlds: 'ReHLDS', regamedll: 'ReGameDLL', metamod: 'Metamod' }[dependency[2]]}`;
+  }
+  return labels[stage || '']?.[lang === 'pl' ? 0 : 1] || words[lang].working;
+}
 
 export function MixQueueNode({ nodeId }: { nodeId: string }) {
   const [lang, setLang] = useLanguage(),
@@ -547,7 +568,7 @@ export function MixQueueServer({ serverId }: { serverId: number }) {
         </section>
       )}
       {data?.pluginOperation?.status === 'running' && <div className="mq-install-progress" role="status">
-        <strong>{t.stage} · {data.pluginOperation.progress?.stage || t.working}</strong>
+        <strong>{installationStage(data.pluginOperation.progress?.stage, lang)}</strong>
         <progress max={100} value={data.pluginOperation.progress?.percent ?? undefined} aria-label={t.stage} />
         {data.pluginOperation.progress?.percent != null && <span>{data.pluginOperation.progress.percent}%</span>}
       </div>}
