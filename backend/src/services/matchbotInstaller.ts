@@ -51,8 +51,8 @@ async function checkImage(image: string, id: number) {
     Image: image, Entrypoint: [], WorkingDir: '/', User: '1000:1000',
     // Run the 32-bit loader itself: the host's glibc is not evidence of container compatibility.
     Cmd: ['/bin/sh', '-c', 'getconf GNU_LIBC_VERSION && /lib/ld-linux.so.2 --version'],
-    Labels: { ...runtimeLabels(), 'gamepanel.nativeOperation': 'matchbot-check', 'gamepanel.serverId': String(id) },
-    HostConfig: { NetworkMode: 'none', ReadonlyRootfs: true, CapDrop: ['ALL'], SecurityOpt: ['no-new-privileges:true'], Memory: 64 * 1024 ** 2, PidsLimit: 32, RestartPolicy: { Name: 'no' }, LogConfig: { Type: 'local', Config: { 'max-size': '1m', 'max-file': '1' } } },
+    Labels: { ...runtimeLabels(), 'gamepanel.managed': 'true', 'gamepanel.oneshot': 'true', 'gamepanel.nativeOperation': 'matchbot-check', 'gamepanel.serverId': String(id) },
+    HostConfig: { NetworkMode: 'none', ReadonlyRootfs: true, CapDrop: ['ALL'], SecurityOpt: ['no-new-privileges:true'], Memory: 64 * 1024 ** 2, PidsLimit: 32, RestartPolicy: { Name: 'no' }, LogConfig: { Type: 'local', Config: { 'max-size': '1m', 'max-file': '2' } } },
   });
   let timer: ReturnType<typeof setTimeout> | undefined;
   try {
