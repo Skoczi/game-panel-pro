@@ -7,6 +7,7 @@ export type Delegation = {
     runtimeKey: string;
     permissions: string[];
     downloadPath?: string;
+    mixqueueOperator?: true;
 };
 
 export function validateDelegation(value: unknown): Delegation {
@@ -19,6 +20,7 @@ export function validateDelegation(value: unknown): Delegation {
         d.serverId <= 0 ||
         typeof d.runtimeKey !== 'string' ||
         !/^[a-f0-9]{32}$/.test(d.runtimeKey) ||
+        (d.mixqueueOperator !== undefined && d.mixqueueOperator !== true) ||
         (d.downloadPath !== undefined &&
             (typeof d.downloadPath !== 'string' ||
                 !/^\/api\/download\/[a-zA-Z0-9_-]{43}$/.test(d.downloadPath))) ||
@@ -33,6 +35,7 @@ export function validateDelegation(value: unknown): Delegation {
         serverId: d.serverId,
         runtimeKey: d.runtimeKey,
         permissions: [...new Set(d.permissions)].sort(),
+        ...(d.mixqueueOperator === true ? { mixqueueOperator: true as const } : {}),
         ...(d.downloadPath ? { downloadPath: d.downloadPath } : {}),
     };
 }

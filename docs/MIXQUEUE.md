@@ -1,0 +1,63 @@
+# MixQueue node integration
+
+## Runtime ownership
+
+One MixQueue supervisor belongs to the existing ESERV backend on each node. There is no second ESERV agent, systemd daemon, enrollment or node credential. Installing MixQueue installs a verified executor image once on that node. Per-server actions attach a matchmaking identity and start or stop an executor using that image.
+
+The single-server upstream Python implementation remains the protocol executor. Each game gets its own sandboxed executor container, rather than sharing a Python interpreter or a host filesystem namespace with other games. A container is an isolation boundary, not another ESERV node agent.
+
+The node supervisor serializes reconciliation, uses deterministic executor identities, and handles each executor's failures and retry delay separately. An executor is replaced when its configuration revision or game-container generation changes. A stopped or deleted game must have no running executor. Node startup reconciles persisted assignments; it must not infer an assignment from game files.
+
+## Isolation and protocol
+
+Each assignment is bound to ESERV's immutable runtime UUID and its original MixQueue `server_id`. It has separate encrypted credentials, derived configuration, RCON connection, plugin journal and SQLite event spool. Numeric ESERV display IDs do not replace matchmaking identities.
+
+Executors have no network, Docker socket or credentials. They receive only their own plugin configuration directory (write), plugin journal directory (read), event spool (write) and a per-server Unix socket. The existing ESERV runtime brokers that socket, signing requests with the assigned key and forwarding only to `https://csco.gg/mq2-agent`, without redirects. RCON destinations come from the inspected owned game container and its configured game port. The broker accepts only the commands supported by the MixQueue adapter.
+
+Import fields `instructions`, `game_root`, `journal`, `database`, `rcon_host` and `rcon_port` never grant execution, filesystem or network capabilities. RCON passwords are not generated or changed. Missing credentials require a secure existing credential or explicit operator input.
+
+The upstream request body, HMAC algorithm, headers, event sequence and server identity remain unchanged. Separate spools ensure that one server's journal fault or event backlog does not affect another server.
+
+## Panel placement
+
+- **Nodes → selected node → MixQueue:** install/update the shared executor runtime and show installation status.
+- **Server → Game Config → Addons → MixQueue:** import configuration, show process/RCON/journal/heartbeat/readiness separately, start/stop/restart and disconnect.
+- The server tab follows AMXX plugins where that tab is present. Both surfaces are limited to the owner and operators, including backend authorization.
+
+Cloning and transferring game files do not copy integration credentials or event spools. A destination requires its own exported identity. Disconnection removes the integration, not the game. No action enables public queues on csco.gg.
+
+## Implementation status
+
+The node supervisor, encrypted assignment storage, operator-only routes, PL/EN panel, node installer, game-plugin installer and server lifecycle hooks are implemented. New and existing servers start with MixQueue disabled. Import also leaves the integration disabled, including repeated imports. The server's switch explicitly enables or disables its executor.
+
+- Twelve TypeScript tests cover duplicate starts, per-server failure isolation, configuration changes, game restart, stop/removal, shutdown, import validation, RCON restrictions, container isolation options and GoldSrc/Source RCON against protocol fixtures.
+- Five Python tests cover separate durable event spools, journal/event errors, readiness and Classic Offensive's build-attestation gate.
+- A Docker integration test runs two real Python executor containers under one supervisor. It verifies signed requests against a controlled receiver, separate state, heartbeat despite a journal fault, restart isolation and scoped stopping. Both containers have networking disabled. The test does not contact csco.gg or operate customer games.
+
+An isolated CS 1.6 copy on WAW2 passed plugin installation, import/reimport with an omitted RCON password, encrypted credential persistence, real GoldSrc RCON, reading the real plugin journal, controlled signed heartbeat, executor restart, game stop/start, disable and disconnect. Seven existing game containers retained their original start times. This acceptance used a controlled matchmaking receiver, not public matchmaking queues.
+
+All 314 backend tests passed. Five browser tests verify explicit enablement, no secret in DOM/browser storage, operator-only tab placement, node installation and desktop/mobile layout. Screenshots produced by those browser tests use labeled test data.
+
+## Configuration and lifecycle
+
+The installation is stored in `/data/mixqueue/node.json`; encrypted per-server bindings live under `/data/mixqueue/servers/<runtime UUID>/binding.json`. The key is encrypted with ESERV's existing authenticated encryption mechanism and a server-specific context. Preserve the node's existing JWT secret and private data during upgrades. Export JSON is never stored verbatim.
+
+The executor's event spool lives outside game files and game backups. Reimport keeps the same identity and spool; changing identity requires disconnecting first. Disconnect deletes the credentials and local event spool, with a confirmation in the panel. It does not revoke the key on csco.gg. Clone/transfer destinations receive neither credentials nor spool, and copied MixQueue plugin state is cleared.
+
+Node startup retires stale executor containers before reconstructing their broker sockets. Enabled integrations resume only when their assigned game is running. Game stop/restart revokes the broker first. A failed game stop leaves the integration suspended until a new game generation or an explicit agent restart. Plugin installation requires the game to be stopped. Existing different plugin binaries are not overwritten.
+
+CS 1.6 requires AMX Mod X. CS:GO and Classic Offensive require SourceMod and a compatible Get5 plugin. These prerequisites are reported separately; installing the MixQueue bridge does not install Get5. Classic Offensive additionally requires a nonempty `verified_build` from its private export; this is an operator attestation, not proof that this ESERV installation has completed a match.
+
+For isolated verification:
+
+```sh
+docker build -t gamepanel-mixqueue:test runtime/mixqueue
+cd backend
+npm run build
+npx tsx --test test/mixqueue-*.test.ts
+MIXQUEUE_TEST_IMAGE=gamepanel-mixqueue:test npx tsx --test test/integration/mixqueue.test.ts
+cd ../runtime/mixqueue
+python3 -m unittest -v test_runner
+```
+
+Real csco.gg heartbeat and a complete match remain separate acceptance steps. A successful fixture heartbeat is not a production heartbeat or acceptance of a full match. The integration never enables queues on csco.gg.

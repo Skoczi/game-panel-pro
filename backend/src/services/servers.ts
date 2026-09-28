@@ -285,6 +285,7 @@ export async function deleteServerBestEffort(serverId: number): Promise<void> {
 
     assertCanDeleteServer(server);
     await revokeServerSftp(server);
+    await (await import('./mixqueue.js')).detachMixqueue(server);
 
     if (server.docker_container_id) {
         if (server.provider === 'ovhcloud') {

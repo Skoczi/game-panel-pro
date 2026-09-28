@@ -210,6 +210,7 @@ export async function serverDelegation(
         serverId: row.runtime_id,
         runtimeKey: row.runtime_key,
         permissions,
+        ...(user.isRoot ? { mixqueueOperator: true as const } : {}),
     };
 }
 const safe =

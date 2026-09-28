@@ -19,6 +19,7 @@ const sections = {
   rotation: 'Maps and rotation',
   admins: 'Administrators',
   plugins: 'AMXX plugins',
+  mixqueue: 'MixQueue',
   addons: 'Install addons',
 };
 export function RehldsManager({
@@ -28,9 +29,11 @@ export function RehldsManager({
   onDirtyChange,
   group = 'all',
   children,
+  mixqueue,
 }: {
   group?: 'all' | 'configuration' | 'addons';
   children?: ReactNode;
+  mixqueue?: ReactNode;
   serverId: number;
   canWrite: boolean;
   onOpen: (path: string, root: string) => void;
@@ -65,7 +68,7 @@ export function RehldsManager({
     setError('');
     setSnapshot(null);
     setReview(false);
-    if (section === 'files') {
+    if (section === 'files' || section === 'mixqueue') {
       setLoading(false);
       return;
     }
@@ -183,8 +186,8 @@ export function RehldsManager({
             group === 'configuration'
               ? ['files', 'rotation', 'admins'].includes(key)
               : group === 'addons'
-                ? ['plugins', 'addons'].includes(key)
-                : key !== 'files'
+                ? ['plugins', 'addons', ...(mixqueue ? ['mixqueue'] : [])].includes(key)
+                : key !== 'files' && (key !== 'mixqueue' || Boolean(mixqueue))
           )
           .map(([key, title]) => (
             <AppButton
@@ -214,6 +217,7 @@ export function RehldsManager({
         {progressError && <p role="alert">{progressError}</p>}
       </section>}
       {section === 'files' && children}
+      {section === 'mixqueue' && mixqueue}
       {loading && <p role="status">Loading ReHLDS tools…</p>}
       {error && (
         <p role="alert" className="text-red-600">

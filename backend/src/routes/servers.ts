@@ -1,4 +1,5 @@
 import { gameAdminRoutes } from './gameAdmins.js';
+import { mixqueueServerRoutes } from './mixqueue.js';
 import { serverCloneRoutes, cloneImportRoutes } from './serverClone.js';
 import { rehldsRoutes } from './rehlds.js';
 import { sourceAddonRoutes } from './sourceAddons.js';
@@ -56,6 +57,7 @@ router.use('/:id', (req, res, next) => {
 });
 // /api/servers/:id/file
 router.use('/:id/game-admins', gameAdminRoutes);
+router.use('/:id/mixqueue', mixqueueServerRoutes);
 router.use('/:id/game-config', nativeGameConfigRoutes);
 router.use('/:id/rehlds', rehldsRoutes);
 router.use('/:id/source-addons', sourceAddonRoutes);

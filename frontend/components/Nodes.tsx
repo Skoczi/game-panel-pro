@@ -8,6 +8,7 @@ import { LocalNodeProfile, LocalRuntimeInfo } from './LocalNodeProfile';
 import { ACTIVE_NODE, openFleet } from '../utils/nodeContext';
 import { SharedFiles } from './SharedFiles';
 import { NodeNetwork } from './NodeNetwork';
+import { MixQueueNode } from './MixQueue';
 import {
   AppModal,
   AppModalContent,
@@ -42,7 +43,7 @@ export function Nodes() {
   const [showCreate, setShowCreate] = useState(false);
   const [enrollment, setEnrollment] = useState<{ nodeId: string; token: string } | null>(null);
   const [selected, setSelected] = useState<{ id: string; name: string } | null>(null);
-  const [nodeTab, setNodeTab] = useState<'overview' | 'network' | 'shared'>('overview');
+  const [nodeTab, setNodeTab] = useState<'overview' | 'network' | 'shared' | 'mixqueue'>('overview');
   const [allocationDirty, setAllocationDirty] = useState(false);
   const [draft, setDraft] = useState({ name: '', origin: '', location: '' });
   const [deleting, setDeleting] = useState<ExecutionNode | null>(null);
@@ -126,7 +127,7 @@ export function Nodes() {
           aria-label="Node settings sections"
           className="flex flex-wrap gap-2 rounded-xl border border-slate-200 p-2 dark:border-slate-700"
         >
-          {(['overview', 'network', 'shared'] as const).map((tab) => (
+          {(['overview', 'network', 'shared', 'mixqueue'] as const).map((tab) => (
             <button
               key={tab}
               aria-current={nodeTab === tab ? 'page' : undefined}
@@ -139,11 +140,11 @@ export function Nodes() {
                 }
               }}
             >
-              {tab === 'overview' ? 'Overview' : tab === 'shared' ? 'Shared files' : 'Network & IPs'}
+              {tab === 'mixqueue' ? 'MixQueue' : tab === 'overview' ? 'Overview' : tab === 'shared' ? 'Shared files' : 'Network & IPs'}
             </button>
           ))}
         </nav>
-        {nodeTab === 'shared' ? <SharedFiles key={selected.id} nodeId={selected.id} onDirtyChange={setAllocationDirty} /> : nodeTab === 'network' ? (
+        {nodeTab === 'mixqueue' ? <MixQueueNode key={selected.id} nodeId={selected.id} /> : nodeTab === 'shared' ? <SharedFiles key={selected.id} nodeId={selected.id} onDirtyChange={setAllocationDirty} /> : nodeTab === 'network' ? (
           <NodeNetwork key={selected.id} nodeId={selected.id} nodeName={local ? localNode?.name || 'Local' : selected.name} onDirtyChange={setAllocationDirty} />
         ) : (
           <section className={`${card} space-y-4`}>

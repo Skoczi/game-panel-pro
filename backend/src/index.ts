@@ -1,4 +1,5 @@
 import { apiProvisionRuntimeRoutes } from './routes/apiProvisionRuntime.js';
+import { startMixqueueWorker } from './services/mixqueue.js';
 import { signedWebhookRoutes } from './routes/signedWebhooks.js';
 import { startSignedWebhookWorker } from './services/signedWebhooks.js';
 import { fleetCloneRoutes } from './routes/fleetClone.js';
@@ -110,6 +111,7 @@ let operationalWorker: ReturnType<typeof startOperationalHealthWorker> | undefin
 let signedWebhookWorker: ReturnType<typeof startSignedWebhookWorker> | undefined;
 let alertWorker: ReturnType<typeof startAlertWorker> | undefined;
 let gameMonitoringWorker: { stop: () => void } | null = null;
+let mixqueueWorker: { stop: () => Promise<void> } | null = null;
 let fastDownloadWorker: { stop: () => void } | null = null;
 let scheduledTaskRunner: { stop: () => void } | null = null;
 let agentHeartbeat: { stop: () => void } | null = null;
@@ -263,6 +265,7 @@ async function startServer(): Promise<void> {
     fastDownloadWorker = startFastDownloadWorker();
     await recoverRestartAttempts();
     gameMonitoringWorker = startGameMonitoringWorker();
+    mixqueueWorker = startMixqueueWorker();
     alertWorker = startAlertWorker();
     if (!isAgent()) signedWebhookWorker = startSignedWebhookWorker();
     operationalWorker = startOperationalHealthWorker();
@@ -296,6 +299,7 @@ function setupGracefulShutdown(): void {
       scheduledTaskRunner?.stop();
       fastDownloadWorker?.stop();
       gameMonitoringWorker?.stop();
+      await mixqueueWorker?.stop();
       alertWorker?.stop();
       signedWebhookWorker?.stop();
       operationalWorker?.stop();

@@ -961,6 +961,12 @@ class ApiClient {
   async getRehldsContent(serverId: number, section: string) {
     return (await this.client.get(`/api/servers/${serverId}/rehlds/${section}`)).data;
   }
+  async getMixqueue(serverId: number) {
+    return (await this.client.get(`/api/servers/${serverId}/mixqueue`)).data;
+  }
+  async changeMixqueue(serverId: number, body: unknown) {
+    return (await this.client.post(`/api/servers/${serverId}/mixqueue`, body)).data;
+  }
   async saveRehldsContent(serverId: number, section: string, payload: { content?: string; version: string; restore?: string }) {
     return (await this.client.put(`/api/servers/${serverId}/rehlds/${section}`, payload)).data;
   }

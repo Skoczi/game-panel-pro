@@ -1,5 +1,6 @@
 import { RehldsManager } from './RehldsManager';
 import { SourceAddonManager } from './SourceAddonManager';
+import { MixQueueServer } from '../MixQueue';
 import { sourceProfile } from '../../../backend/src/templates/sourceProfile';
 import { useEffect, useMemo, useState } from 'react';
 import { apiClient } from '../../utils/api';
@@ -19,6 +20,7 @@ export function NativeGameConfig({
   canRead = true,
   canWrite = false,
   canManageFrameworks = false,
+  isRoot = false,
   onDirtyChange,
 }: {
   canRead?: boolean;
@@ -32,6 +34,7 @@ export function NativeGameConfig({
   onOpenDirectory?: (path: string, root: string) => void;
 }) {
   const [files, setFiles] = useState<string[]>([]);
+  const [sourceSection, setSourceSection] = useState<'addons' | 'mixqueue'>('addons');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
   let templateJson = '';
@@ -236,11 +239,18 @@ export function NativeGameConfig({
           </div>
         </>
       )}
-      {source && section === 'rehlds' && serverId && <SourceAddonManager key={serverId} serverId={serverId} canWrite={canWrite && canManageFrameworks} onOpen={onOpen} onOpenDirectory={onOpenDirectory} />}
+      {source && section === 'rehlds' && serverId && <>
+        {isRoot && ['csgo','classic'].includes(source.game) && <nav className="gp-workflow-nav" aria-label="Source integrations">
+          <AppButton aria-pressed={sourceSection === 'addons'} onClick={() => setSourceSection('addons')}>Plugins</AppButton>
+          <AppButton aria-pressed={sourceSection === 'mixqueue'} onClick={() => setSourceSection('mixqueue')}>MixQueue</AppButton>
+        </nav>}
+        {sourceSection === 'mixqueue' && isRoot ? <MixQueueServer key={serverId} serverId={serverId}/> : <SourceAddonManager key={serverId} serverId={serverId} canWrite={canWrite && canManageFrameworks} onOpen={onOpen} onOpenDirectory={onOpenDirectory} />}
+      </>}
       {goldsrc && serverId && (
         <div hidden={section !== 'rehlds'}>
           <RehldsManager
             group="addons"
+            mixqueue={isRoot && section === 'rehlds' ? <MixQueueServer serverId={serverId}/> : undefined}
             serverId={serverId}
             canWrite={canWrite}
             onOpen={onOpen}
