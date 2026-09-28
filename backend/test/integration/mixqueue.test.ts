@@ -49,6 +49,13 @@ test(
           .digest("hex"),
       );
       const body = JSON.parse(raw);
+      if (body.action === 'poll' && body.healthy) {
+        assert.equal(body.observation.agent_protocol, 2);
+        assert.equal(body.observation.controller, 'matchbot');
+        assert.equal(body.observation.controller_version, '0.4.0');
+        assert.equal(body.observation.rules_ready, true);
+        assert.equal(body.observation.solo_test, true);
+      }
       requests.push({ id, action: body.action, healthy: body.healthy });
       return new Response(JSON.stringify({ commands: [] }), { status: 200 });
     }) as typeof fetch;
@@ -93,7 +100,7 @@ test(
             },
             async rcon(command) {
               assert.equal(command, "mq2_status");
-              return '{"bridge":1,"healthy":true,"idle":true}';
+              return '{"bridge":1,"healthy":true,"idle":true,"controller":"matchbot","controller_version":"0.4.0","rules_ready":true,"solo_test":true}';
             },
           }),
         );

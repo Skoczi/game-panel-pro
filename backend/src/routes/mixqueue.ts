@@ -54,12 +54,13 @@ mixqueueServerRoutes.get("/", async (req, res) => {
     res.status(error.statusCode || 503).json({ error: safeError(error) });
   }
 });
-mixqueueServerRoutes.post("/", async (req, res) => {
+mixqueueServerRoutes.post("/", async (req: AuthenticatedRequest, res) => {
   try {
     res.json(
       await changeMixqueue(
         Number((req.params as Record<string, string>).id),
         req.body,
+        req.user?.username || 'operator',
       ),
     );
   } catch (error: any) {

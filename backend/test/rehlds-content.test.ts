@@ -31,6 +31,7 @@ test('addon staging preserves settings, appends missing loader and does not dupl
     'node:fs': { promises: { ...fs, chown: async () => {} } }, 'node:path': path, 'node:crypto': await import('node:crypto'),
     './servers.js': {}, './rehldsContent.js': {}, '../utils/storage.js': {}, '../utils/docker.js': {}, './nativeBackups.js': {}, './nativeRestore.js': {},
     './rehldsPackages.js': { addonPath, REHLDS_MODULES }, './nativeRestoreJournal.js': { syncDirectory: async () => {} },
+    './addonFiles.js': await import('../src/services/addonFiles.js'),
   }, { Buffer });
   await fs.mkdir(path.join(root, 'cstrike'), { recursive: true });
   await fs.writeFile(path.join(root, 'cstrike/liblist.gam'), 'game "Counter-Strike"\n');

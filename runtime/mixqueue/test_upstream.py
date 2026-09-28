@@ -3,6 +3,7 @@ import json
 from pathlib import Path
 import tempfile
 import unittest
+from unittest.mock import Mock
 
 spec = importlib.util.spec_from_file_location('mq_agent', Path(__file__).with_name('mq_agent.py'))
 agent = importlib.util.module_from_spec(spec)
@@ -77,6 +78,99 @@ class AgentTests(unittest.TestCase):
     def test_source_cannot_claim_solo_support(self):
         p=payload();p['rules']['test']=True
         with self.assertRaises(ValueError): agent.Get5Adapter.build(p)
+
+    def test_legacy_controller_cannot_receive_a_new_cs16_assignment(self):
+        a = agent.AmxxAdapter.__new__(agent.AmxxAdapter)
+        a.rcon = Mock()
+        a.rcon.command.return_value = json.dumps({'bridge':1,'healthy':True,'idle':True,'matchid':'','solo_test':True,'controller_version':'0.3.0'})
+        p = payload('cs16')
+        with self.assertRaisesRegex(RuntimeError, 'MatchBot'):
+            a.execute({'type':'load','match_id':p['match_id'],'generation':p['generation'],'payload':p})
+        self.assertEqual(['mq2_status'],[c.args[0] for c in a.rcon.command.call_args_list])
+
+
+class CleanupTests(unittest.TestCase):
+    command = {'id': 'c'*24, 'match_id': 'a'*24, 'generation': 2, 'type': 'abort'}
+    idle = {'bridge': 1, 'healthy': True, 'idle': True, 'matchid': ''}
+    active = {**idle, 'idle': False, 'matchid': 'a'*24+':2'}
+
+    def adapter(self, cls, replies):
+        adapter = cls.__new__(cls)
+        adapter.spool = agent.Spool(':memory:')
+        self.addCleanup(adapter.spool.db.close)
+        adapter.rcon = Mock()
+        adapter.rcon.command.side_effect = [json.dumps(r) if isinstance(r, dict) else r for r in replies]
+        return adapter
+
+    def events(self, adapter):
+        sent = []
+        adapter.spool.flush(sent.append)
+        return [item['event'] for item in sent]
+
+    def test_retry_on_empty_server_confirms_once_without_another_clear(self):
+        for cls in (agent.AmxxAdapter, agent.Get5Adapter):
+            with self.subTest(adapter=cls.__name__):
+                a = self.adapter(cls, [self.idle, self.idle])
+                a.execute(self.command)
+                a.execute(self.command)
+                self.assertEqual(['mq2_status']*2, [c.args[0] for c in a.rcon.command.call_args_list])
+                events = self.events(a)
+                self.assertEqual(1, len(events))
+                self.assertEqual(('idle-'+'c'*24, 'a'*24, 2, 'idle'),
+                                 tuple(events[0][k] for k in ('event_id','match_id','generation','type')))
+
+    def test_lost_clear_reply_reconciles_only_with_verified_idle(self):
+        for cls in (agent.AmxxAdapter, agent.Get5Adapter):
+            for error in (TimeoutError('dropped UDP reply'), RuntimeError('broker_rejected')):
+                with self.subTest(adapter=cls.__name__, error=type(error).__name__):
+                    a = self.adapter(cls, [self.active, error, self.idle])
+                    a.execute(self.command)
+                    self.assertEqual(['mq2_status','mq2_clear','mq2_status'],
+                                     [c.args[0] for c in a.rcon.command.call_args_list])
+                    self.assertEqual(['idle'], [e['type'] for e in self.events(a)])
+
+    def test_acknowledgement_alone_does_not_release_connected_players(self):
+        for cls in (agent.AmxxAdapter, agent.Get5Adapter):
+            with self.subTest(adapter=cls.__name__):
+                draining = {**self.idle, 'idle': False}
+                a = self.adapter(cls, [self.active, 'ok', draining, self.idle])
+                a.execute(self.command)
+                self.assertEqual([], self.events(a))
+                a.execute(self.command)
+                self.assertEqual(['idle'], [e['type'] for e in self.events(a)])
+                self.assertEqual(1, sum(c.args[0]=='mq2_clear' for c in a.rcon.command.call_args_list))
+
+    def test_foreign_assignment_is_never_cleared(self):
+        for cls in (agent.AmxxAdapter, agent.Get5Adapter):
+            for foreign in ('b'*24+':2', 'a'*24+':3'):
+                with self.subTest(adapter=cls.__name__, assignment=foreign):
+                    a = self.adapter(cls, [{**self.active, 'matchid': foreign}])
+                    with self.assertRaises(RuntimeError): a.execute(self.command)
+                    self.assertEqual(['mq2_status'], [c.args[0] for c in a.rcon.command.call_args_list])
+                    self.assertEqual([], self.events(a))
+
+    def test_lost_reply_without_idle_proof_keeps_assignment_reserved(self):
+        invalid = [self.active, {}, {**self.idle, 'healthy': False},
+                   {**self.idle, 'idle': 1}, {**self.idle, 'matchid': None},
+                   {**self.idle, 'matchid': 'b'*24+':3'}, TimeoutError('offline')]
+        for cls in (agent.AmxxAdapter, agent.Get5Adapter):
+            for observed in invalid:
+                with self.subTest(adapter=cls.__name__, observed=observed):
+                    a = self.adapter(cls, [self.active, TimeoutError('clear reply lost'), observed])
+                    with self.assertRaises(Exception): a.execute(self.command)
+                    self.assertEqual([], self.events(a))
+
+    def test_failed_post_clear_read_recovers_on_retry_and_preserves_event_order(self):
+        for cls in (agent.AmxxAdapter, agent.Get5Adapter):
+            with self.subTest(adapter=cls.__name__):
+                a = self.adapter(cls, [self.active, '', TimeoutError('status reply lost'), self.idle])
+                a.spool.put({'event_id':'loaded-1','match_id':'a'*24,'generation':2,'type':'loaded','data':{}})
+                with self.assertRaises(TimeoutError): a.execute(self.command)
+                a.execute({**self.command, 'type':'cleanup'})
+                events = self.events(a)
+                self.assertEqual(['loaded','idle'], [e['type'] for e in events])
+                self.assertEqual([1,2], [e['sequence'] for e in events])
+                self.assertEqual(1, sum(c.args[0]=='mq2_clear' for c in a.rcon.command.call_args_list))
 
 
 if __name__ == '__main__': unittest.main(verbosity=2)

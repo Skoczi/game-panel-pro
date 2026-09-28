@@ -4,7 +4,7 @@ Imported from the operator-provided `csco-matchmaking` workspace. The source wor
 
 | File | SHA-256 |
 | --- | --- |
-| mq_agent.py | 90ee2cc8ad515c6972ec89ef339af9ec93b7fc66ac6eae8f4e98327cc790b58b |
+| mq_agent.py | f28b4b6c4fb754bd08fdf4517095b97f0ff3b0a3589ce2c6a9b929e118d558d3 |
 | mq2_match.amxx | 28ba83817d8aeb9ccd2cc9bb9929dcf7a1974d98e68d1a7dafef089f86c90ca4 |
 | mq2_bridge.smx | b86938870e03f318a0eb708864edf327c9a5c7b53a67ef2bb6a3302d728dbf45 |
 
@@ -17,3 +17,14 @@ The unmodified `source-bundles/mixqueue2-cs16-0.2.3.zip` and `source-bundles/mix
 ## MixQueue2 0.3.0
 
 Imported from the operator-provided `mixqueue2-eserv-0.3.0.zip` after verifying every entry in `SHA256SUMS.txt` and `manifest.json`. Agent protocol 2 and the CS 1.6 solo-test controller are bundled together. The Source bridge remains unchanged at 0.2.3. The original 0.3.0 CS 1.6 source/license archive is retained in `source-bundles/`. ESERV `runner.py`, its schedule, the broker transport and sandbox are unchanged.
+
+## MatchBot CSCO 0.4.0
+
+Imported from the operator-provided `mixqueue2-eserv-0.4.0.zip` (SHA-256 `3391084d268696a65a89c69e461c71eefdba7c42b4151fe7618b28fcc5717629`). All outer manifest/checksum entries and inner checksums were verified. The agent README is covered by its outer archive checksum. Full GPL-3.0 controller sources and licenses are retained in `source-bundles/mixqueue2-cs16-0.4.0.zip`. This is the release Linux i386 binary, not the QA build.
+
+The CS 1.6 installer now uses `matchbot_csco_mm.so` and `matchbot-language.txt`. Legacy AMXX sources are retained for attribution/history, not installed. `adapter=amxx` names the unchanged transport paths. The Source bridge, ESERV runner, broker allowlist, poll schedule and sandbox are unchanged. Dependency URLs and SHA-256 values are recorded in `release-040-dependencies.json` and match the native addon registry.
+
+| 0.4.0 controller asset | SHA-256 |
+| --- | --- |
+| matchbot_csco_mm.so | 0298b8d2e8096094789123e773b65861de5da296fdcb48cec6e3cc94f1b7c11e |
+| matchbot-language.txt | 877007aa9b884af157b69cd8d33c73af00e4d6583f48a588ec5a26b2ce38bf27 |

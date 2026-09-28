@@ -13,11 +13,13 @@ export const mqSources = fileURLToPath(
   new URL("../../../runtime/mixqueue/", import.meta.url),
 );
 let installation: "idle" | "installing" | "failed" = "idle";
+export const MIXQUEUE_VERSION = "0.4.0";
 export const sourceHashes: Record<string, string> = {
   "mq_agent.py":
-    "90ee2cc8ad515c6972ec89ef339af9ec93b7fc66ac6eae8f4e98327cc790b58b",
-  "mq2_match.amxx":
-    "28ba83817d8aeb9ccd2cc9bb9929dcf7a1974d98e68d1a7dafef089f86c90ca4",
+    "f28b4b6c4fb754bd08fdf4517095b97f0ff3b0a3589ce2c6a9b929e118d558d3",
+  "matchbot_csco_mm.so":
+    "0298b8d2e8096094789123e773b65861de5da296fdcb48cec6e3cc94f1b7c11e",
+  "matchbot-language.txt": "877007aa9b884af157b69cd8d33c73af00e4d6583f48a588ec5a26b2ce38bf27",
   "mq2_bridge.smx":
     "b86938870e03f318a0eb708864edf327c9a5c7b53a67ef2bb6a3302d728dbf45",
 };
@@ -64,10 +66,14 @@ export async function mixqueueImage(): Promise<string | null> {
   }
 }
 export async function mixqueueNodeStatus() {
+  const installed = Boolean(await mixqueueImage());
+  const saved = await readPrivate<{ version?: string; sourceHash?: string }>(path.join(mqRoot, "node.json"));
   return {
-    installed: Boolean(await mixqueueImage()),
+    installed,
     installation,
-    version: "0.3.0",
+    version: MIXQUEUE_VERSION,
+    installedVersion: installed ? saved?.version || null : null,
+    updateAvailable: installed && saved?.sourceHash !== sourceHashes["mq_agent.py"],
     supervisor: "eserv",
     error: installation === "failed" ? "installation_failed" : null,
   };
@@ -109,6 +115,8 @@ export function installMixqueueNode() {
     const image = (await mqDocker.getImage(tag).inspect()).Id;
     await privateJson(path.join(mqRoot, "node.json"), {
       image,
+      version: MIXQUEUE_VERSION,
+      sourceHash: sourceHashes["mq_agent.py"],
       installedAt: Date.now(),
     });
     installation = "idle";

@@ -28,6 +28,9 @@ import {
 } from "./mixqueueSupervisor.js";
 import { startMixqueueBroker } from "./mixqueueBroker.js";
 import { mixqueueRcon } from "./mixqueueRcon.js";
+import { matchbotPreview, startMatchbotInstall, matchbotJob, MATCHBOT_VERSION } from './matchbotInstaller.js';
+import { MATCHBOT_ENTRY } from './matchbotFiles.js';
+import { sourceHashes } from './mixqueueNode.js';
 
 type Binding = {
   serverId: string;
@@ -350,6 +353,11 @@ const publicErrors = new Set([
   "not_configured",
   "server_not_found",
   "identity_already_connected",
+  "plugin_preview_changed",
+  "incompatible_game_image",
+  "matchbot_install_failed",
+  "matchbot_backup_failed",
+  "matchbot_assignment_active",
 ]);
 export const safeError = (error: any) =>
   publicErrors.has(error?.message) ? error.message : "operation_failed";
@@ -373,6 +381,7 @@ export async function mixqueueStatus(id: number) {
     key = keyFor(server);
   const executors = await runtime.list(),
     running = executors.get(key)?.running || false;
+  const runtimeUpdateRequired = running && executors.get(key)?.image !== await mixqueueImage();
   let state: any = null;
   try {
     state = await readPrivate(
@@ -386,14 +395,20 @@ export async function mixqueueStatus(id: number) {
     Date.now() - state.checkedAt >= 0 &&
     Date.now() - state.checkedAt < 15000;
   let pluginInstalled = false;
+  const profile = mixqueueProfile(server);
   try {
     const p = mixqueueProfile(server),
       root = await safePath(getServerStoragePaths(id).dataDir, p.base);
     const file = await safePath(
       root,
-      `addons/${p.engine}/plugins/${p.game === "cs16" ? "mq2_match.amxx" : "mq2_bridge.smx"}`,
+      p.game === 'cs16' ? 'addons/matchbot/dlls/matchbot_csco_mm.so' : `addons/${p.engine}/plugins/mq2_bridge.smx`,
     );
     pluginInstalled = (await fs.stat(file)).isFile();
+    if (p.game === 'cs16') {
+      pluginInstalled = createHash('sha256').update(await fs.readFile(file)).digest('hex') === sourceHashes['matchbot_csco_mm.so'];
+      const list = await safePath(root, 'addons/metamod/plugins.ini');
+      pluginInstalled = pluginInstalled && (await fs.readFile(list, 'utf8')).split(/\r?\n/).some(line => line.trim() === MATCHBOT_ENTRY);
+    }
   } catch {}
   let logs: Array<{ time: number; event: string }> = [];
   try {
@@ -423,17 +438,20 @@ export async function mixqueueStatus(id: number) {
     enabled: assigned?.enabled || false,
     serverId: assigned?.serverId || null,
     pluginInstalled,
+    plugin: profile.game === 'cs16' ? { name: 'MatchBot CSCO', version: MATCHBOT_VERSION } : { name: 'MixQueue bridge', version: '0.2.3' },
+    pluginOperation: profile.game === 'cs16' ? await matchbotJob(id) : null,
     process: running ? "running" : "stopped",
+    runtimeUpdateRequired,
     rcon: fresh && state.rcon === true,
     journal: fresh && state.journal === true,
     heartbeat: fresh && state.heartbeat === true,
-    ready: fresh && state.ready === true,
+    ready: fresh && state.ready === true && pluginInstalled && !runtimeUpdateRequired,
     lastCheck: fresh ? state.checkedAt : null,
     error: errors.get(key) || (running ? null : supervisor.status(key).error),
     logs,
   };
 }
-export async function changeMixqueue(id: number, input: any) {
+export async function changeMixqueue(id: number, input: any, actor = 'operator') {
   return serial(async () => {
     const server = await load(id),
       profile = mixqueueProfile(server),
@@ -448,9 +466,11 @@ export async function changeMixqueue(id: number, input: any) {
         "restart",
         "disconnect",
         "plugin",
+        "plugin-preview",
       ].includes(input.action)
     )
       throw mqFail("invalid_import", 400);
+    if (input.action === 'plugin-preview') return profile.game === 'cs16' ? matchbotPreview(id) : { controller: 'MixQueue bridge', version: '0.2.3' };
     const current = await binding(server);
     if (input.action === "import") {
       const imported = validateMixqueueImport(
@@ -486,7 +506,11 @@ export async function changeMixqueue(id: number, input: any) {
       await runtime.stop(key);
       await fs.rm(directory(key), { recursive: true, force: true });
     } else if (input.action === "plugin") {
-      await installPlugin(server);
+      if (profile.game === 'cs16') {
+        if ((await gameInfo(server)).State.Running) throw mqFail('stop_game_before_plugin_install');
+        await runtime.stop(key);
+        await startMatchbotInstall(id, input.fingerprint, actor);
+      } else await installPlugin(server);
     } else {
       if (!current) throw mqFail("not_configured");
       const enabled = input.action !== "disable";
@@ -528,15 +552,12 @@ async function installPlugin(server: GameServerRow) {
   } catch {
     throw mqFail("framework_required");
   }
-  if (p.game !== "cs16") {
-    try {
-      await safePath(root, engine + "/plugins/get5.smx");
-    } catch {
-      throw mqFail("get5_required");
-    }
+  try {
+    await safePath(root, engine + "/plugins/get5.smx");
+  } catch {
+    throw mqFail("get5_required");
   }
-  const file = p.game === "cs16" ? "mq2_match.amxx" : "mq2_bridge.smx",
-    data = await verifiedSource(file);
+  const file = "mq2_bridge.smx", data = await verifiedSource(file);
   const plugin = path.join(root, engine, "plugins", file);
   try {
     const stat = await fs.lstat(plugin);
@@ -553,26 +574,7 @@ async function installPlugin(server: GameServerRow) {
     await fs.chown(plugin, 1000, 1000);
   }
   await gamePaths(server, true);
-  if (p.game === "cs16") {
-    const configFile = await safePath(root, engine + "/configs/plugins.ini");
-    const old = await fs.readFile(configFile, "utf8");
-    if (!/^\s*mq2_match\.amxx(?:\s|$)/m.test(old)) {
-      const backup = path.join(
-        directory(keyFor(server)),
-        "plugin-backups",
-        Date.now() + ".ini",
-      );
-      await fs.mkdir(path.dirname(backup), { recursive: true, mode: 0o700 });
-      await fs.writeFile(backup, old, { flag: "wx", mode: 0o600 });
-      const temporary = configFile + ".mq2-" + randomBytes(6).toString("hex");
-      await fs.writeFile(temporary, old.trimEnd() + "\nmq2_match.amxx\n", {
-        flag: "wx",
-        mode: 0o644,
-      });
-      await fs.chown(temporary, 1000, 1000);
-      await fs.rename(temporary, configFile);
-    }
-  }
+
 }
 
 export async function suspendMixqueueContainer(containerId: string) {

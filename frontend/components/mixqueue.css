@@ -288,6 +288,19 @@
   color: #94a3b8;
   padding: 16px;
 }
+.mq-install-preview { display: grid; gap: 14px; padding: 20px; border: 1px solid var(--mq-border); border-radius: 14px; background: var(--mq-surface); min-width: 0; }
+.mq-install-preview h3 { font-size: 16px; font-weight: 700; }
+.mq-install-preview strong, .mq-install-preview p { font-size: 13px; }
+.mq-install-preview small, .mq-muted-label { color: var(--mq-muted); font-size: 12px; overflow-wrap: anywhere; }
+.mq-dependencies { display: flex; flex-wrap: wrap; gap: 8px; }
+.mq-dependencies span { padding: 7px 10px; border-radius: 7px; border: 1px solid var(--mq-border); font-size: 12px; }
+.mq-dependencies b { color: #089eb5; margin-left: 4px; }
+.mq-install-preview ul { display: grid; gap: 10px; max-height: 220px; overflow: auto; }
+.mq-install-preview li { display: grid; gap: 3px; padding: 8px 0; border-bottom: 1px solid var(--mq-border); overflow-wrap: anywhere; }
+.mq-install-preview code { font-size: 12px; }
+.mq-install-progress { display: grid; gap: 10px; grid-template-columns: 1fr auto; font-size: 13px; }
+.mq-install-progress strong { grid-column: 1/-1; }
+.mq-install-progress progress { width: 100%; accent-color: #12bfd6; }
 .mq-panel button:focus-visible,
 .mq-panel summary:focus-visible {
   outline: 2px solid #13bfd8;

@@ -50,12 +50,14 @@ class RunnerTests(unittest.TestCase):
         from mq_agent import AmxxAdapter
         agent, calls = self.agent()
         adapter = object.__new__(AmxxAdapter)
-        adapter.rcon = SimpleNamespace(command=lambda command: '{"bridge":1,"solo_test":true,"healthy":true,"idle":true,"controller_version":"0.3.0"}')
+        adapter.rcon = SimpleNamespace(command=lambda command: '{"bridge":1,"solo_test":true,"healthy":true,"idle":true,"controller":"matchbot","controller_version":"0.4.0","rules_ready":true}')
         agent.adapter = adapter
         self.assertTrue(cycle(agent)['ready'])
         self.assertEqual(calls[-1]['observation']['agent_protocol'], 2)
+        self.assertEqual(calls[-1]['observation']['controller'], 'matchbot')
+        self.assertIs(calls[-1]['observation']['rules_ready'], True)
         self.assertIs(calls[-1]['observation']['solo_test'], True)
-        self.assertEqual(calls[-1]['observation']['controller_version'], '0.3.0')
+        self.assertEqual(calls[-1]['observation']['controller_version'], '0.4.0')
 
     def test_spools_keep_identity_sequences_separate_across_restarts(self):
         from mq_agent import Spool
