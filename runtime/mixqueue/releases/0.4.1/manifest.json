@@ -1,0 +1,48 @@
+{
+  "version": "0.4.1",
+  "controller": "matchbot",
+  "controller_version": "0.4.1",
+  "agent_version": "0.4.0",
+  "agent_protocol": 2,
+  "minimum_web_version": "0.5.2",
+  "game": "cs16",
+  "target_server": "SRV-107",
+  "restart_game_required": true,
+  "sourceHashes": {
+    "mq_agent.py": "f28b4b6c4fb754bd08fdf4517095b97f0ff3b0a3589ce2c6a9b929e118d558d3",
+    "matchbot_csco_mm.so": "f0062c2ce1915a193830dadcb3a4b3efabf052cd6654bdf3a75cb4ae8bf4b6bb"
+  },
+  "files": {
+    "ACCEPTANCE.md": "dbff76c3edc22772b7a0ea9d086aa4a5bf2da4c86dda8d80daad75d576840460",
+    "INSTALL.pl.md": "5ada8bfa72fc17033ef523765149b3f849270ee44845c58ba9f7778404137fea",
+    "PROMPT-ESERV.md": "8444f4036c8ba9a7e96a02515393788b507d2390483619b002b9e2cdadd0340b",
+    "RELEASE-0.4.1.md": "f5b44b2d50441ce2a2349e7c78cd5aed3ebd8cee5360503eebe7d1832073f425",
+    "dependencies.json": "433adf99454ed3ae936c315c84d5d8426831dfd0adcd480099e72ef8d2998522",
+    "packages/mixqueue2-agent-0.4.0.zip": "87e5a8864194a15c9e039424d7c791832b14e27c7a70add226daaea6aa1f6c49",
+    "packages/mixqueue2-cs16-0.4.1.zip": "43e68619e5682bbadd8df502f0f29474526bea42a451add5bc29016f1a913121",
+    "runtime/mixqueue/mq_agent.py": "f28b4b6c4fb754bd08fdf4517095b97f0ff3b0a3589ce2c6a9b929e118d558d3",
+    "tests/cs16_matchbot_runtime.py": "3d60eb1a4e66628edd11ec958afb180bb4570dff4be5f65ed83ffeebf0663f25",
+    "tests/test_agent.py": "7a4fe924b7a7e0e314befa56587fa0e6cd64947f1866bdb5a57bf054076b2851"
+  },
+  "preserve": [
+    "runner.py",
+    "broker",
+    "spool.sqlite",
+    "events.jsonl",
+    "private configuration",
+    "active-matchbot.txt",
+    "generation-matchbot.txt",
+    "mq2_bridge.smx",
+    "unrelated plugins"
+  ],
+  "disable": [
+    "mq2_match.amxx"
+  ],
+  "policy": {
+    "disconnect_pause_seconds": 90,
+    "reconnect_grace_seconds": 180,
+    "abandon_queue_cooldown_seconds": 1800,
+    "surrender_vote": "strict majority of remaining roster",
+    "solo_penalties": false
+  }
+}

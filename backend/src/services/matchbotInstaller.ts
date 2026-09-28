@@ -13,8 +13,9 @@ import { mqFail } from './mixqueueContract.js';
 import { startBackupJob, readBackupJob } from './backupJobs.js';
 import { commitMatchbotFiles, disableConflictingPlugins, fileHash, hasMatchbotTransaction, MATCHBOT_BINARY, pluginLists, registerMatchbot } from './matchbotFiles.js';
 
+import { MATCHBOT_VERSION, MATCHBOT_SOURCE, MATCHBOT_LANGUAGE, MATCHBOT_ARCHIVE, MATCHBOT_MIN_WEB_VERSION } from './matchbotRelease.js';
+export { MATCHBOT_VERSION } from './matchbotRelease.js';
 const dependencies = ['rehlds', 'metamod', 'regamedll'];
-export const MATCHBOT_VERSION = '0.4.0';
 const jobPath = (id: number) => path.join(getServerStoragePaths(id).serverRoot, '.mixqueue-plugin-job.json');
 export async function matchbotJob(id: number) {
   const ref = await readPrivate<{ id: string }>(jobPath(id));
@@ -37,8 +38,8 @@ export async function matchbotPreview(id: number) {
   }
   const conflicts = [...lists].flatMap(([file, text]) => (file.endsWith('/metamod/plugins.ini') ? registerMatchbot(text) : disableConflictingPlugins(text)).disabled.map(plugin => ({ file: file.replace(/^cstrike\//, ''), plugin })));
   return {
-    version: MATCHBOT_VERSION, controller: 'MatchBot CSCO', stopped: preview.stopped, activeAssignment,
-    fingerprint: fileHash(Buffer.from(JSON.stringify([preview.fingerprint, info.Image, [...lists], sourceHashes['matchbot_csco_mm.so']]))),
+    version: MATCHBOT_VERSION, minimumWebVersion: MATCHBOT_MIN_WEB_VERSION, controller: 'MatchBot CSCO', stopped: preview.stopped, activeAssignment,
+    fingerprint: fileHash(Buffer.from(JSON.stringify([preview.fingerprint, info.Image, [...lists], sourceHashes[MATCHBOT_SOURCE]]))),
     dependencies: preview.modules.map(m => ({ name: m.name, version: m.version })), conflicts,
   };
 }
@@ -81,8 +82,9 @@ export async function startMatchbotInstall(id: number, expected: unknown, actor:
       if (info.State.Running) throw mqFail('stop_game_before_plugin_install');
       await report({ stage: 'compatibility', message: 'Checking MatchBot compatibility', percent: null });
       await checkImage(info.Image, id);
-      const binary = await verifiedSource('matchbot_csco_mm.so');
-      const language = await verifiedSource('matchbot-language.txt');
+      await verifiedSource(MATCHBOT_ARCHIVE);
+      const binary = await verifiedSource(MATCHBOT_SOURCE);
+      const language = await verifiedSource(MATCHBOT_LANGUAGE);
       const files = await downloadAddonFiles(dependencies, report);
       const current = await matchbotPreview(id);
       if (!current.stopped || current.activeAssignment || current.fingerprint !== expected) throw mqFail('plugin_preview_changed');
@@ -131,8 +133,8 @@ export async function startMatchbotInstall(id: number, expected: unknown, actor:
       // Transport directories are required even when this game has never had AMXX installed.
       for (const relative of ['cstrike/addons/amxmodx/configs/mq2/active-matchbot.txt', 'cstrike/addons/amxmodx/data/mq2/events.jsonl']) await safeFile(root, relative, true);
       await commitMatchbotFiles(paths.serverRoot, plan);
-      if (fileHash(await fs.readFile(path.join(root, MATCHBOT_BINARY))) !== sourceHashes['matchbot_csco_mm.so']) throw mqFail('source_verification_failed');
-      return { ok: true, exitCode: 0, stdout: 'MatchBot CSCO 0.4.0 installed. Server remains stopped.' };
+      if (fileHash(await fs.readFile(path.join(root, MATCHBOT_BINARY))) !== sourceHashes[MATCHBOT_SOURCE]) throw mqFail('source_verification_failed');
+      return { ok: true, exitCode: 0, stdout: `MatchBot CSCO ${MATCHBOT_VERSION} installed. Server remains stopped.` };
     } catch (error: any) {
       if (await hasMatchbotTransaction(paths.serverRoot)) blockNativeServer(id, 'MatchBot recovery required. Restart the node agent to recover.');
       // Paths, configuration values and raw Docker errors never enter job logs/API.

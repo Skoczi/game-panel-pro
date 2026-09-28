@@ -28,3 +28,8 @@ The CS 1.6 installer now uses `matchbot_csco_mm.so` and `matchbot-language.txt`.
 | --- | --- |
 | matchbot_csco_mm.so | 0298b8d2e8096094789123e773b65861de5da296fdcb48cec6e3cc94f1b7c11e |
 | matchbot-language.txt | 877007aa9b884af157b69cd8d33c73af00e4d6583f48a588ec5a26b2ce38bf27 |
+## MatchBot CSCO 0.4.1
+
+Operator-provided `mixqueue2-eserv-0.4.1.zip`: SHA-256 `1dfce3e5c1b8c957cbc25319b0333fb6cd10d5c3ca289f6f234ad5810c28cbbf`. All 11 outer checksum entries, manifest entries and 312 CS 1.6 inner entries were verified. Production controller and language assets live in `releases/0.4.1/`; full corresponding GPL sources remain in `source-bundles/mixqueue2-cs16-0.4.1.zip` (SHA-256 `43e68619e5682bbadd8df502f0f29474526bea42a451add5bc29016f1a913121`). This bundled archive is the installer source; it is not downloaded from an unversioned URL.
+
+The controller requires CSCO WWW >=0.5.2. Its Python agent remains byte-identical 0.4.0 / protocol 2, and the ESERV runner/broker are unchanged. Published 0.4.0 assets, source archive and hashes are retained without modification. Controller 0.4.1 fixes the observed server-side reconnect behavior; it does not establish the cause of the original client crash. See the bundled release and acceptance documents for upstream automated coverage and remaining real-player gates.

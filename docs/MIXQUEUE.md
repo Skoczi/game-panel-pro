@@ -77,3 +77,10 @@ python3 -m unittest -v test_runner
 ```
 
 Real csco.gg heartbeat and a complete match remain separate acceptance steps. A successful fixture heartbeat is not a production heartbeat or acceptance of a full match. The integration never enables queues on csco.gg.
+## Controller 0.4.1 upgrade
+
+MatchBot CSCO 0.4.1 requires CSCO WWW 0.5.2 or newer for reconnect, abandon and surrender events. Verify the web deployment before installing the controller. Python remains 0.4.0 / protocol 2; no node runtime rebuild is required. Both versions are shown separately in the panel. An existing recognized 0.4.0 controller offers **Review update** rather than appearing uninstalled. Readiness remains false until the current controller is installed and actual runtime checks pass.
+
+Use the same reviewed installation on an empty, stopped, unleased server. The versioned archive and production binary are independently pinned; 0.4.0 artifacts remain unchanged. Preserve private settings, unrelated plugins, journal, spool and generation. If an existing server.cfg overrides `mb_log_tag`, back up the file and update only that setting to `"CSCO.GG"` when requested. The installer does not replace operator configuration.
+
+The release is in `runtime/mixqueue/releases/0.4.1/`; full GPL sources are in `runtime/mixqueue/source-bundles/mixqueue2-cs16-0.4.1.zip`. Real Steam solo/reconnect and ten-player gameplay acceptance remain separate from installer/heartbeat checks. Public queues must remain disabled until acceptance; 0.4.1 does not claim to fix an unidentified client crash.
