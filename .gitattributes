@@ -2,3 +2,4 @@
 runtime/mixqueue/mq_agent.py -text
 runtime/mixqueue/matchbot-language.txt -text
 runtime/mixqueue/releases/*/language.txt -text -diff
+runtime/mixqueue/releases/*/resources/bot-dependencies.json -text
