@@ -37,6 +37,9 @@ test(
       [];
     const observations = new Map<string, any>();
     const rejected: any[] = [];
+    const currentResultMatch = 'd'.repeat(24), legacyResultMatch = 'e'.repeat(24);
+    const resultAttempts: any[] = [];
+    let allowResultDelivery = false;
     let rejectMissingMap = false;
     let firstControllerHealthy = true;
     let rejectAiLoads = false;
@@ -73,6 +76,10 @@ test(
           .digest("hex"),
       );
       const body = JSON.parse(raw);
+      if (body.action === 'event' && [currentResultMatch, legacyResultMatch].includes(body.event.match_id)) {
+        resultAttempts.push({id, event: body.event});
+        if (!allowResultDelivery) return new Response('{"error":"fixture_upstream_unavailable"}', {status: 503});
+      }
       if (body.action === 'poll') observations.set(id, body.observation);
       if (body.action === 'event') rejected.push({id, event: body.event});
       if (body.action === 'poll' && body.healthy) {
@@ -81,7 +88,7 @@ test(
         assert.equal(body.observation.assignment_contract, 3);
         assert.equal(body.observation.full_test, true);
         assert.equal(body.observation.controller, 'matchbot');
-        assert.equal(body.observation.controller_version, '0.6.2');
+        assert.equal(body.observation.controller_version, '0.6.3');
         assert.equal(body.observation.rules_ready, true);
         assert.equal(body.observation.stats_version, 2);
         assert.equal(body.observation.pause_policy, 2);
@@ -153,7 +160,7 @@ test(
               }
               assert.equal(command, "mq2_status");
               return JSON.stringify({bridge: 1, healthy: a.runtimeKey !== keys[0] || firstControllerHealthy,
-                idle: true, controller: 'matchbot', controller_version: '0.6.2', assignment_contract: 3, stats_version: 2,
+                idle: true, controller: 'matchbot', controller_version: '0.6.3', assignment_contract: 3, stats_version: 2,
                 pause_policy: 2, reconnect_budget: 1, tactical_limit: 3, tactical_seconds: 30, ready_seconds: 300,
                 full_test: true, rules_ready: true, solo_test: true});
             },
@@ -266,6 +273,37 @@ test(
     assert.equal(aiRconCalls.length, 4);
     assert.ok(!JSON.stringify(rejected).includes('private-controller-diagnostic'));
     assert.equal(rejected.filter(item => item.event.type === 'loaded').length, 1, 'only the journal acknowledges loaded');
+    // A blocked upstream and executor recreation must preserve optional controller-owned reasons.
+    const results = [
+      {event_id: 'current-round', match_id: currentResultMatch, generation: 11, type: 'round',
+        data: {team1_score: 15, team2_score: 10, stats_version: 2, players: {}, round_reason: 'elimination'}},
+      {event_id: 'current-finished', match_id: currentResultMatch, generation: 11, type: 'finished',
+        data: {team1_score: 16, team2_score: 10, stats_version: 2, players: {}, round_reason: 'bomb_defused'}},
+      {event_id: 'legacy-round', match_id: legacyResultMatch, generation: 12, type: 'round',
+        data: {team1_score: 15, team2_score: 10, stats_version: 2, players: {}}},
+      {event_id: 'legacy-finished', match_id: legacyResultMatch, generation: 12, type: 'finished',
+        data: {team1_score: 16, team2_score: 10, stats_version: 2, players: {}}},
+    ];
+    await fs.appendFile(path.join(root, keys[1], 'journal', 'events.jsonl'), results.map(event => JSON.stringify(event) + '\n').join(''));
+    await until(async () => resultAttempts.length > 0 && !(await status(keys[1])).ready);
+    const blocked = structuredClone(resultAttempts[0]);
+    const spoolPath = path.join(root, keys[1], 'state', 'spool.sqlite');
+    const spoolInode = (await fs.stat(spoolPath)).ino;
+    const firstGeneration = (await runtime.list()).get(keys[0])?.generation;
+    assignments[1] = {...assignments[1], revision: '2'};
+    await supervisor.reconcile(assignments);
+    assert.equal((await runtime.list()).get(keys[0])?.generation, firstGeneration);
+    assert.equal((await fs.stat(spoolPath)).ino, spoolInode);
+    allowResultDelivery = true;
+    const acceptedResults = () => rejected.filter(item => [currentResultMatch, legacyResultMatch].includes(item.event.match_id));
+    await until(async () => acceptedResults().length === results.length && (await status(keys[1])).ready);
+    assert.deepEqual(acceptedResults()[0], blocked, 'retry retains event ID, boot ID, sequence and payload across restart');
+    for (const [index, expected] of results.entries()) {
+      const {id, event} = acceptedResults()[index];
+      assert.equal(id, keys[1]);
+      assert.deepEqual(event, {...expected, schema_version: 1, sequence: index % 2 + 1, boot_id: blocked.event.boot_id});
+      assert.equal(Object.hasOwn(event.data, 'round_reason'), index < 2, 'legacy reasons must not be invented');
+    }
     await fs.rm(path.join(root, keys[0], 'maps', 'de_nuke.bsp'));
     await until(async () => observations.get(keys[0]).map_inventory.maps.length === 0);
     assert.deepEqual(observations.get(keys[1]).map_inventory.maps, ['de_train']);
@@ -289,6 +327,7 @@ test(
     assert.equal((await runtime.list()).get(keys[1])?.generation, before);
     assert.equal(rejected.filter(item => item.event.type === 'load_rejected').length, 5);
     assert.equal(aiRconCalls.length, 4, 'redelivery/restart must not resubmit durably rejected commands');
+    assert.equal(acceptedResults().length, results.length, 'journal retries must not duplicate acknowledged results');
     await supervisor.reconcile([
       { ...assignments[0], gameRunning: false },
       assignments[1],
