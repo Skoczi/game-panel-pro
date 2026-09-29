@@ -12,11 +12,28 @@ import { mqDocker, verifiedSource, sourceHashes, mqRoot, privateJson, readPrivat
 import { mqFail } from './mixqueueContract.js';
 import { startBackupJob, readBackupJob } from './backupJobs.js';
 import { commitMatchbotFiles, disableConflictingPlugins, fileHash, hasMatchbotTransaction, MATCHBOT_BINARY, pluginLists, registerMatchbot } from './matchbotFiles.js';
+import { planMatchbotAi, readBotProfiles, type MatchbotAiAssets } from './matchbotAi.js';
 
-import { MATCHBOT_VERSION, MATCHBOT_SOURCE, MATCHBOT_LANGUAGE, MATCHBOT_ARCHIVE, MATCHBOT_MIN_WEB_VERSION } from './matchbotRelease.js';
+import { MATCHBOT_VERSION, MATCHBOT_SOURCE, MATCHBOT_LANGUAGE, MATCHBOT_ARCHIVE, MATCHBOT_MIN_WEB_VERSION, MATCHBOT_BOT_PROFILES, MATCHBOT_NAV, MATCHBOT_NAV_PROOF, MATCHBOT_RESOURCE_PROVENANCE, MATCHBOT_NAVIGATION_MANIFEST, MATCHBOT_NAVIGATION_FILES } from './matchbotRelease.js';
 export { MATCHBOT_VERSION } from './matchbotRelease.js';
 const dependencies = ['rehlds', 'metamod', 'regamedll'];
 const jobPath = (id: number) => path.join(getServerStoragePaths(id).serverRoot, '.mixqueue-plugin-job.json');
+async function verifiedAiAssets(): Promise<MatchbotAiAssets> {
+  const profiles = await readBotProfiles(await verifiedSource(MATCHBOT_BOT_PROFILES));
+  const nav = await verifiedSource(MATCHBOT_NAV), proof = await verifiedSource(MATCHBOT_NAV_PROOF);
+  const provenance = new Map<string, Buffer>();
+  for (const [name, source] of Object.entries(MATCHBOT_RESOURCE_PROVENANCE)) provenance.set(name, await verifiedSource(source));
+  const navigationManifest = await verifiedSource(MATCHBOT_NAVIGATION_MANIFEST);
+  const manifest = JSON.parse(navigationManifest.toString('utf8'));
+  if (!Array.isArray(manifest.maps) || manifest.maps.length !== Object.keys(MATCHBOT_NAVIGATION_FILES).length) throw mqFail('source_verification_failed');
+  const navigation: { nav: Buffer; proof: Buffer }[] = [];
+  for (const [map, source] of Object.entries(MATCHBOT_NAVIGATION_FILES)) {
+    const entry = manifest.maps.find((entry: any) => entry.map === map);
+    if (!entry) throw mqFail('source_verification_failed');
+    navigation.push({ nav: await verifiedSource(source), proof: Buffer.from(JSON.stringify(entry)) });
+  }
+  return { profiles, nav, proof, provenance, navigation, navigationManifest };
+}
 export async function matchbotJob(id: number) {
   const ref = await readPrivate<{ id: string }>(jobPath(id));
   if (!ref) return null;
@@ -25,12 +42,13 @@ export async function matchbotJob(id: number) {
   const codes = ['incompatible_game_image', 'plugin_preview_changed', 'stop_game_before_plugin_install', 'matchbot_backup_failed', 'source_verification_failed'];
   return { id: job.id, status: job.status, progress: job.progress, error: job.status === 'failed' || job.status === 'interrupted' ? codes.includes(job.error || '') ? job.error : 'matchbot_install_failed' : null };
 }
-export async function matchbotPreview(id: number) {
+export async function matchbotPreview(id: number, assets?: MatchbotAiAssets) {
   const preview = await addonPreview(id, dependencies), server = await getServerOrThrow(id);
   if (!server.docker_container_id) throw mqFail('game_container_missing');
   const info = await mqDocker.getContainer(server.docker_container_id).inspect();
   const root = path.join(getServerStoragePaths(id).dataDir, 'serverfiles');
   const lists = await pluginLists(root);
+  const ai = await planMatchbotAi(root, assets || await verifiedAiAssets());
   let activeAssignment = false;
   for (const name of ['active.txt', 'active-matchbot.txt']) {
     const marker = await safeFile(root, 'cstrike/addons/amxmodx/configs/mq2/' + name);
@@ -39,8 +57,9 @@ export async function matchbotPreview(id: number) {
   const conflicts = [...lists].flatMap(([file, text]) => (file.endsWith('/metamod/plugins.ini') ? registerMatchbot(text) : disableConflictingPlugins(text)).disabled.map(plugin => ({ file: file.replace(/^cstrike\//, ''), plugin })));
   return {
     version: MATCHBOT_VERSION, minimumWebVersion: MATCHBOT_MIN_WEB_VERSION, controller: 'MatchBot CSCO', stopped: preview.stopped, activeAssignment,
-    fingerprint: fileHash(Buffer.from(JSON.stringify([preview.fingerprint, info.Image, [...lists], sourceHashes[MATCHBOT_SOURCE]]))),
+    fingerprint: fileHash(Buffer.from(JSON.stringify([preview.fingerprint, info.Image, [...lists], sourceHashes[MATCHBOT_SOURCE], ai.fingerprint]))),
     dependencies: preview.modules.map(m => ({ name: m.name, version: m.version })), conflicts,
+    ai: ai.summary,
   };
 }
 export function supportsMatchbotLibc(output: string) {
@@ -85,8 +104,9 @@ export async function startMatchbotInstall(id: number, expected: unknown, actor:
       await verifiedSource(MATCHBOT_ARCHIVE);
       const binary = await verifiedSource(MATCHBOT_SOURCE);
       const language = await verifiedSource(MATCHBOT_LANGUAGE);
+      const aiAssets = await verifiedAiAssets();
       const files = await downloadAddonFiles(dependencies, report);
-      const current = await matchbotPreview(id);
+      const current = await matchbotPreview(id, aiAssets);
       if (!current.stopped || current.activeAssignment || current.fingerprint !== expected) throw mqFail('plugin_preview_changed');
       // Executor has already stopped. Snapshot credentials/spool privately; these are NEVER a rollback target.
       if (server.runtime_uuid && /^[a-f0-9]{32}$/.test(server.runtime_uuid)) {
@@ -123,11 +143,13 @@ export async function startMatchbotInstall(id: number, expected: unknown, actor:
       // Preserve operator translations while pinning the production controller binary.
       if (!plan.has('cstrike/addons/matchbot/language.txt')) plan.set('cstrike/addons/matchbot/language.txt', language);
       for (const [name, text] of lists) plan.set(name, Buffer.from(name.endsWith('/metamod/plugins.ini') ? registerMatchbot(text).content : disableConflictingPlugins(text).content));
+      const ai = await planMatchbotAi(root, aiAssets);
+      for (const [name, bytes] of ai.plan) plan.set(name, bytes);
       for (const [name, bytes] of plan) {
         const target = await safeFile(root, name);
         if (target?.stat && fileHash(await fs.readFile(target.filename)) === fileHash(bytes)) plan.delete(name);
       }
-      const last = await matchbotPreview(id);
+      const last = await matchbotPreview(id, aiAssets);
       if (!last.stopped || last.activeAssignment || last.fingerprint !== expected) throw mqFail('plugin_preview_changed');
       await report({ stage: 'commit', message: 'Applying MatchBot CSCO', percent: null });
       // Transport directories are required even when this game has never had AMXX installed.

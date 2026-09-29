@@ -38,10 +38,14 @@ test('inventory and load rejection contracts are bounded without exposing arbitr
     assert.equal(validMixqueueReport({...poll, observation: {map_inventory: {...inventory, ...patch}}}), false);
   }
   for (const code of ['missing_map', 'malformed_assignment', 'storage_failure',
-    'inventory_unavailable', 'server_busy', 'stale_generation', 'server_not_empty']) {
+    'inventory_unavailable', 'server_busy', 'stale_generation', 'server_not_empty',
+    'test_ai_disabled', 'test_bot_profiles_missing', 'test_bot_nav_missing', 'test_bot_nav_invalid']) {
     assert.ok(validMixqueueReport({action: 'event', event: {type: 'load_rejected', data: {code}}}));
   }
-  for (const data of [{code: 'private RCON output'}, {code: 'missing_map', message: 'private'}, null]) {
+  for (const data of [{code: 'private RCON output'}, {code: 'missing_map', message: 'private'},
+    {code: 'test_bot_nav_missing', path: '/private/maps/de_nuke.nav'},
+    {code: 'test_bot_nav_missing\nprivate'}, {code: 'test_bot_nav_missing '},
+    {code: 'test_bot_nav_unknown'}, {code: ['test_ai_disabled']}, null]) {
     assert.equal(validMixqueueReport({action: 'event', event: {type: 'load_rejected', data}}), false);
   }
   assert.ok(validMixqueueReport({action: 'poll', observation: {healthy: false}}));

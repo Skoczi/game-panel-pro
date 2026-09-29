@@ -153,7 +153,7 @@ class Get5Adapter:
         value = json.loads(raw)
         if value.get('bridge') != 1:
             raise RuntimeError('MixQueue2 SourceMod bridge is not installed')
-        return {**value, 'agent_protocol': 2, 'agent_version': '0.6.0', 'delivery': self.spool.metrics()}
+        return {**value, 'agent_protocol': 2, 'agent_version': '0.6.1', 'delivery': self.spool.metrics()}
 
     @staticmethod
     def cleanup_complete(status):
@@ -274,7 +274,11 @@ class AmxxAdapter(Get5Adapter):
                    'malformed_assignment': 'malformed_assignment', 'invalid_assignment': 'malformed_assignment',
                    'storage_failure': 'storage_failure', 'load_failed': 'storage_failure',
                    'busy': 'server_busy', 'stale_generation': 'stale_generation',
-                   'server_not_empty': 'server_not_empty'}
+                   'server_not_empty': 'server_not_empty',
+                   'test_ai_disabled': 'test_ai_disabled',
+                   'test_bot_profiles_missing': 'test_bot_profiles_missing',
+                   'test_bot_nav_missing': 'test_bot_nav_missing',
+                   'test_bot_nav_invalid': 'test_bot_nav_invalid'}
 
     def map_inventory(self):
         """Local BSP v30 presence/header check, not map playability certification.

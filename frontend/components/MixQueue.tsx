@@ -53,6 +53,18 @@ const words = {
     cancel: 'Cancel',
     installMatchbot: 'Install MatchBot CSCO',
     dependencies: 'Dependencies',
+    nativeBots: 'Native AI bots',
+    enableBots: 'Enable on restart',
+    botsEnabled: 'Enabled',
+    botResources: 'Bot resources',
+    added: 'to add',
+    preserved: 'preserved',
+    navigation: 'Map navigation',
+    navInstall: 'Add NAV',
+    navVerified: 'Verified NAV',
+    navPreserved: 'Keep existing NAV',
+    navMismatch: 'Different BSP — NAV required',
+    navMissing: 'Map not installed',
     conflicts: 'Plugins to disable',
     noConflicts: 'No conflicting plugins detected',
     pluginScope: 'Verified backup · Server stays stopped',
@@ -135,6 +147,18 @@ const words = {
     cancel: 'Anuluj',
     installMatchbot: 'Zainstaluj MatchBot CSCO',
     dependencies: 'Zależności',
+    nativeBots: 'Natywne boty AI',
+    enableBots: 'Włącz po restarcie',
+    botsEnabled: 'Włączone',
+    botResources: 'Zasoby botów',
+    added: 'do dodania',
+    preserved: 'zachowanych',
+    navigation: 'Nawigacja map',
+    navInstall: 'Dodaj NAV',
+    navVerified: 'NAV zweryfikowany',
+    navPreserved: 'Zachowaj obecny NAV',
+    navMismatch: 'Inny BSP — wymagany NAV',
+    navMissing: 'Mapa niezainstalowana',
     conflicts: 'Pluginy do wyłączenia',
     noConflicts: 'Nie wykryto kolidujących pluginów',
     pluginScope: 'Zweryfikowany backup · Serwer pozostaje wyłączony',
@@ -561,6 +585,19 @@ export function MixQueueServer({ serverId }: { serverId: number }) {
           {preview.minimumWebVersion && <p>{t.requiresWeb} {preview.minimumWebVersion}+</p>}
           <span className="mq-muted-label">{t.dependencies}</span>
           <div className="mq-dependencies">{preview.dependencies?.map((item: any) => <span key={item.name}>{item.name} <b>{item.version}</b></span>)}</div>
+          {preview.ai && <div className="mq-ai-preview">
+            <dl>
+              <div><dt>{t.nativeBots}</dt><dd>{preview.ai.botEnable === 'enabled' ? t.botsEnabled : t.enableBots}</dd></div>
+              <div><dt>{t.botResources}</dt><dd>{preview.ai.filesToAdd} {t.added} · {preview.ai.filesPreserved} {t.preserved}</dd></div>
+            </dl>
+            <details>
+              <summary>{t.navigation} <span>{preview.ai.navigation?.length || 0}</span></summary>
+              <ul>{preview.ai.navigation?.map((item: any) => <li key={item.map}>
+                <code>{item.map}</code>
+                <span className={item.status === 'bsp_mismatch' ? 'mq-nav-warning' : undefined}>{({ install: t.navInstall, verified: t.navVerified, preserved: t.navPreserved, bsp_mismatch: t.navMismatch, missing_bsp: t.navMissing } as Record<string, string>)[item.status] || t.unavailable}</span>
+              </li>)}</ul>
+            </details>
+          </div>}
           <strong>{t.conflicts}</strong>
           {preview.conflicts?.length ? <ul>{preview.conflicts.map((item: any) => <li key={item.file + item.plugin}><code>{item.plugin}</code><small>{item.file}</small></li>)}</ul> : <p>{t.noConflicts}</p>}
           <small>{t.pluginScope}</small>

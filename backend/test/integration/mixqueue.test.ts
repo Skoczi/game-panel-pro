@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { createHmac, randomBytes } from "node:crypto";
+import { createHash, createHmac, randomBytes } from "node:crypto";
 import Docker from "dockerode";
 import { MixqueueDockerRuntime } from "../../src/services/mixqueueDocker.js";
 import {
@@ -39,6 +39,24 @@ test(
     const rejected: any[] = [];
     let rejectMissingMap = false;
     let firstControllerHealthy = true;
+    let rejectAiLoads = false;
+    const aiCodes = ['test_ai_disabled', 'test_bot_profiles_missing', 'test_bot_nav_missing', 'test_bot_nav_invalid'];
+    const aiLoads = aiCodes.map((code, index) => {
+      const matchId = '7e5700' + String(index + 1).repeat(18), generation = index + 3;
+      const players = [1, 2].flatMap(team => Array.from({length: 5}, (_, slot) => {
+        const human = team === 1 && slot === 0;
+        return {steam_id: human ? '76561198000000001' : 'bot:' + createHash('sha256')
+          .update(`${matchId}:${generation}:${team}:${slot + 1}`).digest('hex').slice(0, 24),
+          team, bot: !human, captain: Number(slot === 0), locale: human ? 'pl' : 'en',
+          name: human ? 'Captain' : `Bot ${team}-${slot + 1}`};
+      }));
+      return {code, command: {id: String(index + 1).repeat(24), type: 'load', match_id: matchId, generation,
+        payload: {match_id: matchId, generation, game: 'cs16', map: 'de_nuke', team_size: 5,
+          contract_version: 3, starting_ct_team: 1, config_hash: 'a'.repeat(64),
+          rules: {test: true, test_type: 'full', mr: 15, ot_mr: 3}, players,
+          test_owner: '76561198000000001', teams: {'1': 'Captain team', '2': 'Bot 2-1 team'}}}};
+    });
+    const aiRconCalls: string[] = [];
     const command = { id: 'c'.repeat(24), type: 'load', match_id: 'a'.repeat(24), generation: 2,
       payload: {match_id: 'a'.repeat(24), generation: 2, rules: {}, map: 'de_missing'} };
     const originalFetch = globalThis.fetch;
@@ -59,11 +77,11 @@ test(
       if (body.action === 'event') rejected.push({id, event: body.event});
       if (body.action === 'poll' && body.healthy) {
         assert.equal(body.observation.agent_protocol, 2);
-        assert.equal(body.observation.agent_version, '0.6.0');
+        assert.equal(body.observation.agent_version, '0.6.1');
         assert.equal(body.observation.assignment_contract, 3);
         assert.equal(body.observation.full_test, true);
         assert.equal(body.observation.controller, 'matchbot');
-        assert.equal(body.observation.controller_version, '0.6.1');
+        assert.equal(body.observation.controller_version, '0.6.2');
         assert.equal(body.observation.rules_ready, true);
         assert.equal(body.observation.stats_version, 2);
         assert.equal(body.observation.pause_policy, 2);
@@ -75,7 +93,8 @@ test(
         assert.equal(body.observation.solo_test, true);
       }
       requests.push({ id, action: body.action, healthy: body.healthy });
-      return new Response(JSON.stringify({ commands: rejectMissingMap && id === keys[0] ? [command] : [],
+      return new Response(JSON.stringify({ commands: id !== keys[0] ? [] : rejectAiLoads
+        ? aiLoads.map(item => item.command) : rejectMissingMap ? [command] : [],
         load_rejection_contract: 1 }), { status: 200 });
     }) as typeof fetch;
     const closeBroker = async (key: string) => {
@@ -121,9 +140,20 @@ test(
               };
             },
             async rcon(command) {
+              if (command.startsWith('mq2_load ')) {
+                assert.equal(a.runtimeKey, keys[0]);
+                const load = aiLoads.find(item => command === `mq2_load ${item.command.match_id} ${item.command.generation}`);
+                assert.ok(load, 'only a validated full-test assignment may reach controller load');
+                const wire = await fs.readFile(path.join(base, 'config', `${load.command.match_id}-${load.command.generation}.txt`), 'utf8');
+                assert.ok(wire.startsWith('MQ2V3 '));
+                assert.equal(wire.trim().split('\n').length, 12);
+                aiRconCalls.push(command);
+                // The actual agent must map only the exact safe line, dropping all other RCON text.
+                return `private-controller-diagnostic\n${load.code}\n`;
+              }
               assert.equal(command, "mq2_status");
               return JSON.stringify({bridge: 1, healthy: a.runtimeKey !== keys[0] || firstControllerHealthy,
-                idle: true, controller: 'matchbot', controller_version: '0.6.1', assignment_contract: 3, stats_version: 2,
+                idle: true, controller: 'matchbot', controller_version: '0.6.2', assignment_contract: 3, stats_version: 2,
                 pause_policy: 2, reconnect_budget: 1, tactical_limit: 3, tactical_seconds: 30, ready_seconds: 300,
                 full_test: true, rules_ready: true, solo_test: true});
             },
@@ -220,6 +250,22 @@ test(
     assert.equal(rejected[2].event.sequence, 3);
     assert.deepEqual(rejected[2].event.data, loaded);
     firstControllerHealthy = true;
+    rejectMissingMap = false;
+    rejectAiLoads = true;
+    // Exact controller refusals cross the real executor, durable spool and HMAC broker.
+    await until(async () => rejected.length === 7);
+    for (const [index, load] of aiLoads.entries()) {
+      const item = rejected[index + 3];
+      assert.equal(item.id, keys[0]);
+      assert.equal(item.event.type, 'load_rejected');
+      assert.equal(item.event.match_id, load.command.match_id);
+      assert.equal(item.event.generation, load.command.generation);
+      assert.equal(item.event.sequence, 1);
+      assert.deepEqual(item.event.data, {code: load.code});
+    }
+    assert.equal(aiRconCalls.length, 4);
+    assert.ok(!JSON.stringify(rejected).includes('private-controller-diagnostic'));
+    assert.equal(rejected.filter(item => item.event.type === 'loaded').length, 1, 'only the journal acknowledges loaded');
     await fs.rm(path.join(root, keys[0], 'maps', 'de_nuke.bsp'));
     await until(async () => observations.get(keys[0]).map_inventory.maps.length === 0);
     assert.deepEqual(observations.get(keys[1]).map_inventory.maps, ['de_train']);
@@ -241,7 +287,8 @@ test(
       assignments[1],
     ]);
     assert.equal((await runtime.list()).get(keys[1])?.generation, before);
-    assert.equal(rejected.filter(item => item.event.type === 'load_rejected').length, 1);
+    assert.equal(rejected.filter(item => item.event.type === 'load_rejected').length, 5);
+    assert.equal(aiRconCalls.length, 4, 'redelivery/restart must not resubmit durably rejected commands');
     await supervisor.reconcile([
       { ...assignments[0], gameRunning: false },
       assignments[1],

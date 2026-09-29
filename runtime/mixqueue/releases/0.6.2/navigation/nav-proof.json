@@ -1,0 +1,14 @@
+{
+  "map": "de_dust2",
+  "source": "offline navigation generation on isolated ReGameDLL 5.30.0.814-dev",
+  "magic": "0xfeedface",
+  "version": 5,
+  "bsp_bytes": 2057288,
+  "nav_bytes": 422027,
+  "places": 0,
+  "areas": 737,
+  "bsp_sha256": "15945389528d113562ede0a2c80647ebfa799079ed1c05a25379bcf84e4e9286",
+  "nav_sha256": "9a44381363572f05d42fa4f82b293f54e49c93d60a4471d2fe8396ecceb77753",
+  "BotProfile.db": "b1ee270d717d7bef6b2cd53e851cf1b558cd2ecdde89a4e45267481183673fba",
+  "BotChatter.db": "d371bafbb585db3bdf25eed889095d66af9159685437e3087448a050890da302"
+}

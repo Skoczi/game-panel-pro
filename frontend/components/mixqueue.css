@@ -360,3 +360,16 @@
     min-width: 60px;
   }
 }
+
+.mq-ai-preview { border: 1px solid var(--mq-border); border-radius: 10px; padding: 14px; font-size: 12px; }
+.mq-ai-preview dl { display: grid; gap: 12px; margin: 0 0 14px; }
+.mq-ai-preview dl > div { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.mq-ai-preview dt { color: var(--mq-muted); }
+.mq-ai-preview dd { margin: 0; font-weight: 600; }
+.mq-ai-preview summary { cursor: pointer; }
+.mq-ai-preview summary > span { color: var(--mq-muted); margin-left: 8px; font-variant-numeric: tabular-nums; }
+.mq-ai-preview ul { margin: 10px 0 0; }
+.mq-ai-preview li { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+.mq-ai-preview li > span { color: var(--mq-muted); }
+.mq-ai-preview li > .mq-nav-warning { color: #b45309; }
+.dark .mq-ai-preview li > .mq-nav-warning { color: #fbbf24; }

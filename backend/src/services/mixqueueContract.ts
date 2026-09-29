@@ -20,6 +20,7 @@ export function validMixqueueReport(body: any): boolean {
       || Object.keys(data).length !== 1 || ![
         'missing_map', 'malformed_assignment', 'storage_failure', 'inventory_unavailable',
         'server_busy', 'stale_generation', 'server_not_empty',
+        'test_ai_disabled', 'test_bot_profiles_missing', 'test_bot_nav_missing', 'test_bot_nav_invalid',
       ].includes(data.code)) return false;
   }
   return true;
