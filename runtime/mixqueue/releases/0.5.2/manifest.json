@@ -1,0 +1,82 @@
+{
+  "version": "0.5.2",
+  "controller": "matchbot",
+  "controller_version": "0.5.2",
+  "game": "cs16",
+  "platform": "linux-i386",
+  "agent_version": "0.5.1",
+  "agent_unchanged": true,
+  "agent_protocol": 2,
+  "assignment_contract": 2,
+  "minimum_web_version": "0.6.5",
+  "current_web_version": "0.6.6",
+  "minimum_agent_version": "0.5.1",
+  "map_inventory_contract": 1,
+  "load_rejection_contract": 1,
+  "event_schema_changed": false,
+  "restart_game_required": true,
+  "runtime_agent_rebuild_required": false,
+  "rebuild_installer_image_if_package_embedded": true,
+  "target": "ESERV WAW1/WAW2 installer; empty SRV-107 without lease",
+  "sourceHashes": {
+    "matchbot_csco_mm.so": "ae8cf6516f4a684d44bff8e21f0a590b1de1988351557450bc76efdfe6d1e82d",
+    "mq_agent.py": "586a831b8605bc419c40aa9c112ab59c614f1e06a48ec37514e394a40e4efc3a"
+  },
+  "files": {
+    "ACCEPTANCE.md": "acfb1f7a80b9332adbb4c81002f1df309d83caa61d31faad0199e67d1f372de9",
+    "INSTALL.pl.md": "2fe9980a92556aba5591dcf18415733199eb0c8671fdf6fd1fc9a1fa8a3b1bdf",
+    "PROMPT-ESERV.md": "b4f80df6480350bc5c02a01ca5822074b4ce8d879d66cbedcc912eacb607312e",
+    "RELEASE-CS16-0.5.2.md": "642a6c7727bd96eea32694c08d16b43a39f96396eb68d7074675121158ac0e2d",
+    "dependencies.json": "433adf99454ed3ae936c315c84d5d8426831dfd0adcd480099e72ef8d2998522",
+    "packages/mixqueue2-agent-0.5.1.zip": "65c0dff7644b5284ef8630512c170be145c48f7182b004f32fc3ce0373a9aa5a",
+    "packages/mixqueue2-cs16-0.5.2-source.zip": "7eb874567574fc0462617c6924e846786e3260199324a41925c204a158365c7b",
+    "packages/mixqueue2-cs16-0.5.2.zip": "86381d8451b0661d0d572a5857f87ebf1c563ee979307b8aa1fecdf5560f5f34"
+  },
+  "preserve": [
+    "server_id",
+    "private configuration",
+    "keys",
+    "RCON",
+    "spool.sqlite",
+    "events.jsonl",
+    "generation-matchbot.txt",
+    "active-matchbot.txt",
+    "original-hostname.txt",
+    "recovery",
+    "history",
+    "unrelated AMXX plugins"
+  ],
+  "reviewed_conflicts_retained": [
+    "mq2_match.amxx",
+    "statsx.amxx"
+  ],
+  "public_pool_eligibility": "keep disabled",
+  "live_game_deployed_by_csco": false,
+  "tactical_pause": {
+    "seconds": 60,
+    "per_team": 2,
+    "captains_only": true,
+    "early_resume": "both opposing captains; complete roster",
+    "bot_auto_consent": false,
+    "scope": "match/generation/current tactical pause"
+  },
+  "damage_summary": {
+    "automatic": true,
+    "private": true,
+    "locale": [
+      "pl-ASCII",
+      "en"
+    ],
+    "model": "measured HP loss after armor; capped at remaining HP",
+    "no_current_round_disclosure": true,
+    "stable_roster_identity": true
+  },
+  "acceptance": {
+    "automated": "see ACCEPTANCE.md",
+    "real_steam_052": "pending ESERV/user 2+8 PL/EN",
+    "real_steam_051_reported": "TAB LIVE and reconnect preserving team/score in 1+9",
+    "real_steam_051_test_end": "not confirmed by prior handoff",
+    "earlier_client_crash_cause": "unestablished",
+    "ten_real_steam_clients": "pending"
+  }
+}
