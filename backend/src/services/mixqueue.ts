@@ -264,6 +264,18 @@ const runtime = new MixqueueDockerRuntime(
         }),
       );
       errors.delete(a.runtimeKey);
+      // Expose only this game's actual BSP directory. Missing inventory stays absent
+      // so cleanup and journal delivery still work; never fabricate a map list.
+      let mapsDirectory: string | undefined;
+      if (config.game === "cs16") {
+        try {
+          const maps = await safePath(paths.root, "maps");
+          if (!(await fs.stat(maps)).isDirectory()) throw mqFail("unsafe_storage_path");
+          mapsDirectory = await dockerHostPath(maps);
+        } catch (error: any) {
+          if (error.code !== "ENOENT") throw error;
+        }
+      }
       return {
         image,
         engine: paths.profile.engine as "amxmodx" | "sourcemod",
@@ -271,6 +283,7 @@ const runtime = new MixqueueDockerRuntime(
         journalDirectory: await dockerHostPath(paths.journal),
         stateDirectory: await dockerHostPath(state),
         brokerDirectory: await dockerHostPath(broker),
+        mapsDirectory,
       };
     } catch (error: any) {
       errors.set(a.runtimeKey, safeError(error));

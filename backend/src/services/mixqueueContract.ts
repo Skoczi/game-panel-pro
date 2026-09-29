@@ -1,6 +1,29 @@
 export const MQ_API = "https://csco.gg/mq2-agent";
 export const mqFail = (code: string, statusCode = 409) =>
   Object.assign(new Error(code), { statusCode });
+
+/** Bound new v1 fields without filtering legacy observations or event envelopes. */
+export function validMixqueueReport(body: any): boolean {
+  const inventory = body?.action === 'poll' ? body.observation?.map_inventory : undefined;
+  if (inventory !== undefined) {
+    if (!inventory || typeof inventory !== 'object' || Array.isArray(inventory)
+      || Object.keys(inventory).some(k => !['version', 'source', 'complete', 'maps'].includes(k))
+      || inventory.version !== 1 || inventory.source !== 'bsp_v30'
+      || typeof inventory.complete !== 'boolean' || !Array.isArray(inventory.maps)
+      || inventory.maps.length > 256
+      || inventory.maps.some((m: unknown) => typeof m !== 'string' || !/^de_[a-z0-9_]{1,36}$/.test(m))
+      || new Set(inventory.maps).size !== inventory.maps.length) return false;
+  }
+  if (body?.action === 'event' && body.event?.type === 'load_rejected') {
+    const data = body.event.data;
+    if (!data || typeof data !== 'object' || Array.isArray(data)
+      || Object.keys(data).length !== 1 || ![
+        'missing_map', 'malformed_assignment', 'storage_failure', 'inventory_unavailable',
+        'server_busy', 'stale_generation', 'server_not_empty',
+      ].includes(data.code)) return false;
+  }
+  return true;
+}
 export function validateMixqueueImport(input: unknown, game: string) {
   const value = input as any;
   if (

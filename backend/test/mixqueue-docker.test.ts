@@ -19,6 +19,7 @@ test("executor has only per-server mounts and no network or credentials", () => 
       journalDirectory: "/games/100/mq2/data",
       stateDirectory: "/private/100/state",
       brokerDirectory: "/private/100/broker",
+      mapsDirectory: "/games/100/serverfiles/cstrike/maps",
     },
   );
   assert.equal(config.HostConfig?.NetworkMode, "none");
@@ -34,6 +35,9 @@ test("executor has only per-server mounts and no network or credentials", () => 
       ["/journal", true],
       ["/state", false],
       ["/broker", true],
+      ["/game/maps", true],
     ],
   );
+  assert.equal(config.HostConfig?.Mounts?.find(m => m.Target === '/game/maps')?.Source,
+    '/games/100/serverfiles/cstrike/maps');
 });

@@ -50,17 +50,46 @@ class RunnerTests(unittest.TestCase):
         from mq_agent import AmxxAdapter
         agent, calls = self.agent()
         adapter = object.__new__(AmxxAdapter)
-        adapter.rcon = SimpleNamespace(command=lambda command: '{"bridge":1,"solo_test":true,"healthy":true,"idle":true,"controller":"matchbot","controller_version":"0.5.0","assignment_contract":2,"full_test":true,"rules_ready":true}')
+        adapter.root = Path('/unavailable-game-inventory')
+        adapter.rcon = SimpleNamespace(command=lambda command: '{"bridge":1,"solo_test":true,"healthy":true,"idle":true,"controller":"matchbot","controller_version":"0.5.1","assignment_contract":2,"full_test":true,"rules_ready":true}')
         agent.adapter = adapter
         self.assertTrue(cycle(agent)['ready'])
         self.assertEqual(calls[-1]['observation']['agent_protocol'], 2)
         self.assertEqual(calls[-1]['observation']['controller'], 'matchbot')
         self.assertIs(calls[-1]['observation']['rules_ready'], True)
         self.assertIs(calls[-1]['observation']['solo_test'], True)
-        self.assertEqual(calls[-1]['observation']['controller_version'], '0.5.0')
-        self.assertEqual(calls[-1]['observation']['agent_version'], '0.5.0')
+        self.assertEqual(calls[-1]['observation']['controller_version'], '0.5.1')
+        self.assertEqual(calls[-1]['observation']['agent_version'], '0.5.1')
         self.assertEqual(calls[-1]['observation']['assignment_contract'], 2)
         self.assertIs(calls[-1]['observation']['full_test'], True)
+        self.assertEqual(calls[-1]['observation']['map_inventory'],
+                         {'version': 1, 'source': 'bsp_v30', 'complete': False, 'maps': []})
+
+    def test_dispatch_negotiation_and_unhealthy_cleanup_preserve_journal_delivery(self):
+        from unittest.mock import Mock
+        for healthy in (True, False):
+            with self.subTest(healthy=healthy):
+                agent, calls = self.agent()
+                agent.adapter.status = lambda: {'healthy': healthy, 'idle': True}
+                agent.spool = Mock()
+                agent.dispatch = Mock()
+                commands = [{'type': 'load'}, {'type': 'cleanup'}]
+                agent.send = Mock(return_value={'commands': commands, 'load_rejection_contract': 1})
+                cycle(agent)
+                agent.spool.tail.assert_called_once_with(agent.config['journal'])
+                agent.spool.flush.assert_called_once_with(agent.send)
+                expected = commands if healthy else commands[1:]
+                self.assertEqual([((command, 1),) for command in expected],
+                                 [(call.args,) for call in agent.dispatch.call_args_list])
+
+    def test_missing_contract_remains_unnegotiated(self):
+        from unittest.mock import Mock
+        agent, _ = self.agent()
+        command = {'type': 'cleanup'}
+        agent.dispatch = Mock()
+        agent.send = Mock(return_value={'commands': [command]})
+        cycle(agent)
+        agent.dispatch.assert_called_once_with(command, 0)
 
     def test_spools_keep_identity_sequences_separate_across_restarts(self):
         from mq_agent import Spool

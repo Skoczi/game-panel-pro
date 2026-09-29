@@ -81,6 +81,7 @@ class AgentTests(unittest.TestCase):
 
     def test_legacy_controller_cannot_receive_a_new_cs16_assignment(self):
         a = agent.AmxxAdapter.__new__(agent.AmxxAdapter)
+        a.root = Path(tempfile.gettempdir()) / "mq2-nonexistent-test-root"
         a.rcon = Mock()
         a.rcon.command.return_value = json.dumps({'bridge':1,'healthy':True,'idle':True,'matchid':'','solo_test':True,'controller_version':'0.3.0'})
         p = payload('cs16')
@@ -96,6 +97,7 @@ class CleanupTests(unittest.TestCase):
 
     def adapter(self, cls, replies):
         adapter = cls.__new__(cls)
+        adapter.root = Path(tempfile.gettempdir()) / "mq2-nonexistent-test-root"
         adapter.spool = agent.Spool(':memory:')
         self.addCleanup(adapter.spool.db.close)
         adapter.rcon = Mock()
