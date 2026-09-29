@@ -11,7 +11,7 @@ const { MIXQUEUE_VERSION, sourceHashes } = await import('../src/services/mixqueu
 
 const runtime = new URL('../../runtime/mixqueue/', import.meta.url);
 const hash = (data: Buffer) => createHash('sha256').update(data).digest('hex');
-test('controller release verifies without changing the agent or any published release', async () => {
+test('controller release verifies with independent agent pins and immutable published releases', async () => {
   for (const [name, expected] of Object.entries(matchbotReleaseHashes)) {
     assert.equal(hash(await fs.readFile(new URL(name, runtime))), expected, name);
   }
@@ -27,23 +27,28 @@ test('controller release verifies without changing the agent or any published re
   const v051 = hash(await fs.readFile(new URL('releases/0.5.1/matchbot_csco_mm.so', runtime)));
   assert.equal(v051, '6cac5c2f16e8236580ebf8738a95678c60946497571de645a0175293eef6dffb');
   assert.equal(matchbotVersionForHash(v051), '0.5.1');
+  const v052 = hash(await fs.readFile(new URL('releases/0.5.2/matchbot_csco_mm.so', runtime)));
+  assert.equal(v052, 'ae8cf6516f4a684d44bff8e21f0a590b1de1988351557450bc76efdfe6d1e82d');
+  assert.equal(matchbotVersionForHash(v052), '0.5.2');
+  assert.equal(hash(await fs.readFile(new URL('source-bundles/mixqueue2-cs16-0.5.2.zip', runtime))), '86381d8451b0661d0d572a5857f87ebf1c563ee979307b8aa1fecdf5560f5f34');
+  assert.equal(hash(await fs.readFile(new URL('source-bundles/mixqueue2-agent-0.5.1.zip', runtime))), '65c0dff7644b5284ef8630512c170be145c48f7182b004f32fc3ce0373a9aa5a');
   assert.equal(hash(await fs.readFile(new URL('source-bundles/mixqueue2-cs16-0.5.1.zip', runtime))), 'a7f4894e35f41058f62cdf6d3b80d03624b9b69e616103af3deaba77e1e15c1b');
   assert.equal(hash(await fs.readFile(new URL('source-bundles/mixqueue2-cs16-0.5.0.zip', runtime))), '57638e836ba41c0c3f8ddbed467568e147bc4d97283d8ed5991e56bddc99666f');
   assert.equal(hash(await fs.readFile(new URL('source-bundles/mixqueue2-cs16-0.4.1.zip', runtime))), '43e68619e5682bbadd8df502f0f29474526bea42a451add5bc29016f1a913121');
   assert.equal(hash(await fs.readFile(new URL('source-bundles/mixqueue2-agent-0.5.0.zip', runtime))), '005b045255862f1ca848127580ae70111de9115db6cc62a6737907bb3e8df464');
   assert.equal(matchbotVersionForHash(matchbotReleaseHashes[MATCHBOT_SOURCE]), MATCHBOT_VERSION);
   assert.equal(matchbotVersionForHash(hash(Buffer.from('untrusted controller'))), null);
-  assert.equal(hash(await fs.readFile(new URL('mq_agent.py', runtime))), '586a831b8605bc419c40aa9c112ab59c614f1e06a48ec37514e394a40e4efc3a');
+  assert.equal(hash(await fs.readFile(new URL('mq_agent.py', runtime))), '6274415004a73cbf2750ab9138746ad87f8b84329721c80e96600097907c092a');
   assert.equal(hash(await fs.readFile(new URL('source-bundles/mixqueue2-cs16-0.4.0.zip', runtime))), '89a04a3c461095d0e82f732d189b18dbf6f78c300f58ced0d504986e622f163b');
 });
 
-test('controller-only upgrade preserves the pinned agent and dependency contract', async () => {
-  const manifest = JSON.parse(await fs.readFile(new URL('releases/0.5.2/manifest.json', runtime), 'utf8'));
+test('controller and agent upgrade retain the dependency contract', async () => {
+  const manifest = JSON.parse(await fs.readFile(new URL('releases/0.6.1/manifest.json', runtime), 'utf8'));
   assert.equal(MATCHBOT_VERSION, manifest.controller_version);
   assert.equal(MIXQUEUE_VERSION, manifest.agent_version);
-  assert.equal(MIXQUEUE_VERSION, '0.5.1');
+  assert.equal(MIXQUEUE_VERSION, '0.6.0');
   assert.equal(sourceHashes['mq_agent.py'], manifest.sourceHashes['mq_agent.py']);
   assert.equal(matchbotReleaseHashes[MATCHBOT_SOURCE], manifest.sourceHashes['matchbot_csco_mm.so']);
-  assert.equal(hash(await fs.readFile(new URL('source-bundles/mixqueue2-agent-0.5.1.zip', runtime))), manifest.files['packages/mixqueue2-agent-0.5.1.zip']);
-  assert.deepEqual(await fs.readFile(new URL('releases/0.5.2/dependencies.json', runtime)), await fs.readFile(new URL('releases/0.5.1/dependencies.json', runtime)));
+  assert.equal(hash(await fs.readFile(new URL('source-bundles/mixqueue2-agent-0.6.0.zip', runtime))), manifest.files['packages/mixqueue2-agent-0.6.0.zip']);
+  assert.deepEqual(await fs.readFile(new URL('releases/0.6.1/dependencies.json', runtime)), await fs.readFile(new URL('releases/0.5.2/dependencies.json', runtime)));
 });

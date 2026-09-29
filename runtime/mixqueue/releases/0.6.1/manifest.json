@@ -1,0 +1,101 @@
+{
+  "version": "0.6.1",
+  "controller": "matchbot",
+  "controller_version": "0.6.1",
+  "agent_version": "0.6.0",
+  "agent_unchanged": true,
+  "web_version": "0.7.1",
+  "minimum_web_version": "0.7.1",
+  "minimum_agent_version": "0.6.0",
+  "agent_protocol": 2,
+  "assignment_contract": 3,
+  "stats_version": 2,
+  "side_choice": 1,
+  "map_inventory_contract": 1,
+  "load_rejection_contract": 1,
+  "event_schema_changed": true,
+  "event_additions": [],
+  "event_extensions": [
+    "loaded.ready_deadline: integer UNIX seconds"
+  ],
+  "ruleset": 2,
+  "game": "cs16",
+  "platform": "linux-i386",
+  "sourceHashes": {
+    "matchbot_csco_mm.so": "c53d87ad9078e4a53d56ebad468e54a362f4f1efde8d6c0badfa1da4d46ec89a",
+    "mq_agent.py": "6274415004a73cbf2750ab9138746ad87f8b84329721c80e96600097907c092a"
+  },
+  "files": {
+    "ACCEPTANCE.md": "4189d43802de705aee93861935e4d3cf00d8957642299b5eecd19a2e8d3bc328",
+    "AUDIT-IMPLEMENTATION.md": "e1fbbee4ec665c47658159a1158075181918fc6bf2f1dc965f24c6bd75004aaa",
+    "INSTALL.pl.md": "80cc97382748f9f2af7cc772b9e4f03f944d1d5372a9045fa77aab3f374ed8f3",
+    "MIGRATION.md": "5fc31e9a741aaa9b57b6429ff95517a1aa0022c15a427ba7b60f2a2fa7a473a5",
+    "PROMPT-ESERV.md": "1d01385a206f2c7c3411084d3861b1704184dfb74ae78d7f5c343096617884c8",
+    "RELEASE-CS16-0.6.1.md": "b03e8c5f915b4a17320fd4e6015fa1b72c33644b1ca3ef4eef3947e4c111b7ef",
+    "dependencies.json": "433adf99454ed3ae936c315c84d5d8426831dfd0adcd480099e72ef8d2998522",
+    "feedback-061-disconnect.json": "c2e0445575e7587d06e3322187211736d56ac6e7878de8c913039de9032b1c5f",
+    "feedback-061-ready-ranked.json": "400e223be4e54809aff70267967cd4f70f100698293224b6a5b5b9fa2f6bab20",
+    "feedback-061-ready-test.json": "a0fe78c5987bc335f611a42aa10c2a50854a0e5cc628205780d96e9c9fe8897e",
+    "feedback-061-tactical.json": "28cf1ac46b6b95deed5de4539d5cf2a1345e4c801de4d6bae9ef52d900dd0270",
+    "packages/mixqueue2-agent-0.6.0.zip": "b1be179add3b5b71de07c5738ab0566b923c6368e4dc01e270ed91adf34e2ce4",
+    "packages/mixqueue2-cs16-0.6.1-source.zip": "69974b438191271b778f63667c5a5d79d4b8fbefb5267035adb789864734de9f",
+    "packages/mixqueue2-cs16-0.6.1.zip": "7635a1a488556dd35fa87c9cc2739d4d718a9d8427691487bc18abaeddc76cfb",
+    "packages/mixqueue2-web-0.7.1.zip": "6a56533fe8c4f344b8e24faa31f5e319b790c571a34893e6558ea33b031ccc4b",
+    "runtime/mixqueue/mq_agent.py": "6274415004a73cbf2750ab9138746ad87f8b84329721c80e96600097907c092a"
+  },
+  "restart_game_required": true,
+  "runtime_agent_rebuild_required": false,
+  "target": "ESERV universal WAW1/WAW2 installer; empty SRV-107 without lease",
+  "public_pool_eligibility": "keep disabled",
+  "live_game_deployed_by_csco": false,
+  "preserve": [
+    "private configuration",
+    "keys",
+    "RCON",
+    "server_id",
+    "broker isolation",
+    "spool.sqlite/WAL",
+    "journal",
+    "generation",
+    "active-matchbot",
+    "original-hostname",
+    "recovery",
+    "history",
+    "unrelated AMXX"
+  ],
+  "reviewed_conflicts_retained": [
+    "mq2_match.amxx",
+    "statsx.amxx"
+  ],
+  "policy": {
+    "disconnect_pause_seconds": 90,
+    "disconnect_pauses_per_team": 1,
+    "tactical_pauses_per_team": 3,
+    "tactical_seconds": 30,
+    "pause_policy": 2,
+    "reconnect_grace_seconds": 180,
+    "abandon_queue_seconds": 1800,
+    "veto": "alternate bans until 2 maps; pick; opposing captain chooses CT/T",
+    "side_deadline_seconds": 30,
+    "side_fallback": "CT for choosing team",
+    "game_ready_seconds": 300,
+    "readiness_penalty_seconds": [
+      1800,
+      3600,
+      7200,
+      86400
+    ],
+    "readiness_lookback_seconds": 604800,
+    "accepted_auto_requeue": true,
+    "behaviour_signal_auto_penalty": false,
+    "test_elo": false,
+    "test_penalties": false
+  },
+  "acceptance": {
+    "automated": "see ACCEPTANCE.md",
+    "real_steam_061": "pending",
+    "all_maps_and_2v2": "pending",
+    "ten_real_clients": "pending",
+    "earlier_crash_cause": "unestablished"
+  }
+}

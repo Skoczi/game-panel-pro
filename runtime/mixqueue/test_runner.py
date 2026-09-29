@@ -51,17 +51,22 @@ class RunnerTests(unittest.TestCase):
         agent, calls = self.agent()
         adapter = object.__new__(AmxxAdapter)
         adapter.root = Path('/unavailable-game-inventory')
-        adapter.rcon = SimpleNamespace(command=lambda command: '{"bridge":1,"solo_test":true,"healthy":true,"idle":true,"controller":"matchbot","controller_version":"0.5.1","assignment_contract":2,"full_test":true,"rules_ready":true}')
+        adapter.spool = SimpleNamespace(metrics=lambda: {'pending': 0, 'oldest_pending_seconds': None, 'database_bytes': 4096})
+        adapter.rcon = SimpleNamespace(command=lambda command: '{"bridge":1,"solo_test":true,"healthy":true,"idle":true,"controller":"matchbot","controller_version":"0.6.1","assignment_contract":3,"stats_version":2,"pause_policy":2,"ready_seconds":300,"full_test":true,"rules_ready":true}')
         agent.adapter = adapter
         self.assertTrue(cycle(agent)['ready'])
         self.assertEqual(calls[-1]['observation']['agent_protocol'], 2)
         self.assertEqual(calls[-1]['observation']['controller'], 'matchbot')
         self.assertIs(calls[-1]['observation']['rules_ready'], True)
         self.assertIs(calls[-1]['observation']['solo_test'], True)
-        self.assertEqual(calls[-1]['observation']['controller_version'], '0.5.1')
-        self.assertEqual(calls[-1]['observation']['agent_version'], '0.5.1')
-        self.assertEqual(calls[-1]['observation']['assignment_contract'], 2)
+        self.assertEqual(calls[-1]['observation']['controller_version'], '0.6.1')
+        self.assertEqual(calls[-1]['observation']['agent_version'], '0.6.0')
+        self.assertEqual(calls[-1]['observation']['assignment_contract'], 3)
         self.assertIs(calls[-1]['observation']['full_test'], True)
+        self.assertEqual(calls[-1]['observation']['stats_version'], 2)
+        self.assertEqual(calls[-1]['observation']['pause_policy'], 2)
+        self.assertEqual(calls[-1]['observation']['ready_seconds'], 300)
+        self.assertEqual(calls[-1]['observation']['delivery'], adapter.spool.metrics())
         self.assertEqual(calls[-1]['observation']['map_inventory'],
                          {'version': 1, 'source': 'bsp_v30', 'complete': False, 'maps': []})
 
@@ -105,6 +110,40 @@ class RunnerTests(unittest.TestCase):
             self.assertEqual(a.db.execute('SELECT COUNT(*) FROM events').fetchone()[0], 1)
             a.db.close()
             b.db.close()
+
+
+    def test_upgrade_keeps_legacy_events_cursors_and_sequences(self):
+        import json
+        import sqlite3
+        from mq_agent import Spool
+        with tempfile.TemporaryDirectory() as directory:
+            path = str(Path(directory) / 'spool.sqlite')
+            previous = sqlite3.connect(path)
+            previous.executescript('CREATE TABLE events(id TEXT PRIMARY KEY,body TEXT NOT NULL,sent INTEGER DEFAULT 0); CREATE TABLE state(key TEXT PRIMARY KEY,value TEXT NOT NULL);')
+            event = {'event_id': 'old', 'match_id': 'a'*24, 'generation': 15,
+                     'type': 'loaded', 'data': {'map': 'de_nuke'}}
+            body = json.dumps({**event, 'schema_version': 1, 'sequence': 7, 'boot_id': 'original'})
+            cursor = {'offset': 4096, 'inode': 12345}
+            previous.execute('INSERT INTO events VALUES(?,?,0)', ('old', body))
+            previous.executemany('INSERT INTO state VALUES(?,?)', [
+                ('sequence:'+'a'*24+':15', '7'), ('tail:/journal/events.jsonl', json.dumps(cursor))])
+            previous.commit()
+            previous.close()
+            spool = Spool(path)
+            try:
+                self.assertEqual(spool.get('tail:/journal/events.jsonl'), cursor)
+                self.assertEqual(spool.db.execute('SELECT body,sent FROM events').fetchone(), (body, 0))
+                self.assertEqual(spool.metrics()['pending'], 1)
+                self.assertIsNone(spool.metrics()['oldest_pending_seconds'])
+                spool.put(event)
+                spool.put({**event, 'event_id': 'new', 'type': 'live'})
+                delivered = []
+                spool.flush(delivered.append)
+                self.assertEqual([e['event']['sequence'] for e in delivered], [7, 8])
+                self.assertEqual(delivered[0]['event']['boot_id'], 'original')
+                self.assertEqual(spool.db.execute('SELECT COUNT(*) FROM events').fetchone()[0], 2)
+            finally:
+                spool.db.close()
 
 
 if __name__ == '__main__':

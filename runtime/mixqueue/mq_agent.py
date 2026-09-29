@@ -34,7 +34,7 @@ class Spool:
         self.db = sqlite3.connect(path)
         self.db.execute("PRAGMA journal_mode=WAL")
         self.db.execute("PRAGMA synchronous=FULL")
-        self.db.executescript("CREATE TABLE IF NOT EXISTS events(id TEXT PRIMARY KEY,body TEXT NOT NULL,sent INTEGER DEFAULT 0); CREATE TABLE IF NOT EXISTS state(key TEXT PRIMARY KEY,value TEXT NOT NULL);")
+        self.db.executescript("CREATE TABLE IF NOT EXISTS events(id TEXT PRIMARY KEY,body TEXT NOT NULL,sent INTEGER DEFAULT 0); CREATE TABLE IF NOT EXISTS state(key TEXT PRIMARY KEY,value TEXT NOT NULL); CREATE INDEX IF NOT EXISTS events_sent ON events(sent); CREATE TABLE IF NOT EXISTS queued_at(id TEXT PRIMARY KEY,at INTEGER NOT NULL);")
 
     def put(self, event):
         with self.db:
@@ -49,6 +49,7 @@ class Spool:
             sequence=(json.loads(row[0]) if row else 0)+1
             body=encode({**event,'schema_version':1,'sequence':sequence,'boot_id':self.boot})
             self.db.execute("INSERT OR IGNORE INTO events(id,body) VALUES(?,?)", (event['event_id'], body))
+            self.db.execute("INSERT INTO queued_at VALUES(?,?)", (event['event_id'],int(time.time())))
             self.db.execute('INSERT INTO state VALUES(?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value',(key,encode(sequence)))
 
     def get(self, key, default=None):
@@ -58,6 +59,14 @@ class Spool:
     def set(self, key, value):
         with self.db:
             self.db.execute("INSERT INTO state VALUES(?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value", (key, encode(value)))
+
+    def metrics(self):
+        pending = self.db.execute('SELECT count(*) FROM events WHERE sent=0').fetchone()[0]
+        oldest = self.db.execute('SELECT min(q.at) FROM events e JOIN queued_at q ON q.id=e.id WHERE e.sent=0').fetchone()[0]
+        pages = self.db.execute('PRAGMA page_count').fetchone()[0]
+        page_size = self.db.execute('PRAGMA page_size').fetchone()[0]
+        return {'pending': pending, 'oldest_pending_seconds': max(0,int(time.time())-oldest) if oldest is not None else None,
+                'database_bytes': pages*page_size}
 
     def flush(self, send):
         # Preserve causal ordering. A rejected event remains visible and blocks later events.
@@ -144,7 +153,7 @@ class Get5Adapter:
         value = json.loads(raw)
         if value.get('bridge') != 1:
             raise RuntimeError('MixQueue2 SourceMod bridge is not installed')
-        return {**value, 'agent_protocol': 2, 'agent_version': '0.5.1'}
+        return {**value, 'agent_protocol': 2, 'agent_version': '0.6.0', 'delivery': self.spool.metrics()}
 
     @staticmethod
     def cleanup_complete(status):
@@ -327,7 +336,7 @@ class AmxxAdapter(Get5Adapter):
         reason = command.get('payload', {}).get('reason', 'server_error')
         if reason not in self.REASONS:
             raise ValueError('Invalid cleanup reason')
-        return 'mq2_clear ' + reason if status.get('assignment_contract') == 2 else 'mq2_clear'
+        return 'mq2_clear ' + reason if status.get('assignment_contract') in (2, 3) else 'mq2_clear'
 
     def __init__(self, config, spool):
         self.config, self.spool = config, spool
@@ -341,13 +350,18 @@ class AmxxAdapter(Get5Adapter):
         size = int(payload['team_size'])
         test = payload['rules'].get('test') is True
         full = test and payload['rules'].get('test_type') == 'full'
-        v2 = payload.get('contract_version') == 2
+        v3 = payload.get('contract_version') == 3
+        v2 = v3 or payload.get('contract_version') == 2
+        if v3 and (type(payload.get('starting_ct_team')) is not int or payload['starting_ct_team'] not in (1, 2)):
+            raise ValueError('Invalid starting side')
         if full and (not v2 or size != 5 or not re.fullmatch(r'7e5700[a-f0-9]{18}', payload['match_id'])):
             raise ValueError('Invalid full test assignment')
         count = len(payload['players'])
         if size not in (2, 5) or count != (1 if test and not full else size * 2):
             raise ValueError('Invalid roster')
-        lines = [f"{'MQ2V2 ' if v2 else ''}{payload['match_id']} {payload['generation']} {payload['map']} {size} {payload['rules']['mr']} {payload['rules']['ot_mr']} {payload['config_hash']} {2 if full else 1 if test else 0}"]
+        lines = [f"{'MQ2V3 ' if v3 else 'MQ2V2 ' if v2 else ''}{payload['match_id']} {payload['generation']} {payload['map']} {size} {payload['rules']['mr']} {payload['rules']['ot_mr']} {payload['config_hash']} {2 if full else 1 if test else 0}"]
+        if v3:
+            lines[0] += ' ' + str(payload['starting_ct_team'])
         if v2:
             names = payload.get('teams', {})
             owner = payload.get('test_owner', '-')
@@ -420,7 +434,7 @@ class AmxxAdapter(Get5Adapter):
             if active:
                 return
             p = command['payload']
-            if p['rules'].get('test_type') == 'full' and (status.get('full_test') is not True or status.get('assignment_contract') != 2):
+            if p['rules'].get('test_type') == 'full' and (status.get('full_test') is not True or status.get('assignment_contract') not in (2, 3)):
                 raise RuntimeError('Full tests require controller 0.5.0')
             if p['rules'].get('test') is True and status.get('solo_test') is not True:
                 raise RuntimeError('Controller does not support solo tests')
@@ -432,7 +446,9 @@ class AmxxAdapter(Get5Adapter):
             if p['map'] not in inventory['maps']:
                 raise LoadRejected('missing_map')
             path = self.root / 'addons/amxmodx/configs/mq2' / (match_id + '-' + str(generation) + '.txt')
-            wire = p if status.get('assignment_contract') == 2 else {**p, 'contract_version': 1}
+            if p.get('contract_version') == 3 and status.get('assignment_contract') != 3:
+                raise LoadRejected('malformed_assignment')
+            wire = p if status.get('assignment_contract') in (2, 3) else {**p, 'contract_version': 1}
             try:
                 content = self.build(wire)
             except (ValueError, KeyError, TypeError):
@@ -504,7 +520,13 @@ class Agent:
         except Exception:
             logging.exception('Bridge/transport unhealthy; assignment disabled')
         # A recovery quarantine must not block a durable rejection/idle report.
-        self.spool.flush(self.send)
+        try:
+            self.spool.flush(self.send)
+        except Exception:
+            # Keep the rejected record and causal ordering. The control channel
+            # must still receive abort/cleanup; never allocate a new match here.
+            healthy = False
+            logging.exception('Event delivery blocked; assignments disabled, cleanup still available')
         response = self.send({'action': 'poll', 'healthy': healthy, 'observation': status})
         # Abort and cleanup remain possible even if an earlier event is quarantined.
         for command in response['commands']:
