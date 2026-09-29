@@ -12,6 +12,7 @@ export type ExecutorFiles = {
   journalDirectory: string;
   stateDirectory: string;
   brokerDirectory: string;
+  mapsDirectory?: string;
 };
 const role = "gamepanel.mixqueue.executor";
 const identity = "gamepanel.mixqueue.identity";
@@ -36,6 +37,8 @@ export function executorContainerOptions(
     [files.journalDirectory, "/journal", true],
     [files.stateDirectory, "/state", false],
     [files.brokerDirectory, "/broker", true],
+    ...(files.engine === "amxmodx" && files.mapsDirectory
+      ? [[files.mapsDirectory, "/game/maps", true] as const] : []),
   ] as const;
   for (const [source] of mounts)
     if (!source.startsWith("/") || source.includes("\0"))

@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import {
   allowedMixqueueCommand,
   validateMixqueueImport,
+  validMixqueueReport,
   MQ_API,
 } from "../src/services/mixqueueContract.js";
 
@@ -23,6 +24,28 @@ const exported = () => ({
   },
   environment: { MQ2_AGENT_KEY: "a".repeat(48), MQ2_RCON_PASSWORD: null },
   instructions: "Not an executable command",
+});
+
+test('inventory and load rejection contracts are bounded without exposing arbitrary error text', () => {
+  const inventory = { version: 1, source: 'bsp_v30', complete: true,
+    maps: Array.from({length: 256}, (_, i) => `de_map_${i}`) };
+  const poll = { action: 'poll', healthy: true, observation: { map_inventory: inventory } };
+  assert.ok(validMixqueueReport(poll));
+  assert.ok(Buffer.byteLength(JSON.stringify(poll)) < 131072);
+  for (const patch of [{maps: [...inventory.maps, 'de_overflow']}, {maps: ['../private']},
+    {maps: ['de_nuke', 'de_nuke']}, {version: 2}, {source: '/private/path'},
+    {complete: 'true'}, {extra: 'private'}]) {
+    assert.equal(validMixqueueReport({...poll, observation: {map_inventory: {...inventory, ...patch}}}), false);
+  }
+  for (const code of ['missing_map', 'malformed_assignment', 'storage_failure',
+    'inventory_unavailable', 'server_busy', 'stale_generation', 'server_not_empty']) {
+    assert.ok(validMixqueueReport({action: 'event', event: {type: 'load_rejected', data: {code}}}));
+  }
+  for (const data of [{code: 'private RCON output'}, {code: 'missing_map', message: 'private'}, null]) {
+    assert.equal(validMixqueueReport({action: 'event', event: {type: 'load_rejected', data}}), false);
+  }
+  assert.ok(validMixqueueReport({action: 'poll', observation: {healthy: false}}));
+  assert.ok(validMixqueueReport({action: 'event', event: {type: 'idle'}}));
 });
 
 test("import preserves identity and separates secrets without granting exported paths or targets", () => {

@@ -35,6 +35,12 @@ test(
     >();
     const requests: Array<{ id: string; action: string; healthy?: boolean }> =
       [];
+    const observations = new Map<string, any>();
+    const rejected: any[] = [];
+    let rejectMissingMap = false;
+    let firstControllerHealthy = true;
+    const command = { id: 'c'.repeat(24), type: 'load', match_id: 'a'.repeat(24), generation: 2,
+      payload: {match_id: 'a'.repeat(24), generation: 2, rules: {}, map: 'de_missing'} };
     const originalFetch = globalThis.fetch;
     globalThis.fetch = (async (url, options) => {
       assert.equal(url, "https://csco.gg/mq2-agent");
@@ -49,18 +55,21 @@ test(
           .digest("hex"),
       );
       const body = JSON.parse(raw);
+      if (body.action === 'poll') observations.set(id, body.observation);
+      if (body.action === 'event') rejected.push({id, event: body.event});
       if (body.action === 'poll' && body.healthy) {
         assert.equal(body.observation.agent_protocol, 2);
-        assert.equal(body.observation.agent_version, '0.5.0');
+        assert.equal(body.observation.agent_version, '0.5.1');
         assert.equal(body.observation.assignment_contract, 2);
         assert.equal(body.observation.full_test, true);
         assert.equal(body.observation.controller, 'matchbot');
-        assert.equal(body.observation.controller_version, '0.5.0');
+        assert.equal(body.observation.controller_version, '0.5.1');
         assert.equal(body.observation.rules_ready, true);
         assert.equal(body.observation.solo_test, true);
       }
       requests.push({ id, action: body.action, healthy: body.healthy });
-      return new Response(JSON.stringify({ commands: [] }), { status: 200 });
+      return new Response(JSON.stringify({ commands: rejectMissingMap && id === keys[0] ? [command] : [],
+        load_rejection_contract: 1 }), { status: 200 });
     }) as typeof fetch;
     const closeBroker = async (key: string) => {
       await brokers.get(key)?.close();
@@ -71,7 +80,7 @@ test(
       nodeId,
       async (a) => {
         const base = path.join(root, a.runtimeKey);
-        for (const name of ["config", "journal", "state", "broker"]) {
+        for (const name of ["config", "journal", "state", "broker", "maps"]) {
           await fs.mkdir(path.join(base, name), { recursive: true });
           // Match production ownership for the unprivileged executor, including root-run CI.
           await fs.chown(path.join(base, name), 1000, 1000);
@@ -106,7 +115,9 @@ test(
             },
             async rcon(command) {
               assert.equal(command, "mq2_status");
-              return '{"bridge":1,"healthy":true,"idle":true,"controller":"matchbot","controller_version":"0.5.0","assignment_contract":2,"full_test":true,"rules_ready":true,"solo_test":true}';
+              return JSON.stringify({bridge: 1, healthy: a.runtimeKey !== keys[0] || firstControllerHealthy,
+                idle: true, controller: 'matchbot', controller_version: '0.5.1', assignment_contract: 2,
+                full_test: true, rules_ready: true, solo_test: true});
             },
           }),
         );
@@ -117,6 +128,7 @@ test(
           journalDirectory: path.join(base, "journal"),
           stateDirectory: path.join(base, "state"),
           brokerDirectory: path.join(base, "broker"),
+          mapsDirectory: path.join(base, "maps"),
         };
       },
       closeBroker,
@@ -133,6 +145,10 @@ test(
     for (const key of keys) {
       await fs.mkdir(path.join(root, key, "journal"), { recursive: true });
       await fs.writeFile(path.join(root, key, "journal", "events.jsonl"), "");
+      await fs.mkdir(path.join(root, key, 'maps'), {recursive: true});
+      const bsp = Buffer.alloc(126); bsp.writeInt32LE(30, 0); bsp.writeInt32LE(124, 4);
+      bsp.writeInt32LE(2, 8); bsp.write('{}', 124);
+      await fs.writeFile(path.join(root, key, 'maps', key === keys[0] ? 'de_nuke.bsp' : 'de_train.bsp'), bsp);
     }
     const assignments = keys.map(
       (runtimeKey) =>
@@ -164,6 +180,31 @@ test(
         (await status(keys[0])).ready && (await status(keys[1])).ready,
     );
     assert.equal((await runtime.list()).size, 2);
+    for (const [index, key] of keys.entries()) {
+      assert.deepEqual(observations.get(key).map_inventory, {version: 1, source: 'bsp_v30', complete: true,
+        maps: [index === 0 ? 'de_nuke' : 'de_train']});
+    }
+    // Real runner dispatch must negotiate and durably report refusal, never synthesize loaded.
+    rejectMissingMap = true;
+    await until(async () => rejected.length > 0);
+    assert.equal(rejected.length, 1);
+    assert.deepEqual(rejected[0].event.data, {code: 'missing_map'});
+    assert.equal(rejected[0].event.type, 'load_rejected');
+    assert.equal(rejected[0].event.match_id, command.match_id);
+    assert.equal(rejected[0].event.generation, 2);
+    assert.equal(rejected[0].event.sequence, 1);
+    // Recovery must continue delivering sequenced journal events to the signed broker.
+    firstControllerHealthy = false;
+    await fs.appendFile(path.join(root, keys[0], 'journal', 'events.jsonl'), JSON.stringify({
+      event_id: 'fixture-idle', match_id: command.match_id, generation: 2, type: 'idle', data: {},
+    }) + '\n');
+    await until(async () => rejected.length === 2);
+    assert.equal(rejected[1].event.type, 'idle');
+    assert.equal(rejected[1].event.sequence, 2);
+    firstControllerHealthy = true;
+    await fs.rm(path.join(root, keys[0], 'maps', 'de_nuke.bsp'));
+    await until(async () => observations.get(keys[0]).map_inventory.maps.length === 0);
+    assert.deepEqual(observations.get(keys[1]).map_inventory.maps, ['de_train']);
     assert.ok(
       keys.every((key) =>
         requests.some((r) => r.id === key && r.action === "poll" && r.healthy),
@@ -182,6 +223,7 @@ test(
       assignments[1],
     ]);
     assert.equal((await runtime.list()).get(keys[1])?.generation, before);
+    assert.equal(rejected.filter(item => item.event.type === 'load_rejected').length, 1);
     await supervisor.reconcile([
       { ...assignments[0], gameRunning: false },
       assignments[1],
@@ -192,6 +234,9 @@ test(
     })) {
       const info = await docker.getContainer(item.Id).inspect();
       assert.equal(info.HostConfig.NetworkMode, "none");
+      const maps = info.Mounts.find(m => m.Destination === '/game/maps');
+      assert.equal(maps?.RW, false);
+      assert.equal(maps?.Source, path.join(root, keys[1], 'maps'));
       assert.ok(!JSON.stringify(info).includes(secrets.get(keys[1])!));
     }
   },

@@ -54,7 +54,7 @@ def cycle(agent):
         state['heartbeat'] = True
         for command in response['commands']:
             if healthy or command['type'] != 'load':
-                agent.adapter.execute(command)
+                agent.dispatch(command, response.get('load_rejection_contract', 0))
         state['ready'] = healthy and state['idle']
     except Exception:
         state['error'] = 'matchmaking_or_command'

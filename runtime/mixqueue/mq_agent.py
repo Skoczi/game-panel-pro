@@ -8,6 +8,7 @@ import os
 from pathlib import Path
 import re
 import socket
+import stat
 import sqlite3
 import struct
 import sys
@@ -18,6 +19,13 @@ import uuid
 
 def encode(value):
     return json.dumps(value, ensure_ascii=False, separators=(",", ":"))
+
+
+class LoadRejected(RuntimeError):
+    """Only a known, explicit rejection; never a transport timeout."""
+    def __init__(self, code):
+        self.code = code
+        super().__init__('Controller rejected load: ' + code)
 
 
 class Spool:
@@ -136,7 +144,7 @@ class Get5Adapter:
         value = json.loads(raw)
         if value.get('bridge') != 1:
             raise RuntimeError('MixQueue2 SourceMod bridge is not installed')
-        return {**value, 'agent_protocol': 2, 'agent_version': '0.5.0'}
+        return {**value, 'agent_protocol': 2, 'agent_version': '0.5.1'}
 
     @staticmethod
     def cleanup_complete(status):
@@ -253,6 +261,61 @@ class GoldSrcRcon:
 
 class AmxxAdapter(Get5Adapter):
     REASONS = ('test_admin', 'test_timeout', 'match_finished', 'not_roster', 'no_match', 'steam_timeout', 'server_error')
+    LOAD_ERRORS = {'missing_map': 'missing_map', 'invalid_config': 'malformed_assignment',
+                   'malformed_assignment': 'malformed_assignment', 'invalid_assignment': 'malformed_assignment',
+                   'storage_failure': 'storage_failure', 'load_failed': 'storage_failure',
+                   'busy': 'server_busy', 'stale_generation': 'stale_generation',
+                   'server_not_empty': 'server_not_empty'}
+
+    def map_inventory(self):
+        """Local BSP v30 presence/header check, not map playability certification.
+
+        Each observation rescans the files. No extra RCON traffic, paths or hashes
+        of private assignments leave the game host. PAK-only maps are excluded.
+        """
+        result = {'version': 1, 'source': 'bsp_v30', 'complete': False, 'maps': []}
+        try:
+            directory = self.root / 'maps'
+            maps = []
+            with os.scandir(directory) as entries:
+                for entry in entries:
+                    if not re.fullmatch(r'de_[a-z0-9_]{1,36}\.bsp', entry.name):
+                        continue
+                    # Reject special files before opening (e.g. a pipe).
+                    if not entry.is_file():
+                        continue
+                    with open(entry.path, 'rb') as stream:
+                        info = os.fstat(stream.fileno())
+                        header = stream.read(124)
+                    if not stat.S_ISREG(info.st_mode) or len(header) != 124:
+                        continue
+                    values = struct.unpack('<31i', header)
+                    if values[0] != 30 or not any(values[2::2]):
+                        continue
+                    if any(offset < 0 or length < 0 or offset + length > info.st_size
+                           or (length > 0 and offset < 124)
+                           for offset, length in zip(values[1::2], values[2::2])):
+                        continue
+                    maps.append(entry.name[:-4])
+                    if len(maps) > 256:
+                        return result
+            result.update(complete=True, maps=sorted(maps))
+        except OSError:
+            pass  # Missing/inaccessible inventory must never fall back to configured names.
+        return result
+
+    def status(self):
+        return {**super().status(), 'map_inventory': self.map_inventory()}
+
+    @classmethod
+    def check_load_reply(cls, reply):
+        # Exact lines only. Never publish arbitrary RCON output as a user error.
+        lines = [line.strip() for line in reply.splitlines() if line.strip()]
+        for line in lines:
+            if line in cls.LOAD_ERRORS:
+                raise LoadRejected(cls.LOAD_ERRORS[line])
+        if not any(line in ('loaded', 'loading_map', 'already_loaded') for line in lines):
+            raise ConnectionError('Unconfirmed mq2_load reply; waiting for journal or retry')
 
     @staticmethod
     def label(value, limit=64):
@@ -363,15 +426,42 @@ class AmxxAdapter(Get5Adapter):
                 raise RuntimeError('Controller does not support solo tests')
             if p['match_id'] != match_id or int(p['generation']) != generation:
                 raise ValueError('Payload assignment mismatch')
+            inventory = status['map_inventory']
+            if not inventory['complete']:
+                raise LoadRejected('inventory_unavailable')
+            if p['map'] not in inventory['maps']:
+                raise LoadRejected('missing_map')
             path = self.root / 'addons/amxmodx/configs/mq2' / (match_id + '-' + str(generation) + '.txt')
-            path.parent.mkdir(parents=True, exist_ok=True)
             wire = p if status.get('assignment_contract') == 2 else {**p, 'contract_version': 1}
-            content = self.build(wire)
-            if path.exists() and path.read_text(encoding='utf-8') != content:
-                raise RuntimeError('Immutable configuration conflict')
-            with path.open('w', encoding='utf-8') as stream:
-                stream.write(content); stream.flush(); os.fsync(stream.fileno())
-            self.rcon.command(f'mq2_load {match_id} {generation}')
+            try:
+                content = self.build(wire)
+            except (ValueError, KeyError, TypeError):
+                raise LoadRejected('malformed_assignment') from None
+            temporary = path.with_suffix('.' + uuid.uuid4().hex + '.next')
+            try:
+                path.parent.mkdir(parents=True, exist_ok=True)
+                if path.exists():
+                    if path.read_text(encoding='utf-8') != content:
+                        raise LoadRejected('malformed_assignment')
+                else:
+                    with temporary.open('x', encoding='utf-8', newline='\n') as stream:
+                        stream.write(content); stream.flush(); os.fsync(stream.fileno())
+                    temporary.replace(path)
+                    if os.name != 'nt':
+                        fd = os.open(path.parent, os.O_RDONLY | os.O_DIRECTORY)
+                        try:
+                            os.fsync(fd)
+                        finally:
+                            os.close(fd)
+            except OSError:
+                raise LoadRejected('storage_failure') from None
+            finally:
+                try:
+                    temporary.unlink(missing_ok=True)
+                except OSError:
+                    pass
+            self.check_load_reply(self.rcon.command(f'mq2_load {match_id} {generation}'))
+            # Submission alone never emits loaded. Only the controller journal can.
         elif command['type'] == 'finish_test':
             reason = command.get('payload', {}).get('reason')
             if reason not in ('test_admin', 'test_timeout', 'server_error') or not match_id.startswith('7e5700'):
@@ -409,18 +499,37 @@ class Agent:
         status = {}
         try:
             status = self.adapter.status()
-            if not status.get('healthy', True):
-                raise RuntimeError('Controller is in recovery quarantine')
             self.spool.tail(self.config['journal'])
-            self.spool.flush(self.send)
-            healthy = True
+            healthy = status.get('healthy', True) is True
         except Exception:
             logging.exception('Bridge/transport unhealthy; assignment disabled')
+        # A recovery quarantine must not block a durable rejection/idle report.
+        self.spool.flush(self.send)
         response = self.send({'action': 'poll', 'healthy': healthy, 'observation': status})
         # Abort and cleanup remain possible even if an earlier event is quarantined.
         for command in response['commands']:
             if healthy or command['type'] != 'load':
-                self.adapter.execute(command)
+                self.dispatch(command, response.get('load_rejection_contract', 0))
+
+    def dispatch(self, command, rejection_contract=0):
+        """Shared by the standalone loop and the ESERV broker runner.
+
+        ESERV must call this instead of adapter.execute to persist a safe refusal.
+        A return is NOT a loaded acknowledgement; the journal remains authoritative.
+        """
+        rejection_id = 'load-rejected-' + command['id']
+        if command['type'] == 'load' and self.spool.db.execute(
+                'SELECT 1 FROM events WHERE id=?', (rejection_id,)).fetchone():
+            return
+        try:
+            self.adapter.execute(command)
+        except LoadRejected as error:
+            if rejection_contract != 1:
+                raise  # Old WWW: preserve retries, never poison its event stream.
+            self.spool.put({'event_id': rejection_id, 'match_id': command['match_id'],
+                            'generation': int(command['generation']), 'type': 'load_rejected',
+                            'data': {'code': error.code}})
+            logging.warning('Load rejected: %s', error.code)
 
 
 if __name__ == '__main__':

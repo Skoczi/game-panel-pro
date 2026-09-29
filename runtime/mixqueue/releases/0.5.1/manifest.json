@@ -1,0 +1,74 @@
+{
+  "version": "0.5.1",
+  "controller": "matchbot",
+  "controller_version": "0.5.1",
+  "agent_version": "0.5.1",
+  "agent_protocol": 2,
+  "assignment_contract": 2,
+  "map_inventory_contract": 1,
+  "load_rejection_contract": 1,
+  "minimum_web_version": "0.6.5",
+  "minimum_agent_version": "0.5.1",
+  "minimum_controller_version": "0.5.1",
+  "game": "cs16",
+  "target": "ESERV universal WAW1/WAW2 installer; initial Steam acceptance SRV-107",
+  "restart_game_required": true,
+  "rebuild_executor_image_required": true,
+  "recreate_executor_required": true,
+  "sourceHashes": {
+    "mq_agent.py": "586a831b8605bc419c40aa9c112ab59c614f1e06a48ec37514e394a40e4efc3a",
+    "matchbot_csco_mm.so": "6cac5c2f16e8236580ebf8738a95678c60946497571de645a0175293eef6dffb"
+  },
+  "files": {
+    "ACCEPTANCE.md": "e41e58e9d4a817c312f062aa32cedb6dbf9a9979b2520fd25f1163cf5608ab8c",
+    "AGENT-INSTALL.md": "8d4d83ecec81d1af201734502ad9ef285617eebe64738a9a2f5b73d8455121f5",
+    "INSTALL.pl.md": "27a48906b9b99c385bb1f27f15b3b6d4f9436aec1ee48dae5ae0aecd48c4512f",
+    "MIGRATION.md": "bea515df8745e1c995d4f46b591fe1c2755195b5029c9b26408e0c67e099b6b8",
+    "PROMPT-ESERV.md": "f278e36701f07e8f29198b3dbb68a0acc92f6530fb965097e61852342fd76166",
+    "RELEASE-CS16-0.5.1.md": "767b0408d6c3b26d7bab539e36cc0fac379b865ebb2a988073ad081f61516226",
+    "dependencies.json": "433adf99454ed3ae936c315c84d5d8426831dfd0adcd480099e72ef8d2998522",
+    "packages/mixqueue2-agent-0.5.1.zip": "65c0dff7644b5284ef8630512c170be145c48f7182b004f32fc3ce0373a9aa5a",
+    "packages/mixqueue2-cs16-0.5.1.zip": "a7f4894e35f41058f62cdf6d3b80d03624b9b69e616103af3deaba77e1e15c1b",
+    "packages/mixqueue2-web-0.6.5.zip": "b5eb1684f93d2a15db154e276ed54e079a26f54e28ab1077967efe4343c73620",
+    "runtime/mixqueue/mq_agent.py": "586a831b8605bc419c40aa9c112ab59c614f1e06a48ec37514e394a40e4efc3a",
+    "schema.sql": "8626e60be7c224759333f8e5ee8645937f7a59f43e1ea58eba9cdbacd8c5d621",
+    "tests/test_agent.py": "733ca133f6f038becc5905ae8369a65e84e5955c971fbf79ce135b7ef4e7cbdd",
+    "tests/test_agent_051.py": "c799a26450c2549b1b4dcaca4b25a77013366922c83b9d5a64630d82f7394eb5"
+  },
+  "preserve": [
+    "server_id",
+    "private configuration",
+    "broker isolation",
+    "runner integration except documented dispatch call",
+    "spool.sqlite",
+    "events.jsonl",
+    "generation-matchbot.txt",
+    "active-matchbot.txt",
+    "original-hostname.txt",
+    "unrelated plugins"
+  ],
+  "disable": [
+    "mq2_match.amxx",
+    "statsx.amxx"
+  ],
+  "conflict_list_policy": "Append exact statsx.amxx if missing; retain reviewed existing conflicts and unrelated AMXX plugins",
+  "runner_dispatch": "agent.dispatch(command, response.get(\"load_rejection_contract\", 0))",
+  "inventory_mount": "read-only actual game_root/maps/*.bsp",
+  "public_pool_eligibility": "keep disabled",
+  "policy": {
+    "test_elo": false,
+    "test_penalties": false,
+    "tombstone_days": 180,
+    "disconnect_pause_seconds": 90,
+    "reconnect_grace_seconds": 180,
+    "abandon_queue_cooldown_seconds": 1800,
+    "surrender_vote": "strict majority of remaining roster"
+  },
+  "acceptance": {
+    "isolated_engine": true,
+    "real_steam_051": "pending ESERV/user",
+    "player_reconnect": "not accepted",
+    "earlier_crash_cause": "unestablished",
+    "ten_real_steam_clients": "pending"
+  }
+}

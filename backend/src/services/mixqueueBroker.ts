@@ -1,7 +1,7 @@
 import http from "node:http";
 import fs from "node:fs/promises";
 import { createHmac } from "node:crypto";
-import { allowedMixqueueCommand, MQ_API } from "./mixqueueContract.js";
+import { allowedMixqueueCommand, validMixqueueReport, MQ_API } from "./mixqueueContract.js";
 
 export type BrokerIdentity = { serverId: string; game: string; key: string };
 export type BrokerDependencies = {
@@ -70,6 +70,7 @@ export async function startMixqueueBroker(
             : ["action", "event"];
         if (Object.keys(body).some((key) => !allowed.includes(key)))
           throw new Error("invalid_body");
+        if (!validMixqueueReport(body)) throw new Error("invalid_report");
         const raw = JSON.stringify(body),
           timestamp = String(Math.floor(Date.now() / 1000));
         const signature = createHmac("sha256", identity.key)
