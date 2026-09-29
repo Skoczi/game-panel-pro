@@ -56,6 +56,9 @@ const words = {
     gameLogs: 'Game logs',
     logAdd: 'Enable at startup',
     logConfigured: 'Already configured',
+    rconPrivacy: 'RCON privacy',
+    rconProtect: 'Disable packet logging',
+    rconProtected: 'Protected',
     nativeBots: 'Native AI bots',
     enableBots: 'Enable on restart',
     botsEnabled: 'Enabled',
@@ -153,6 +156,9 @@ const words = {
     gameLogs: 'Logi gry',
     logAdd: 'Włącz przy starcie',
     logConfigured: 'Już skonfigurowane',
+    rconPrivacy: 'Prywatność RCON',
+    rconProtect: 'Wyłącz zapis pakietów',
+    rconProtected: 'Chronione',
     nativeBots: 'Natywne boty AI',
     enableBots: 'Włącz po restarcie',
     botsEnabled: 'Włączone',
@@ -594,6 +600,7 @@ export function MixQueueServer({ serverId }: { serverId: number }) {
           {preview.ai && <div className="mq-ai-preview">
             <dl>
               {preview.startupLogging && <div><dt>{t.gameLogs}</dt><dd>{preview.startupLogging === 'configured' ? t.logConfigured : t.logAdd}</dd></div>}
+              {preview.rconLogging && <div><dt>{t.rconPrivacy}</dt><dd>{preview.rconLogging === 'protected' ? t.rconProtected : t.rconProtect}</dd></div>}
               <div><dt>{t.nativeBots}</dt><dd>{preview.ai.botEnable === 'enabled' ? t.botsEnabled : t.enableBots}</dd></div>
               <div><dt>{t.botResources}</dt><dd>{preview.ai.filesToAdd} {t.added} · {preview.ai.filesPreserved} {t.preserved}</dd></div>
             </dl>

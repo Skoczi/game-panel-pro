@@ -134,7 +134,7 @@ for (const width of [1280, 390]) test(`MatchBot review ${width}px upgrades an in
     if (!route.request().url().includes('/mixqueue')) return route.fulfill({ json: { content: '', available: [], history: [], version: '1' } });
     if (route.request().method() === 'POST') {
       const body = route.request().postDataJSON(); mutations.push(body);
-      if (body.action === 'plugin-preview') return route.fulfill({ json: { stopped: true, fingerprint: 'reviewed-fixture', version: '0.6.3', minimumWebVersion: '0.7.3', startupLogging: 'add', ai: { botEnable: 'enable', filesToAdd: 494, filesPreserved: 0, navigation: [{ map: 'de_dust2', status: 'install', bspMatches: true }, { map: 'de_nuke', status: 'preserved', bspMatches: false }, { map: 'de_train', status: 'bsp_mismatch', bspMatches: false }] }, dependencies: [{ name: 'ReHLDS', version: '3.15.0.896' }, { name: 'ReGameDLL', version: '5.30.0.814' }, { name: 'Metamod-R', version: '1.3.0.149' }], conflicts: [{ file: 'addons/amxmodx/configs/plugins.ini', plugin: 'mq2_match.amxx' }] } });
+      if (body.action === 'plugin-preview') return route.fulfill({ json: { stopped: true, fingerprint: 'reviewed-fixture', version: '0.6.3', minimumWebVersion: '0.7.3', startupLogging: 'add', rconLogging: 'protect', ai: { botEnable: 'enable', filesToAdd: 494, filesPreserved: 0, navigation: [{ map: 'de_dust2', status: 'install', bspMatches: true }, { map: 'de_nuke', status: 'preserved', bspMatches: false }, { map: 'de_train', status: 'bsp_mismatch', bspMatches: false }] }, dependencies: [{ name: 'ReHLDS', version: '3.15.0.896' }, { name: 'ReGameDLL', version: '5.30.0.814' }, { name: 'Metamod-R', version: '1.3.0.149' }], conflicts: [{ file: 'addons/amxmodx/configs/plugins.ini', plugin: 'mq2_match.amxx' }] } });
       if (body.action === 'plugin') installing = true;
     }
     await route.fulfill({ json: { ...state(), plugin: { name: 'MatchBot CSCO', version: '0.6.3', installedVersion: '0.6.2', updateAvailable: true }, pluginInstalled: true, pluginOperation: installing ? { status: 'running', progress: { stage: 'backup', percent: 47 } } : null } });
@@ -149,6 +149,7 @@ for (const width of [1280, 390]) test(`MatchBot review ${width}px upgrades an in
   await expect(page.getByText('mq2_match.amxx', { exact: true })).toBeVisible();
   await expect(page.getByText('Enable on restart', { exact: true })).toBeVisible();
   await expect(page.getByText('Enable at startup', { exact: true })).toBeVisible();
+  await expect(page.getByText('Disable packet logging', { exact: true })).toBeVisible();
   await page.locator('.mq-ai-preview summary').click();
   await expect(page.getByText('Add NAV', { exact: true })).toBeVisible();
   await expect(page.getByText('Keep existing NAV', { exact: true })).toBeVisible();
@@ -161,6 +162,7 @@ for (const width of [1280, 390]) test(`MatchBot review ${width}px upgrades an in
   await expect(page.getByText('Wymaga CSCO 0.7.3+', { exact: true })).toBeVisible();
   await expect(page.getByText('Włącz po restarcie', { exact: true })).toBeVisible();
   await expect(page.getByText('Włącz przy starcie', { exact: true })).toBeVisible();
+  await expect(page.getByText('Wyłącz zapis pakietów', { exact: true })).toBeVisible();
   await expect(page.getByText('Zachowaj obecny NAV', { exact: true })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Przejrzyj aktualizację', exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'EN', exact: true }).click();

@@ -114,7 +114,7 @@ function startupCommands(argv: string[]) {
   const game: string[][] = [];
   for (const row of rows) {
     for (let i = 0; i < row.length; i++) {
-      if (/^\+(?:log|exec|servercfgfile)$/i.test(row[i]) && row[i + 1]) game.push([row[i].slice(1).toLowerCase(), row[++i]]);
+      if (/^\+(?:log|exec|servercfgfile|sv_rcon_condebug)$/i.test(row[i]) && row[i + 1]) game.push([row[i].slice(1).toLowerCase(), row[++i]]);
     }
   }
   return game;
@@ -134,6 +134,7 @@ export async function planMatchbotStartup(root: string, startup: Startup, planne
   const visited = new Set<string>();
   const states: [string, string | null][] = [];
   const logging = initial.filter(command => command[0] === 'log').map(command => command[1].toLowerCase());
+  const rconDebug = initial.filter(command => command[0] === 'sv_rcon_condebug').map(command => command[1]);
   let gameInit = Buffer.alloc(0), total = 0;
   for (let index = 0; index < queue.length; index++) {
     const name = queue[index];
@@ -150,6 +151,7 @@ export async function planMatchbotStartup(root: string, startup: Startup, planne
     if (name === 'game_init.cfg') gameInit = bytes;
     for (const command of commands(bytes.toString('utf8'))) {
       if (command[0].toLowerCase() === 'log' && command.length === 2) logging.push(command[1].toLowerCase());
+      if (command[0].toLowerCase() === 'sv_rcon_condebug' && command.length >= 2) rconDebug.push(command[1]);
       if (command[0].toLowerCase() === 'exec' && command.length === 2) queue.push(command[1]);
     }
   }
@@ -157,13 +159,24 @@ export async function planMatchbotStartup(root: string, startup: Startup, planne
   // The reviewed installer can retry once that conflicting startup setting is resolved.
   if (logging.some(value => !['on', 'off'].includes(value))) throw invalidStartup();
   if (logging.includes('off')) throw new Error('startup_logging_conflict');
+  // ReHLDS defaults to logging raw RCON requests, including the password. Never
+  // enable game logging while an explicit startup/config override can restore it.
+  const isZero = (value: string) => /^[+-]?(?:0+(?:\.0*)?|\.0+)$/.test(value);
+  if (rconDebug.some(value => !isZero(value))) throw new Error('unsafe_rcon_logging');
   const startupLogging = logging.includes('on') ? 'configured' : 'add';
   const plan = new Map<string, Buffer>();
+  let text = (plannedGameInit || gameInit).toString('utf8');
+  const newline = text.includes('\r\n') ? '\r\n' : '\n';
+  const first = commands(text)[0];
+  const rconLogging = first?.[0].toLowerCase() === 'sv_rcon_condebug' && first.length === 2 && isZero(first[1]) ? 'protected' : 'protect';
+  // Put protection before any existing log/exec/alias command, not merely before
+  // our new log line. Preserve safe operator entries later in the file unchanged.
+  if (rconLogging === 'protect') text = 'sv_rcon_condebug 0' + newline + text;
   if (startupLogging === 'add') {
-    const text = (plannedGameInit || gameInit).toString('utf8');
-    const newline = text.includes('\r\n') ? '\r\n' : '\n';
-    plan.set(startupPath, Buffer.from(text + (text && !/[\r\n]$/.test(text) ? newline : '') + 'log on' + newline));
+    text += (text && !/[\r\n]$/.test(text) ? newline : '') + 'log on' + newline;
   }
-  const fingerprint = hash(JSON.stringify([startup, states, plannedGameInit ? hash(plannedGameInit) : null]));
-  return { plan, fingerprint, startupLogging };
+  if (rconLogging === 'protect' || startupLogging === 'add') plan.set(startupPath, Buffer.from(text));
+  // Include the new protection policy/plan so pre-guard previews cannot authorize it.
+  const fingerprint = hash(JSON.stringify([2, startup, states, plannedGameInit ? hash(plannedGameInit) : null, rconLogging, startupLogging, [...plan].map(([name, bytes]) => [name, hash(bytes)])]));
+  return { plan, fingerprint, startupLogging, rconLogging };
 }

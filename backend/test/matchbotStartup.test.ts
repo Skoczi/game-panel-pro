@@ -26,18 +26,21 @@ test('one full-start log entry merges with AI setting, retaining cfg and private
   const aiMerge = Buffer.from(enableMatchbotAi(original));
   const review = await planMatchbotStartup(game, startup, aiMerge);
   assert.equal(review.startupLogging, 'add');
+  assert.equal(review.rconLogging, 'protect');
   assert.deepEqual([...review.plan.keys()], ['cstrike/game_init.cfg']);
-  assert.equal(review.plan.get('cstrike/game_init.cfg')!.toString(), original.replace('bot_enable "0"', 'bot_enable "1"') + '\r\nlog on\r\n');
+  assert.equal(review.plan.get('cstrike/game_init.cfg')!.toString(), 'sv_rcon_condebug 0\r\n' + original.replace('bot_enable "0"', 'bot_enable "1"') + '\r\nlog on\r\n');
   const recovery = await commitMatchbotFiles(root, review.plan);
   assert.equal(await fs.readFile(path.join(root, recovery, 'cstrike/game_init.cfg'), 'utf8'), original);
   assert.equal(await fs.readFile(path.join(game, 'cstrike/server.cfg'), 'utf8'), privateConfig);
   const repeated = await planMatchbotStartup(game, startup);
   assert.equal(repeated.startupLogging, 'configured');
+  assert.equal(repeated.rconLogging, 'protected');
   assert.equal(repeated.plan.size, 0);
 });
 
 test('existing direct or shell-template +log on and configured includes are preserved', async t => {
   const { game } = await fixture(t);
+  await fs.writeFile(path.join(game, 'cstrike/game_init.cfg'), 'sv_rcon_condebug 0\n');
   for (const argv of [
     [...startup.argv, '+log', 'on'],
     ['/bin/bash', '-c', 'set -e\ncd /data/serverfiles\nexec ./hlds_linux -game cstrike +log "on" +servercfgfile "$CFG" +map de_dust2'],
@@ -60,11 +63,12 @@ test('comments, quoted text and echo examples are not mistaken for logging comma
   await fs.writeFile(path.join(game, 'cstrike/server.cfg'), '// log on; log off\nhostname "log on"\nalias example "log on"\n');
   const result = await planMatchbotStartup(game, { argv: ['/bin/bash', '-c', '# exec ./hlds_linux +log on\necho "./hlds_linux +log on"\nexec ./hlds_linux -game cstrike # +log on'] });
   assert.equal(result.startupLogging, 'add');
-  assert.equal(result.plan.get('cstrike/game_init.cfg')!.toString(), 'log on\n');
+  assert.equal(result.plan.get('cstrike/game_init.cfg')!.toString(), 'sv_rcon_condebug 0\nlog on\n');
 });
 
 test('combined shell flags and assignment/env wrappers retain existing startup logging', async t => {
   const { game } = await fixture(t);
+  await fs.writeFile(path.join(game, 'cstrike/game_init.cfg'), 'sv_rcon_condebug 0\n');
   for (const flags of [['-lc'], ['-ec'], ['-euc'], ['-e', '-u', '-c'], ['--noprofile', '-o', 'pipefail', '-lc']]) {
     for (const launch of [
       'LD_LIBRARY_PATH=. ./hlds_linux +log on',
@@ -104,6 +108,7 @@ test('opaque shell launches fail closed instead of appending a potentially dupli
 
 test('shell CFG expansion uses the parent environment before inline/env assignments', async t => {
   const { game } = await fixture(t);
+  await fs.writeFile(path.join(game, 'cstrike/game_init.cfg'), 'sv_rcon_condebug 0\n');
   await fs.writeFile(path.join(game, 'cstrike/server.cfg'), 'log on\n');
   await fs.writeFile(path.join(game, 'cstrike/custom.cfg'), 'log off\n');
   for (const launch of [
@@ -156,4 +161,40 @@ test('failed startup commit restores operator config without touching recovery m
   assert.equal(await fs.readFile(path.join(game, 'cstrike/game_init.cfg'), 'utf8'), original);
   assert.equal((await fs.stat(marker)).ino, ino);
   assert.equal(await fs.readFile(marker, 'utf8'), 'persistent recovery');
+});
+
+test('RCON protection precedes an existing game_init log or exec entry without duplicating log on', async t => {
+  const { root, game } = await fixture(t);
+  for (const original of ['// existing log\nlog on\nbot_enable 1\n', 'exec cfg/logging.cfg\nbot_enable 1\n', 'log on\nsv_rcon_condebug 0\n']) {
+    await fs.writeFile(path.join(game, 'cstrike/game_init.cfg'), original);
+    await fs.writeFile(path.join(game, 'cstrike/cfg/logging.cfg'), 'sv_rcon_condebug 0\nlog on\n');
+    const review = await planMatchbotStartup(game, startup);
+    assert.equal(review.startupLogging, 'configured');
+    assert.equal(review.rconLogging, 'protect');
+    assert.equal(review.plan.get('cstrike/game_init.cfg')!.toString(), 'sv_rcon_condebug 0\n' + original);
+    const recovery = await commitMatchbotFiles(root, review.plan);
+    assert.equal(await fs.readFile(path.join(root, recovery, 'cstrike/game_init.cfg'), 'utf8'), original);
+    const repeated = await planMatchbotStartup(game, startup);
+    assert.equal(repeated.rconLogging, 'protected');
+    assert.equal(repeated.plan.size, 0);
+  }
+});
+
+test('safe leading zero is preserved and later RCON debug overrides fail before mutation', async t => {
+  const { game } = await fixture(t);
+  const init = '// operator guard\nsv_rcon_condebug "0.0"\nbot_enable 1\nlog on\n';
+  await fs.writeFile(path.join(game, 'cstrike/game_init.cfg'), init);
+  const protectedPlan = await planMatchbotStartup(game, startup);
+  assert.equal(protectedPlan.rconLogging, 'protected');
+  assert.equal(protectedPlan.plan.size, 0);
+  for (const value of ['1', '-1', '0.5', '$RCON_DEBUG']) {
+    await assert.rejects(planMatchbotStartup(game, { argv: [...startup.argv, '+sv_rcon_condebug', value] }), /unsafe_rcon_logging/);
+    await fs.writeFile(path.join(game, 'cstrike/server.cfg'), 'exec cfg/private.cfg\n');
+    await fs.writeFile(path.join(game, 'cstrike/cfg/private.cfg'), 'sv_rcon_condebug "' + value + '"\n');
+    await assert.rejects(planMatchbotStartup(game, startup), /unsafe_rcon_logging/);
+    assert.equal(await fs.readFile(path.join(game, 'cstrike/game_init.cfg'), 'utf8'), init);
+    await fs.writeFile(path.join(game, 'cstrike/cfg/private.cfg'), 'sv_rcon_condebug 0\n');
+  }
+  const after = await planMatchbotStartup(game, startup);
+  assert.notEqual(after.fingerprint, protectedPlan.fingerprint);
 });

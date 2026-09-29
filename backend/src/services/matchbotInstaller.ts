@@ -67,6 +67,7 @@ export async function matchbotPreview(id: number, assets?: MatchbotAiAssets) {
     dependencies: preview.modules.map(m => ({ name: m.name, version: m.version })), conflicts,
     ai: ai.summary,
     startupLogging: startup.startupLogging,
+    rconLogging: startup.rconLogging,
   };
 }
 export function supportsMatchbotLibc(output: string) {
