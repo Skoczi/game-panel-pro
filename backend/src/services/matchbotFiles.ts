@@ -18,8 +18,9 @@ export function matchbotDestination(name: string) {
 }
 // Deliberately narrow: unknown plugins remain enabled and visible in the preview.
 // Matching an arbitrary word such as "team" would disable unrelated admin tools.
+// StatsX consumes /stats and /score before the MatchBot ReGameDLL handler.
 export function conflictsWithMatchbot(name: string) {
-  return /^(?:mq2_match|matchbot|pug(?:mod|_.*)?|automix(?:_.*)?|mix(?:_manager|_system)?|csdm(?:_.*)?|deathmatch(?:_.*)?|(?:auto_?)?respawn(?:_.*)?|(?:auto_?)?team_balance(?:r)?|autobalance|ptb|team_join|team_join_management|mapchooser|nextmap|galileo|deagsmapmanager|map_manager(?:_.*)?)\.amxx$/i.test(name);
+  return /^(?:mq2_match|matchbot|statsx|pug(?:mod|_.*)?|automix(?:_.*)?|mix(?:_manager|_system)?|csdm(?:_.*)?|deathmatch(?:_.*)?|(?:auto_?)?respawn(?:_.*)?|(?:auto_?)?team_balance(?:r)?|autobalance|ptb|team_join|team_join_management|mapchooser|nextmap|galileo|deagsmapmanager|map_manager(?:_.*)?)\.amxx$/i.test(name);
 }
 export function disableConflictingPlugins(text: string) {
   const disabled: string[] = [];
