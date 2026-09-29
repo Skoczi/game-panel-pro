@@ -8,11 +8,11 @@ import { promisify } from 'node:util';
 process.env.DOMAIN = 'matchbot-test.invalid'; process.env.PORT = '3001'; process.env.JWT_SECRET = 'fixture-only-matchbot-test-secret';
 const { commitMatchbotFiles, disableConflictingPlugins, registerMatchbot, hasMatchbotTransaction, recoverMatchbotFiles, MATCHBOT_ENTRY, pluginLists } = await import('../src/services/matchbotFiles.js');
 
-test('migration comments only recognized active controllers, retaining unrelated AMXX and comments', () => {
-  const original = '; user comment\r\nadmincmd.amxx\r\nteam_sounds.amxx debug\r\nmq2_match.amxx debug\r\ncsdm_spawn_preset.amxx\r\nmapchooser.amxx\r\n; respawn.amxx\r\n';
+test('migration comments only recognized active controllers and chat-stat conflicts, retaining unrelated AMXX and comments', () => {
+  const original = '; user comment\r\nadmincmd.amxx\r\nteam_sounds.amxx debug\r\nmq2_match.amxx debug\r\ncsdm_spawn_preset.amxx\r\nmapchooser.amxx\r\nstatsx.amxx debug ; legacy statistics\r\nstats_logging.amxx\r\nstatscfg.amxx\r\n; respawn.amxx\r\n';
   const next = disableConflictingPlugins(original);
-  assert.deepEqual(next.disabled, ['mq2_match.amxx', 'csdm_spawn_preset.amxx', 'mapchooser.amxx']);
-  for (const untouched of ['; user comment\r\n', 'admincmd.amxx\r\n', 'team_sounds.amxx debug\r\n', '; respawn.amxx\r\n']) assert.ok(next.content.includes(untouched));
+  assert.deepEqual(next.disabled, ['mq2_match.amxx', 'csdm_spawn_preset.amxx', 'mapchooser.amxx', 'statsx.amxx']);
+  for (const untouched of ['; user comment\r\n', 'admincmd.amxx\r\n', 'team_sounds.amxx debug\r\n', 'stats_logging.amxx\r\n', 'statscfg.amxx\r\n', '; respawn.amxx\r\n']) assert.ok(next.content.includes(untouched));
   assert.deepEqual(disableConflictingPlugins(next.content), { content: next.content, disabled: [] });
 });
 test('Metamod registration retains AMXX/Reunion and activates only one MatchBot', () => {
