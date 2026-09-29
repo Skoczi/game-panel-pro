@@ -81,3 +81,23 @@ test("RCON capability cannot turn into a console or shell and is game-specific",
     true,
   );
 });
+
+test('MatchBot v2 ending and cleanup accept only exact GoldSrc reason codes', () => {
+  const reasons = ['test_admin', 'test_timeout', 'match_finished', 'not_roster', 'no_match', 'steam_timeout', 'server_error'];
+  for (const reason of reasons) {
+    assert.equal(allowedMixqueueCommand('mq2_clear ' + reason, 'cs16'), true);
+    assert.equal(allowedMixqueueCommand('mq2_clear ' + reason, 'csgo'), false);
+  }
+  for (const reason of ['test_admin', 'test_timeout', 'server_error']) {
+    assert.equal(allowedMixqueueCommand('mq2_endtest ' + reason, 'cs16'), true);
+    assert.equal(allowedMixqueueCommand('mq2_endtest ' + reason, 'csco'), false);
+  }
+  for (const command of ['mq2_endtest', 'mq2_endtest match_finished', 'mq2_clear unknown',
+    'mq2_clear test_admin;quit', 'mq2_endtest test_admin\n', 'mq2_clear test_admin\r',
+    'mq2_endtest test_admin extra', 'mq2_clear "test_admin"', 'mq2_clear\x00',
+    'mq2_load ' + 'a'.repeat(24) + ' 1\n']) {
+    assert.equal(allowedMixqueueCommand(command, 'cs16'), false, command);
+  }
+  assert.equal(allowedMixqueueCommand('mq2_clear', 'cs16'), true);
+  assert.equal(allowedMixqueueCommand('mq2_clear', 'csgo'), true);
+});

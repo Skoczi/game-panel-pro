@@ -33,3 +33,11 @@ The CS 1.6 installer now uses `matchbot_csco_mm.so` and `matchbot-language.txt`.
 Operator-provided `mixqueue2-eserv-0.4.1.zip`: SHA-256 `1dfce3e5c1b8c957cbc25319b0333fb6cd10d5c3ca289f6f234ad5810c28cbbf`. All 11 outer checksum entries, manifest entries and 312 CS 1.6 inner entries were verified. Production controller and language assets live in `releases/0.4.1/`; full corresponding GPL sources remain in `source-bundles/mixqueue2-cs16-0.4.1.zip` (SHA-256 `43e68619e5682bbadd8df502f0f29474526bea42a451add5bc29016f1a913121`). This bundled archive is the installer source; it is not downloaded from an unversioned URL.
 
 The controller requires CSCO WWW >=0.5.2. Its Python agent remains byte-identical 0.4.0 / protocol 2, and the ESERV runner/broker are unchanged. Published 0.4.0 assets, source archive and hashes are retained without modification. Controller 0.4.1 fixes the observed server-side reconnect behavior; it does not establish the cause of the original client crash. See the bundled release and acceptance documents for upstream automated coverage and remaining real-player gates.
+
+## MatchBot CSCO and Python 0.5.0
+
+Verified operator archive SHA-256: `252a3a63265418dc36494ca824cda2f90f3f4e4490e7e5a5e168a7f272e16fcc`. Verification covered all 14 outer entries and every inner entry (agent 7, controller/source 314, web reference 80). The bundled web 0.6.0 sources are contract reference only; ESERV does not deploy them over the separately maintained WWW 0.6.1.
+
+The unmodified current `mq_agent.py` is 0.5.0, SHA-256 `841dfd69daf64950a526244af6d1adc30d98a5fc81b0cb3805fdf3ede465db84`. Production controller `releases/0.5.0/matchbot_csco_mm.so` is `0b66608bb29296e101f5191b8a73c5b3d2359e0dc4441f17397d9852df36b490`. Corresponding immutable agent and complete GPL controller archives are in `source-bundles/`; manifest, dependencies and acceptance evidence are in `releases/0.5.0/`. Previous versioned archives and controller assets are unchanged.
+
+ESERV runner, broker transport, polling and isolation remain unchanged. The RCON validator adds only explicit CS1.6 `mq2_endtest` and `mq2_clear` reason enums used by this version; control characters and arbitrary commands remain rejected. The image must be rebuilt and its executor recreated for this Python update.
