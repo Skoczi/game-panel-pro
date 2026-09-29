@@ -1,0 +1,98 @@
+{
+  "format": 1,
+  "controller_release": "0.6.2",
+  "generator": "ReGameDLL 5.30.0.814 bot_nav_analyze",
+  "game_image": "sha256:6241aa0e24aeb0a84bfc8ae0ee2b3399fb0d82712b1818804aba66b1e4c88564",
+  "bot_profiles_sha256": "39e6e8a137dbbbdef842cdb4318ef1069b3467127a0cc19bdc6eca1d5d693e38",
+  "isolation": {
+    "network": "none",
+    "user": "1000:1000",
+    "cap_drop": [
+      "ALL"
+    ],
+    "no_new_privileges": true,
+    "cpus": 2,
+    "memory_mib": 2048,
+    "controller_loaded": false
+  },
+  "acceptance": "Generated and structurally checked. Steam movement/objectives pending.",
+  "maps": [
+    {
+      "map": "de_aztec",
+      "bsp_sha256": "6a9c1c472ad01283098760314cb8744552e5f3a6493108ab5e19075216a3f9ed",
+      "nav_sha256": "9ab7f6c7002a1821ef1b5f5bb8160f6e4c4d55cfb93dd726d12c8cd63185a7fd",
+      "bsp_bytes": 2705772,
+      "nav_bytes": 418454,
+      "version": 5,
+      "places": 0,
+      "areas": 779,
+      "seconds": 35.34
+    },
+    {
+      "map": "de_cbble",
+      "bsp_sha256": "8ca7f2c24566c641a02946ac53c0194551485c8c4bf6514fa35352fb1b4549ec",
+      "nav_sha256": "8f8412812b0bcb97945072086201f9e4619da85edc03cd8cf9856763a16e9465",
+      "bsp_bytes": 2260516,
+      "nav_bytes": 725236,
+      "version": 5,
+      "places": 0,
+      "areas": 1063,
+      "seconds": 59.41
+    },
+    {
+      "map": "de_dust",
+      "bsp_sha256": "ac94fbda94e4a170b971f05936fe8706cb9aa895e55f7797916dc160171cab11",
+      "nav_sha256": "9e040ab23d5ee22887f0580d35f365dee67e393f968a2545784d7c407773555a",
+      "bsp_bytes": 1359684,
+      "nav_bytes": 457155,
+      "version": 5,
+      "places": 0,
+      "areas": 826,
+      "seconds": 29.36
+    },
+    {
+      "map": "de_inferno",
+      "bsp_sha256": "d5dcf0aa4d36a0d446ed22e45b841ebc0b9e9d6c8d73b0151ba0d75afd908d5b",
+      "nav_sha256": "e0fbcb07b38500324e7887dd047518ab2c6c6880bd66d0e8c1a867eec7970cdc",
+      "bsp_bytes": 6269880,
+      "nav_bytes": 1244126,
+      "version": 5,
+      "places": 0,
+      "areas": 1980,
+      "seconds": 89.72
+    },
+    {
+      "map": "de_nuke",
+      "bsp_sha256": "85e6386ffe33a25c2283100e36db7cb5e993cfa070924322339f48725360eeaa",
+      "nav_sha256": "2b94f4731f0a021556661e038b7e5138f74188a2a81a6c95c0d25d521cbb57c0",
+      "bsp_bytes": 2021352,
+      "nav_bytes": 497363,
+      "version": 5,
+      "places": 0,
+      "areas": 953,
+      "seconds": 52.44
+    },
+    {
+      "map": "de_prodigy",
+      "bsp_sha256": "b345bd3f97babab19e026ebb8ae46c9d1be2b7a7da0acc12dbf1816c8a4ced7e",
+      "nav_sha256": "6c336f3d1af4b6ee7afcad6e14ea79c0c004ad502e294128c4337fb98e633e06",
+      "bsp_bytes": 1929740,
+      "nav_bytes": 213876,
+      "version": 5,
+      "places": 0,
+      "areas": 619,
+      "seconds": 11.24
+    },
+    {
+      "map": "de_train",
+      "bsp_sha256": "690fc75d9c29a847aa453448800f5dee22d4c4e1652924923c5f7ab3dc5cfa70",
+      "nav_sha256": "fe0a673078812f774f7a93a002371c8145f864fcbd1321e78ff82d717219c445",
+      "bsp_bytes": 1145428,
+      "nav_bytes": 289239,
+      "version": 5,
+      "places": 0,
+      "areas": 672,
+      "seconds": 17.23
+    }
+  ]
+}

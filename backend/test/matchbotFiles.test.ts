@@ -8,11 +8,16 @@ import { promisify } from 'node:util';
 process.env.DOMAIN = 'matchbot-test.invalid'; process.env.PORT = '3001'; process.env.JWT_SECRET = 'fixture-only-matchbot-test-secret';
 const { commitMatchbotFiles, disableConflictingPlugins, registerMatchbot, hasMatchbotTransaction, recoverMatchbotFiles, MATCHBOT_ENTRY, pluginLists } = await import('../src/services/matchbotFiles.js');
 
-test('migration comments only recognized active controllers and chat-stat conflicts, retaining unrelated AMXX and comments', () => {
-  const original = '; user comment\r\nadmincmd.amxx\r\nteam_sounds.amxx debug\r\nmq2_match.amxx debug\r\ncsdm_spawn_preset.amxx\r\nmapchooser.amxx\r\nstatsx.amxx debug ; legacy statistics\r\nstats_logging.amxx\r\nstatscfg.amxx\r\n; respawn.amxx\r\n';
+test('0.6.2 migration disables exactly mq2_match and StatsX, retaining all other AMXX and comments', () => {
+  const untouched = ['; user comment', 'admincmd.amxx', 'team_sounds.amxx debug',
+    'csdm_spawn_preset.amxx', 'mapchooser.amxx', 'nextmap.amxx', 'galileo.amxx',
+    'automix.amxx', 'pugmod.amxx', 'deathmatch.amxx', 'respawn.amxx', 'ptb.amxx',
+    'team_join.amxx', 'matchbot.amxx', 'mq2_match_custom.amxx', 'statsx_custom.amxx',
+    'stats_logging.amxx', 'statscfg.amxx', '; mq2_match.amxx', '; statsx.amxx'];
+  const original = untouched.join('\r\n') + '\r\nmq2_match.amxx debug\r\nstatsx.amxx debug ; legacy statistics\r\n';
   const next = disableConflictingPlugins(original);
-  assert.deepEqual(next.disabled, ['mq2_match.amxx', 'csdm_spawn_preset.amxx', 'mapchooser.amxx', 'statsx.amxx']);
-  for (const untouched of ['; user comment\r\n', 'admincmd.amxx\r\n', 'team_sounds.amxx debug\r\n', 'stats_logging.amxx\r\n', 'statscfg.amxx\r\n', '; respawn.amxx\r\n']) assert.ok(next.content.includes(untouched));
+  assert.deepEqual(next.disabled, ['mq2_match.amxx', 'statsx.amxx']);
+  for (const line of untouched) assert.ok(next.content.split('\r\n').includes(line), line);
   assert.deepEqual(disableConflictingPlugins(next.content), { content: next.content, disabled: [] });
 });
 test('Metamod registration retains AMXX/Reunion and activates only one MatchBot', () => {

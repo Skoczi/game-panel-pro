@@ -3,6 +3,7 @@ import path from 'node:path';
 import { createHash, randomUUID } from 'node:crypto';
 import { safeFile, textFile } from './addonFiles.js';
 import { syncDirectory } from './nativeRestoreJournal.js';
+import { matchbotAiDestination } from './matchbotAi.js';
 
 export const MATCHBOT_ENTRY = 'linux addons/matchbot/dlls/matchbot_csco_mm.so';
 export const MATCHBOT_BINARY = 'cstrike/addons/matchbot/dlls/matchbot_csco_mm.so';
@@ -14,13 +15,12 @@ const staticPaths = new Set([
   MATCHBOT_BINARY, 'cstrike/addons/matchbot/language.txt',
 ]);
 export function matchbotDestination(name: string) {
-  return staticPaths.has(name) || /^cstrike\/addons\/amxmodx\/configs\/(?:maps\/)?plugins(?:-[A-Za-z0-9_-]+)?\.ini$/.test(name);
+  return staticPaths.has(name) || matchbotAiDestination(name) || /^cstrike\/addons\/amxmodx\/configs\/(?:maps\/)?plugins(?:-[A-Za-z0-9_-]+)?\.ini$/.test(name);
 }
-// Deliberately narrow: unknown plugins remain enabled and visible in the preview.
-// Matching an arbitrary word such as "team" would disable unrelated admin tools.
-// StatsX consumes /stats and /score before the MatchBot ReGameDLL handler.
+// Release 0.6.2 migrates only the old MQ2 controller and StatsX chat handlers.
+// Preserve other operator-selected AMXX plugins, including similarly named ones.
 export function conflictsWithMatchbot(name: string) {
-  return /^(?:mq2_match|matchbot|statsx|pug(?:mod|_.*)?|automix(?:_.*)?|mix(?:_manager|_system)?|csdm(?:_.*)?|deathmatch(?:_.*)?|(?:auto_?)?respawn(?:_.*)?|(?:auto_?)?team_balance(?:r)?|autobalance|ptb|team_join|team_join_management|mapchooser|nextmap|galileo|deagsmapmanager|map_manager(?:_.*)?)\.amxx$/i.test(name);
+  return /^(?:mq2_match|statsx)\.amxx$/i.test(name);
 }
 export function disableConflictingPlugins(text: string) {
   const disabled: string[] = [];
@@ -76,7 +76,7 @@ async function atomicFile(root: string, name: string, bytes: Buffer, metadata: P
 export async function recoverMatchbotFiles(serverRoot: string) {
   const filename = path.join(serverRoot, journalName);
   const journal: Transaction = JSON.parse(await fs.readFile(filename, 'utf8'));
-  if (!/^\.matchbot-recovery-[a-f0-9-]{36}$/.test(journal.directory) || !Array.isArray(journal.entries) || journal.entries.length > 512 || journal.entries.some(e => !matchbotDestination(e.name))) throw new Error('invalid_matchbot_recovery');
+  if (!/^\.matchbot-recovery-[a-f0-9-]{36}$/.test(journal.directory) || !Array.isArray(journal.entries) || journal.entries.length > 1024 || journal.entries.some(e => !matchbotDestination(e.name))) throw new Error('invalid_matchbot_recovery');
   const root = path.join(serverRoot, 'data/serverfiles');
   for (const entry of journal.entries) {
     if (entry.existed) {
@@ -94,10 +94,10 @@ export async function recoverMatchbotFiles(serverRoot: string) {
   await syncDirectory(serverRoot);
 }
 
-/** Commit only approved binaries/lists. Never replace a journal, spool, marker or private config. */
+/** Commit approved binaries, lists and reviewed AI assets. Never replace a journal, spool or marker. */
 export async function commitMatchbotFiles(serverRoot: string, files: Map<string, Buffer>, afterWrite?: (name: string) => Promise<void>) {
   if (await hasMatchbotTransaction(serverRoot)) throw new Error('matchbot_recovery_required');
-  if (!files.size || files.size > 512 || [...files.keys()].some(name => !matchbotDestination(name))) throw new Error('invalid_matchbot_destination');
+  if (!files.size || files.size > 1024 || [...files.keys()].some(name => !matchbotDestination(name))) throw new Error('invalid_matchbot_destination');
   const root = path.join(serverRoot, 'data/serverfiles');
   const directory = '.matchbot-recovery-' + randomUUID();
   const recovery = path.join(serverRoot, directory);
