@@ -6,7 +6,7 @@ const state = () => ({
   enabled: false,
   serverId: 'waw1-cs-mm-test',
   node: { installed: true, installation: 'idle', version: '0.5.1', installedVersion: '0.5.1', updateAvailable: false },
-  plugin: { name: 'MatchBot CSCO', version: '0.5.1' },
+  plugin: { name: 'MatchBot CSCO', version: '0.5.2' },
   pluginInstalled: true,
   process: 'stopped',
   rcon: false,
@@ -134,23 +134,23 @@ for (const width of [1280, 390]) test(`MatchBot review ${width}px upgrades an in
     if (!route.request().url().includes('/mixqueue')) return route.fulfill({ json: { content: '', available: [], history: [], version: '1' } });
     if (route.request().method() === 'POST') {
       const body = route.request().postDataJSON(); mutations.push(body);
-      if (body.action === 'plugin-preview') return route.fulfill({ json: { stopped: true, fingerprint: 'reviewed-fixture', version: '0.5.1', minimumWebVersion: '0.6.5', dependencies: [{ name: 'ReHLDS', version: '3.15.0.896' }, { name: 'ReGameDLL', version: '5.30.0.814' }, { name: 'Metamod-R', version: '1.3.0.149' }], conflicts: [{ file: 'addons/amxmodx/configs/plugins.ini', plugin: 'mq2_match.amxx' }] } });
+      if (body.action === 'plugin-preview') return route.fulfill({ json: { stopped: true, fingerprint: 'reviewed-fixture', version: '0.5.2', minimumWebVersion: '0.6.5', dependencies: [{ name: 'ReHLDS', version: '3.15.0.896' }, { name: 'ReGameDLL', version: '5.30.0.814' }, { name: 'Metamod-R', version: '1.3.0.149' }], conflicts: [{ file: 'addons/amxmodx/configs/plugins.ini', plugin: 'mq2_match.amxx' }] } });
       if (body.action === 'plugin') installing = true;
     }
-    await route.fulfill({ json: { ...state(), plugin: { name: 'MatchBot CSCO', version: '0.5.1', installedVersion: '0.4.1', updateAvailable: true }, pluginInstalled: true, pluginOperation: installing ? { status: 'running', progress: { stage: 'backup', percent: 47 } } : null } });
+    await route.fulfill({ json: { ...state(), plugin: { name: 'MatchBot CSCO', version: '0.5.2', installedVersion: '0.5.1', updateAvailable: true }, pluginInstalled: true, pluginOperation: installing ? { status: 'running', progress: { stage: 'backup', percent: 47 } } : null } });
   });
   await page.goto('/test/mixqueue.fixture.html');
   await page.getByRole('button', { name: 'MixQueue', exact: true }).click();
   await page.getByRole('button', { name: 'EN', exact: true }).click();
-  await expect(page.getByText('MatchBot CSCO 0.4.1', { exact: true })).toBeVisible();
-  await expect(page.getByText('Available: 0.5.1', { exact: true })).toBeVisible();
+  await expect(page.getByText('MatchBot CSCO 0.5.1', { exact: true })).toBeVisible();
+  await expect(page.getByText('Available: 0.5.2', { exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'Review update', exact: true }).click();
   await expect(page.getByText('Requires CSCO 0.6.5+', { exact: true })).toBeVisible();
   await expect(page.getByText('mq2_match.amxx', { exact: true })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Install MatchBot CSCO', exact: true })).toBeEnabled();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
-  await fs.mkdir('../artifacts/mixqueue-051', { recursive: true });
-  await page.screenshot({ path: `../artifacts/mixqueue-051/matchbot-review-${width}.png`, fullPage: true });
+  await fs.mkdir('../artifacts/mixqueue-052', { recursive: true });
+  await page.screenshot({ path: `../artifacts/mixqueue-052/matchbot-review-${width}.png`, fullPage: true });
   await page.getByRole('button', { name: 'PL', exact: true }).click();
   await expect(page.getByText('Wymaga CSCO 0.6.5+', { exact: true })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Przejrzyj aktualizację', exact: true })).toBeVisible();

@@ -95,7 +95,7 @@ Full tests require a fresh heartbeat with controller_version=0.5.0, assignment_c
 
 ## MatchBot and agent 0.5.1
 
-The current universal installer pins controller and agent 0.5.1 and requires WWW 0.6.5 or later. Earlier releases remain immutable. Production controller SHA-256: `6cac5c2f16e8236580ebf8738a95678c60946497571de645a0175293eef6dffb`; agent SHA-256: `586a831b8605bc419c40aa9c112ab59c614f1e06a48ec37514e394a40e4efc3a`.
+The 0.5.1 release pins controller and agent 0.5.1 and requires WWW 0.6.5 or later. Earlier releases remain immutable. Production controller SHA-256: `6cac5c2f16e8236580ebf8738a95678c60946497571de645a0175293eef6dffb`; agent SHA-256: `586a831b8605bc419c40aa9c112ab59c614f1e06a48ec37514e394a40e4efc3a`.
 
 The executor receives only its assigned game's existing `maps` directory at `/game/maps`, read-only. Symlinked storage paths are rejected; an absent directory remains absent. Agent observations rescan local GoldSrc BSP v30 headers on every poll and send `map_inventory` unchanged through the signed broker. No configured-name fallback or cross-server inventory is used. This confirms file/header presence, not WAD dependencies or map playability. WWW restricts allocation and veto to fresh verified inventory.
 
@@ -106,3 +106,13 @@ Updating requires rebuilding the node image, recreating the executor and a revie
 Preserve original-hostname.txt along with existing assignment markers, journal, spool and generation. Never rewind databases/spools or delete recovery markers during rollback. Upstream isolated engine acceptance is bundled with the release; actual Steam 1+9/2+8, kick rendering and ten-person acceptance remain separate checks. Deployment must not enable public queues or delete test history.
 
 MatchBot owns `/stats` and `/score` during assignments. The installer explicitly lists `statsx.amxx` as a conflict because it intercepts these commands before the ReGameDLL handler. Only that plugin entry is disabled; AMXX, statistics configuration/logging plugins and unknown plugins remain unchanged.
+
+## Controller 0.5.2, agent 0.5.1
+
+The current universal installer pins MatchBot CSCO **0.5.2** while the Python agent remains **0.5.1**, protocol 2. WWW must be at least 0.6.5. The controller hash is `ae8cf6516f4a684d44bff8e21f0a590b1de1988351557450bc76efdfe6d1e82d`; the unchanged agent hash is `586a831b8605bc419c40aa9c112ab59c614f1e06a48ec37514e394a40e4efc3a`. The signed API, event schema, RCON allowlist, dispatch negotiation, map inventory, dependency pins and executor isolation are unchanged. Published releases, including 0.5.1, remain immutable.
+
+Rebuild the ESERV backend/installer image because it bundles controller assets. A separate agent image rebuild is unnecessary for this controller-only release; preserve its existing version and image. Review and install through the normal backup workflow only after the previous match has ended, cleanup confirms idle, the WWW lease is released and the game is empty/stopped. Restart the game to load the new controller. The existing supervisor handles its assigned executor; do not add another agent. Preserve all durable state and keep the exact StatsX/mq2_match conflicts disabled.
+
+The controller provides captain-only tactical timeouts, assigned team names in pause messages, and early `/unpause` only after both opposing captains agree. Bot captains do not vote; 1+9 pauses expire normally. Private PL/EN dealt/taken summaries appear after completed rounds and can be replayed with `/dmg`, without exposing damage during the next live round. These changes require real Steam acceptance with two human captains (2+8), including vote order/duplicates, side changes, reconnect, automatic expiry and end-of-round messages. The bundled upstream entity/engine tests are separate evidence, not proof of that acceptance or ten real players.
+
+Keep public eligibility disabled. After test termination, verify the saved result, idle, lease release and no test ELO/penalties. Roll back only on an empty unleased server to the immutable 0.5.1 controller; never rewind newer events, spool, generation, hostname or recovery state.
