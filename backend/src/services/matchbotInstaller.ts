@@ -13,11 +13,16 @@ import { mqFail } from './mixqueueContract.js';
 import { startBackupJob, readBackupJob } from './backupJobs.js';
 import { commitMatchbotFiles, disableConflictingPlugins, fileHash, hasMatchbotTransaction, MATCHBOT_BINARY, pluginLists, registerMatchbot } from './matchbotFiles.js';
 import { planMatchbotAi, readBotProfiles, type MatchbotAiAssets } from './matchbotAi.js';
+import { planMatchbotStartup } from './matchbotStartup.js';
 
 import { MATCHBOT_VERSION, MATCHBOT_SOURCE, MATCHBOT_LANGUAGE, MATCHBOT_ARCHIVE, MATCHBOT_MIN_WEB_VERSION, MATCHBOT_BOT_PROFILES, MATCHBOT_NAV, MATCHBOT_NAV_PROOF, MATCHBOT_RESOURCE_PROVENANCE, MATCHBOT_NAVIGATION_MANIFEST, MATCHBOT_NAVIGATION_FILES } from './matchbotRelease.js';
 export { MATCHBOT_VERSION } from './matchbotRelease.js';
 const dependencies = ['rehlds', 'metamod', 'regamedll'];
 const jobPath = (id: number) => path.join(getServerStoragePaths(id).serverRoot, '.mixqueue-plugin-job.json');
+function startupOptions(info: { Config: { Entrypoint?: string | string[]; Cmd?: string[]; Env?: string[] } }) {
+  const entrypoint = typeof info.Config.Entrypoint === 'string' ? [info.Config.Entrypoint] : info.Config.Entrypoint || [];
+  return { argv: [...entrypoint, ...info.Config.Cmd || []], cfg: info.Config.Env?.find(value => value.startsWith('CFG='))?.slice(4) };
+}
 async function verifiedAiAssets(): Promise<MatchbotAiAssets> {
   const profiles = await readBotProfiles(await verifiedSource(MATCHBOT_BOT_PROFILES));
   const nav = await verifiedSource(MATCHBOT_NAV), proof = await verifiedSource(MATCHBOT_NAV_PROOF);
@@ -49,6 +54,7 @@ export async function matchbotPreview(id: number, assets?: MatchbotAiAssets) {
   const root = path.join(getServerStoragePaths(id).dataDir, 'serverfiles');
   const lists = await pluginLists(root);
   const ai = await planMatchbotAi(root, assets || await verifiedAiAssets());
+  const startup = await planMatchbotStartup(root, startupOptions(info), ai.plan.get('cstrike/game_init.cfg'));
   let activeAssignment = false;
   for (const name of ['active.txt', 'active-matchbot.txt']) {
     const marker = await safeFile(root, 'cstrike/addons/amxmodx/configs/mq2/' + name);
@@ -57,9 +63,10 @@ export async function matchbotPreview(id: number, assets?: MatchbotAiAssets) {
   const conflicts = [...lists].flatMap(([file, text]) => (file.endsWith('/metamod/plugins.ini') ? registerMatchbot(text) : disableConflictingPlugins(text)).disabled.map(plugin => ({ file: file.replace(/^cstrike\//, ''), plugin })));
   return {
     version: MATCHBOT_VERSION, minimumWebVersion: MATCHBOT_MIN_WEB_VERSION, controller: 'MatchBot CSCO', stopped: preview.stopped, activeAssignment,
-    fingerprint: fileHash(Buffer.from(JSON.stringify([preview.fingerprint, info.Image, [...lists], sourceHashes[MATCHBOT_SOURCE], ai.fingerprint]))),
+    fingerprint: fileHash(Buffer.from(JSON.stringify([preview.fingerprint, info.Image, [...lists], sourceHashes[MATCHBOT_SOURCE], ai.fingerprint, startup.fingerprint]))),
     dependencies: preview.modules.map(m => ({ name: m.name, version: m.version })), conflicts,
     ai: ai.summary,
+    startupLogging: startup.startupLogging,
   };
 }
 export function supportsMatchbotLibc(output: string) {
@@ -145,6 +152,8 @@ export async function startMatchbotInstall(id: number, expected: unknown, actor:
       for (const [name, text] of lists) plan.set(name, Buffer.from(name.endsWith('/metamod/plugins.ini') ? registerMatchbot(text).content : disableConflictingPlugins(text).content));
       const ai = await planMatchbotAi(root, aiAssets);
       for (const [name, bytes] of ai.plan) plan.set(name, bytes);
+      const startup = await planMatchbotStartup(root, startupOptions(info), plan.get('cstrike/game_init.cfg'));
+      for (const [name, bytes] of startup.plan) plan.set(name, bytes);
       for (const [name, bytes] of plan) {
         const target = await safeFile(root, name);
         if (target?.stat && fileHash(await fs.readFile(target.filename)) === fileHash(bytes)) plan.delete(name);

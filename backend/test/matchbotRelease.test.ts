@@ -33,6 +33,9 @@ test('controller release verifies with independent agent pins and immutable publ
   const v061 = hash(await fs.readFile(new URL('releases/0.6.1/matchbot_csco_mm.so', runtime)));
   assert.equal(v061, 'c53d87ad9078e4a53d56ebad468e54a362f4f1efde8d6c0badfa1da4d46ec89a');
   assert.equal(matchbotVersionForHash(v061), '0.6.1');
+  const v062 = hash(await fs.readFile(new URL('releases/0.6.2/matchbot_csco_mm.so', runtime)));
+  assert.equal(v062, 'b838e0968bde5a1667096a09d087b5805f035ef7974c3a7e9c2ecf601cab4908');
+  assert.equal(matchbotVersionForHash(v062), '0.6.2');
   assert.equal(hash(await fs.readFile(new URL('source-bundles/mixqueue2-agent-0.6.0.zip', runtime))), 'b1be179add3b5b71de07c5738ab0566b923c6368e4dc01e270ed91adf34e2ce4');
   assert.equal(hash(await fs.readFile(new URL('source-bundles/mixqueue2-cs16-0.5.2.zip', runtime))), '86381d8451b0661d0d572a5857f87ebf1c563ee979307b8aa1fecdf5560f5f34');
   assert.equal(hash(await fs.readFile(new URL('source-bundles/mixqueue2-agent-0.5.1.zip', runtime))), '65c0dff7644b5284ef8630512c170be145c48f7182b004f32fc3ce0373a9aa5a');
@@ -47,16 +50,16 @@ test('controller release verifies with independent agent pins and immutable publ
 });
 
 test('controller and agent upgrade retain the dependency contract', async () => {
-  const manifest = JSON.parse(await fs.readFile(new URL('releases/0.6.2/manifest.json', runtime), 'utf8'));
+  const manifest = JSON.parse(await fs.readFile(new URL('releases/0.6.3/manifest.json', runtime), 'utf8'));
   assert.equal(MATCHBOT_VERSION, manifest.controller_version);
   assert.equal(MIXQUEUE_VERSION, manifest.agent_version);
   assert.equal(MIXQUEUE_VERSION, '0.6.1');
   assert.equal(sourceHashes['mq_agent.py'], manifest.sourceHashes['mq_agent.py']);
   assert.equal(matchbotReleaseHashes[MATCHBOT_SOURCE], manifest.sourceHashes['matchbot_csco_mm.so']);
   assert.equal(hash(await fs.readFile(new URL('source-bundles/mixqueue2-agent-0.6.1.zip', runtime))), manifest.files['packages/mixqueue2-agent-0.6.1.zip']);
-  const previous = JSON.parse(await fs.readFile(new URL('releases/0.6.1/dependencies.json', runtime), 'utf8'));
-  const dependencies = JSON.parse(await fs.readFile(new URL('releases/0.6.2/dependencies.json', runtime), 'utf8'));
+  const previous = JSON.parse(await fs.readFile(new URL('releases/0.6.2/dependencies.json', runtime), 'utf8'));
+  const dependencies = JSON.parse(await fs.readFile(new URL('releases/0.6.3/dependencies.json', runtime), 'utf8'));
   assert.deepEqual(dependencies.tested, previous.tested);
-  assert.deepEqual(dependencies.archives.filter((item: any) => item.name !== 'regamedll-zbot-profiles'), previous.archives);
-  assert.equal(dependencies.archives.find((item: any) => item.name === 'regamedll-zbot-profiles').sha256, matchbotReleaseHashes['releases/0.6.2/resources/bot_profiles-5.30.0.814.zip']);
+  assert.deepEqual(dependencies.archives, previous.archives);
+  assert.equal(dependencies.archives.find((item: any) => item.name === 'regamedll-zbot-profiles').sha256, matchbotReleaseHashes['releases/0.6.3/resources/bot_profiles-5.30.0.814.zip']);
 });

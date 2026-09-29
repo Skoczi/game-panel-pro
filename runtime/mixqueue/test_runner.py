@@ -52,14 +52,14 @@ class RunnerTests(unittest.TestCase):
         adapter = object.__new__(AmxxAdapter)
         adapter.root = Path('/unavailable-game-inventory')
         adapter.spool = SimpleNamespace(metrics=lambda: {'pending': 0, 'oldest_pending_seconds': None, 'database_bytes': 4096})
-        adapter.rcon = SimpleNamespace(command=lambda command: '{"bridge":1,"solo_test":true,"healthy":true,"idle":true,"controller":"matchbot","controller_version":"0.6.2","assignment_contract":3,"stats_version":2,"pause_policy":2,"ready_seconds":300,"full_test":true,"rules_ready":true}')
+        adapter.rcon = SimpleNamespace(command=lambda command: '{"bridge":1,"solo_test":true,"healthy":true,"idle":true,"controller":"matchbot","controller_version":"0.6.3","assignment_contract":3,"stats_version":2,"pause_policy":2,"ready_seconds":300,"full_test":true,"rules_ready":true}')
         agent.adapter = adapter
         self.assertTrue(cycle(agent)['ready'])
         self.assertEqual(calls[-1]['observation']['agent_protocol'], 2)
         self.assertEqual(calls[-1]['observation']['controller'], 'matchbot')
         self.assertIs(calls[-1]['observation']['rules_ready'], True)
         self.assertIs(calls[-1]['observation']['solo_test'], True)
-        self.assertEqual(calls[-1]['observation']['controller_version'], '0.6.2')
+        self.assertEqual(calls[-1]['observation']['controller_version'], '0.6.3')
         self.assertEqual(calls[-1]['observation']['agent_version'], '0.6.1')
         self.assertEqual(calls[-1]['observation']['assignment_contract'], 3)
         self.assertIs(calls[-1]['observation']['full_test'], True)
@@ -110,6 +110,58 @@ class RunnerTests(unittest.TestCase):
             self.assertEqual(a.db.execute('SELECT COUNT(*) FROM events').fetchone()[0], 1)
             a.db.close()
             b.db.close()
+
+    def test_optional_round_reasons_survive_blocked_delivery_and_restart(self):
+        import copy
+        import json
+        from mq_agent import Spool
+        with tempfile.TemporaryDirectory() as directory:
+            database = str(Path(directory) / 'spool.sqlite')
+            journal = Path(directory) / 'events.jsonl'
+            events = []
+            for index, (kind, reason) in enumerate((('round', 'time'), ('finished', 'bomb_exploded'),
+                                                   ('round', None), ('finished', None))):
+                data = {'team1_score': 15 + index % 2, 'team2_score': 10, 'stats_version': 2, 'players': {}}
+                if reason is not None:
+                    data['round_reason'] = reason
+                events.append({'event_id': f'result-{index}', 'match_id': ('a' if index < 2 else 'b') * 24,
+                               'generation': 3, 'type': kind, 'data': data})
+            journal.write_text(''.join(json.dumps(event) + '\n' for event in events))
+            agent, _ = self.agent()
+            agent.config['journal'] = str(journal)
+            agent.spool = Spool(database)
+            attempts = []
+            def unavailable(body):
+                if body['action'] == 'event':
+                    attempts.append(copy.deepcopy(body))
+                    raise ConnectionError('fixture upstream unavailable')
+                return {'commands': []}
+            agent.send = unavailable
+            self.assertFalse(cycle(agent)['ready'])
+            self.assertEqual(agent.spool.metrics()['pending'], len(events))
+            cursor = agent.spool.get('tail:' + str(journal.resolve()))
+            agent.spool.db.close()
+            agent.spool = Spool(database)
+            try:
+                self.assertEqual(agent.spool.get('tail:' + str(journal.resolve())), cursor)
+                accepted = []
+                def available(body):
+                    if body['action'] == 'event':
+                        accepted.append(copy.deepcopy(body))
+                    return {'commands': []}
+                agent.send = available
+                self.assertTrue(cycle(agent)['ready'])
+                self.assertEqual(accepted[0], attempts[0])
+                for index, expected in enumerate(events):
+                    event = accepted[index]['event']
+                    self.assertEqual(event, {**expected, 'schema_version': 1, 'sequence': index % 2 + 1,
+                                             'boot_id': attempts[0]['event']['boot_id']})
+                    self.assertEqual('round_reason' in event['data'], index < 2)
+                self.assertEqual(agent.spool.metrics()['pending'], 0)
+                self.assertTrue(cycle(agent)['ready'])
+                self.assertEqual(len(accepted), len(events))
+            finally:
+                agent.spool.db.close()
 
 
     def test_upgrade_keeps_legacy_events_cursors_and_sequences(self):

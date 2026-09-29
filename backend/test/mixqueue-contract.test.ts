@@ -52,6 +52,27 @@ test('inventory and load rejection contracts are bounded without exposing arbitr
   assert.ok(validMixqueueReport({action: 'event', event: {type: 'idle'}}));
 });
 
+test('round reasons stay optional event data without changing the RCON or rejection contracts', () => {
+  for (const type of ['round', 'finished']) {
+    for (const reason of [undefined, 'elimination', 'bomb_exploded', 'bomb_defused', 'time', 'other']) {
+      const data = {team1_score: 2, team2_score: 1, stats_version: 2, players: {},
+        ...(reason === undefined ? {} : {round_reason: reason})};
+      const report = {action: 'event', event: {event_id: 'fixture-round', match_id: 'a'.repeat(24),
+        generation: 3, schema_version: 1, sequence: 2, boot_id: 'fixture-boot', type, data}};
+      const before = structuredClone(report);
+      assert.ok(validMixqueueReport(report));
+      assert.deepEqual(report, before);
+      assert.equal(Object.hasOwn(report.event.data, 'round_reason'), reason !== undefined);
+    }
+  }
+  for (const reason of ['elimination', 'bomb_exploded', 'bomb_defused', 'time', 'other']) {
+    assert.equal(validMixqueueReport({action: 'event', event: {type: 'load_rejected', data: {code: reason}}}), false);
+    for (const command of [`mq2_clear ${reason}`, `mq2_endtest ${reason}`, `mq2_round_reason ${reason}`]) {
+      assert.equal(allowedMixqueueCommand(command, 'cs16'), false);
+    }
+  }
+});
+
 test("import preserves identity and separates secrets without granting exported paths or targets", () => {
   const data = exported();
   data.agent.game_root = "/etc";

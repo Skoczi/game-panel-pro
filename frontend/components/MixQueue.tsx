@@ -53,6 +53,9 @@ const words = {
     cancel: 'Cancel',
     installMatchbot: 'Install MatchBot CSCO',
     dependencies: 'Dependencies',
+    gameLogs: 'Game logs',
+    logAdd: 'Enable at startup',
+    logConfigured: 'Already configured',
     nativeBots: 'Native AI bots',
     enableBots: 'Enable on restart',
     botsEnabled: 'Enabled',
@@ -147,6 +150,9 @@ const words = {
     cancel: 'Anuluj',
     installMatchbot: 'Zainstaluj MatchBot CSCO',
     dependencies: 'Zależności',
+    gameLogs: 'Logi gry',
+    logAdd: 'Włącz przy starcie',
+    logConfigured: 'Już skonfigurowane',
     nativeBots: 'Natywne boty AI',
     enableBots: 'Włącz po restarcie',
     botsEnabled: 'Włączone',
@@ -587,6 +593,7 @@ export function MixQueueServer({ serverId }: { serverId: number }) {
           <div className="mq-dependencies">{preview.dependencies?.map((item: any) => <span key={item.name}>{item.name} <b>{item.version}</b></span>)}</div>
           {preview.ai && <div className="mq-ai-preview">
             <dl>
+              {preview.startupLogging && <div><dt>{t.gameLogs}</dt><dd>{preview.startupLogging === 'configured' ? t.logConfigured : t.logAdd}</dd></div>}
               <div><dt>{t.nativeBots}</dt><dd>{preview.ai.botEnable === 'enabled' ? t.botsEnabled : t.enableBots}</dd></div>
               <div><dt>{t.botResources}</dt><dd>{preview.ai.filesToAdd} {t.added} · {preview.ai.filesPreserved} {t.preserved}</dd></div>
             </dl>

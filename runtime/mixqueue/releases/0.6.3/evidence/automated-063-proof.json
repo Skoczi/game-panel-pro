@@ -1,0 +1,116 @@
+{
+  "controller": "0.6.3",
+  "web": "0.7.3",
+  "agent": "0.6.1",
+  "agent_unchanged": true,
+  "production_sha256": "cbc24d3b18018db4589581327ae8bc3f120c8de6736129024a053e27868dc4da",
+  "qa_sha256": "258a13394307aa6bd195aeb1ed5c778ac8106203031d407791f90031f32ce8d8",
+  "test_logs": {
+    "unit-tests-final.log": {
+      "sha256": "2285af8949dcd0bfffb95ab0c1a8d702272d9274c5049f5eef751b8df1e5e964",
+      "output": "PASS contract: immutable identity, v1/v2 roster, test-only bots, owner, UTF-8, Steam IDs, maps, MR/OT\nPASS captain consent scope/orders/duplicates/reset; measured HP; final-hit snapshot; identity epoch; dealt/taken/world/team; PL/EN; safe text\nPASS bounded reconnect budget and mode/phase/test/overtime/pause tournament rules\nRound statistics: trades, KAST, clutches, nested damage, duplicate/late hooks, objectives, disconnect, participation, reset OK\nCSCO native bot NAV structure, geometry, references and bounds tests passed\nPASS scoped 20-second break and MR8/MR15 overtime boundaries\nPASS scoped postmatch retention and named GameDLL round reasons\n"
+    },
+    "sqlite-post_match_grace.log": {
+      "sha256": "fe386109f524fa4da029d7d07ff0c66a455d99cb51bd55239c8c72adab752245",
+      "output": "PASS ranked: immediate result/stats/ELO, durable 179/180 deadline, retries, queue exclusion and idle-only release\nPASS cleanup delivery remains bound to the exact lease generation\nPASS surrender: partial score and one settlement retained during grace\nPASS full test: natural finish gets 180 seconds; no ELO/penalty; expiry cannot shorten grace\nPASS admin/test timeout/server error and abort remain immediate\nPASS CS:GO and Classic Offensive keep immediate cleanup\nPASS solo: sequenced finish/replay, durable 179/180 cleanup, result retained and idle-only release\n"
+    },
+    "sqlite-round_timeline.log": {
+      "sha256": "7363d3a3a53e870c2c6b9ade9c4635770669dec22adba42044c5c2d5789ce216",
+      "output": "PASS round timeline: authoritative reasons, logical winners, sequence, final round, missing legacy data, gaps, duplicate/terminal/generation isolation, validation rollback, public projection\n"
+    },
+    "sqlite-system_test.log": {
+      "sha256": "0a2ce0ba9adb3836793b27dbdb60bfb69eb05ce01a4f066c6b87b1252b1d5ef2",
+      "output": "PASS system preview: six ladders, consistent rosters and ELO, 26-match profiles, pagination, no real writes\n"
+    },
+    "sqlite-run.log": {
+      "sha256": "8b6dfb54135104b55d1b94428c325fc6d0520bd996f49b2a8fe70dce5a65e824",
+      "output": "PASS audit: 3,3,1,1,2 always forms 5v5 without splitting parties\nPASS audit: non-contiguous 5,4,5 candidate selection\nPASS global claim prevents joining another game\nPASS party membership and leader authorization\nPASS full lifecycle settles once with zero-sum ELO\nPASS forged assignment and wrong map rejected\nPASS invalid final score rolls back all changes\nPASS overtime result settles\nPASS abort supersedes undelivered load and keeps quarantine\nPASS ready rejection requeues accepted players only\nPASS agent rejects bad signatures and old timestamps\nPASS event sequence gaps and config mismatch rejected\nPASS unprivileged caller cannot cancel or toggle queues\nPASS stats persist and absent metrics are not invented\nPASS veto stale version cannot apply another action\nPASS no-show penalizes only on a healthy server\nPASS lost controller identity quarantines the server\nPASS report resolution requires admin and preserves audit\nPASS csco 5v5 lifecycle keeps ratings isolated\nPASS csco 2v2 lifecycle keeps ratings isolated\nPASS csgo 5v5 lifecycle keeps ratings isolated\nPASS csgo 2v2 lifecycle keeps ratings isolated\nPASS cs16 5v5 lifecycle keeps ratings isolated\nPASS cs16 2v2 lifecycle keeps ratings isolated\nPASS drain releases waiting claims without cancelling active matches\nPASS ready timeout after drain does not requeue accepted users\nPASS server registry validates configuration and rejects duplicate IDs\nPASS server update requires current revision and fresh health before enabling\nPASS server disable preserves active match and rejects reconfiguration\nPASS private enrollment key authenticates only its registered agent\nPASS removal rejects stale revision and active or quarantined lease\nPASS removal preserves completed matches and denies old agents and ID reuse\n32 tests passed\n"
+    },
+    "sqlite-server_tests.log": {
+      "sha256": "b0b98d78d02e30d919e8c850b135a3cee4b1ab2e4b9361763439686fb2426f24",
+      "output": "PASS solo lifecycle never creates ranked records or changes ELO\nPASS stop drains pending events but holds reservation until idle\nPASS capability and freshness are mandatory\nPASS worker expires abandoned tests without releasing an unconfirmed server\nPASS lost identity initiates cleanup through signed agent API\n5 server-test scenarios passed\n"
+    },
+    "sqlite-test_matches.log": {
+      "sha256": "8169c5f838c47e7bf4a61485788137f2ff86f39ebae9044f2c7b0fc1668cf1f0",
+      "output": "PASS full test 1 humans: lobby, bots, ready/veto, partial snapshot, no ELO, cleanup, delete/retry\nPASS full test 2 humans: lobby, bots, ready/veto, partial snapshot, no ELO, cleanup, delete/retry\nPASS full test 10 humans: lobby, bots, ready/veto, partial snapshot, no ELO, cleanup, delete/retry\nPASS permissions, team swap, captain, ready decline without penalties\n"
+    },
+    "sqlite-test_match_failures.log": {
+      "sha256": "aafd95f1ea4171b672993e57650d2d01755d3b3566ba0a4a1fb656f0d505b642",
+      "output": "PASS cancellation in all 6 phases; agent loss fallback, lease waits for idle, late journal drains\nPASS ready, veto, preparation timeouts without penalties\nPASS offline detection, atomic bulk deletion, foreign generation rejection and minimum-version gate\n"
+    },
+    "sqlite-disconnects.log": {
+      "sha256": "dcde257f9e89853dd603cf707d4ad4719366ddde3329be3dd0ac56e3bbc83196",
+      "output": "PASS reconnect cancellation, exact 30-minute cooldown, replay idempotency, late return, majority 3/4, foreign/duplicate votes, surrender 8:2 loss, ELO once, native profile and queue enforcement\n"
+    },
+    "sqlite-statistics.log": {
+      "sha256": "f31f70b3e635e8980f609acc4a7c12af9d4253f2ae24cee925ca00fdc6c4efca",
+      "output": "PASS native statistics: settlement isolation, weighted ratios, missing telemetry, zero denominators, per-map totals, history pagination\n"
+    },
+    "sqlite-game_readiness.log": {
+      "sha256": "40a54824a5fa50180e345d59dbbea7cfb21991b815f309a45c63e4e3869b3caf",
+      "output": "PASS readiness, connected non-ready cooldown, incident exemption, idempotency, late drain, idle release, capability gates\n"
+    },
+    "mariadb-post_match_grace.log": {
+      "sha256": "14763edc76cdc5c58ac79b2c5398127a5047bd2775d3b3f1c6810d8a9c284964",
+      "output": "PASS ranked: immediate result/stats/ELO, durable 179/180 deadline, retries, queue exclusion and idle-only release\nPASS cleanup delivery remains bound to the exact lease generation\nPASS surrender: partial score and one settlement retained during grace\nPASS full test: natural finish gets 180 seconds; no ELO/penalty; expiry cannot shorten grace\nPASS admin/test timeout/server error and abort remain immediate\nPASS CS:GO and Classic Offensive keep immediate cleanup\nPASS solo: sequenced finish/replay, durable 179/180 cleanup, result retained and idle-only release\n"
+    },
+    "mariadb-round_timeline.log": {
+      "sha256": "7363d3a3a53e870c2c6b9ade9c4635770669dec22adba42044c5c2d5789ce216",
+      "output": "PASS round timeline: authoritative reasons, logical winners, sequence, final round, missing legacy data, gaps, duplicate/terminal/generation isolation, validation rollback, public projection\n"
+    },
+    "mariadb-system_test.log": {
+      "sha256": "401d0e33a3325459e64999891f3fc15efc4ce9ede4b189ad910171f915f3cefb",
+      "output": "PASS system preview: six ladders, consistent rosters and ELO, 26-match profiles, pagination, no real writes\n"
+    },
+    "mariadb-run.log": {
+      "sha256": "fde084bcdcd9fe787a73f5e2220aef27030b7e216ad866e8f4616e7135c533c2",
+      "output": "PASS audit: 3,3,1,1,2 always forms 5v5 without splitting parties\nPASS audit: non-contiguous 5,4,5 candidate selection\nPASS global claim prevents joining another game\nPASS party membership and leader authorization\nPASS full lifecycle settles once with zero-sum ELO\nPASS forged assignment and wrong map rejected\nPASS invalid final score rolls back all changes\nPASS overtime result settles\nPASS abort supersedes undelivered load and keeps quarantine\nPASS ready rejection requeues accepted players only\nPASS agent rejects bad signatures and old timestamps\nPASS event sequence gaps and config mismatch rejected\nPASS unprivileged caller cannot cancel or toggle queues\nPASS stats persist and absent metrics are not invented\nPASS veto stale version cannot apply another action\nPASS no-show penalizes only on a healthy server\nPASS lost controller identity quarantines the server\nPASS report resolution requires admin and preserves audit\nPASS csco 5v5 lifecycle keeps ratings isolated\nPASS csco 2v2 lifecycle keeps ratings isolated\nPASS csgo 5v5 lifecycle keeps ratings isolated\nPASS csgo 2v2 lifecycle keeps ratings isolated\nPASS cs16 5v5 lifecycle keeps ratings isolated\nPASS cs16 2v2 lifecycle keeps ratings isolated\nPASS drain releases waiting claims without cancelling active matches\nPASS ready timeout after drain does not requeue accepted users\nPASS server registry validates configuration and rejects duplicate IDs\nPASS server update requires current revision and fresh health before enabling\nPASS server disable preserves active match and rejects reconfiguration\nPASS private enrollment key authenticates only its registered agent\nPASS removal rejects stale revision and active or quarantined lease\nPASS removal preserves completed matches and denies old agents and ID reuse\n32 tests passed\n"
+    },
+    "mariadb-server_tests.log": {
+      "sha256": "2772e1fae2134118180c108e8a28c531037a6c34e2e1f99aefa332db0021eaf1",
+      "output": "PASS solo lifecycle never creates ranked records or changes ELO\nPASS stop drains pending events but holds reservation until idle\nPASS capability and freshness are mandatory\nPASS worker expires abandoned tests without releasing an unconfirmed server\nPASS lost identity initiates cleanup through signed agent API\n5 server-test scenarios passed\n"
+    },
+    "mariadb-test_matches.log": {
+      "sha256": "8717b98bd0a04b8925f845639f412180d0bc7c43778ff8281ed928d4162e5f17",
+      "output": "PASS full test 1 humans: lobby, bots, ready/veto, partial snapshot, no ELO, cleanup, delete/retry\nPASS full test 2 humans: lobby, bots, ready/veto, partial snapshot, no ELO, cleanup, delete/retry\nPASS full test 10 humans: lobby, bots, ready/veto, partial snapshot, no ELO, cleanup, delete/retry\nPASS permissions, team swap, captain, ready decline without penalties\n"
+    },
+    "mariadb-test_match_failures.log": {
+      "sha256": "1a049bd5ffccb4c1da5a368d79d20a23d161d77c8e5aca0532f3a4e92a29b2bb",
+      "output": "PASS cancellation in all 6 phases; agent loss fallback, lease waits for idle, late journal drains\nPASS ready, veto, preparation timeouts without penalties\nPASS offline detection, atomic bulk deletion, foreign generation rejection and minimum-version gate\n"
+    },
+    "mariadb-disconnects.log": {
+      "sha256": "6c81aab3d5bd62717687ba5e24dfa55f931336911bd58fb411280e3b5e6e8452",
+      "output": "PASS reconnect cancellation, exact 30-minute cooldown, replay idempotency, late return, majority 3/4, foreign/duplicate votes, surrender 8:2 loss, ELO once, native profile and queue enforcement\n"
+    },
+    "mariadb-statistics.log": {
+      "sha256": "a57ed7c0be01494d51e57131aa3cb4c313fe2ff5a86176d55e520c3c4772f3a7",
+      "output": "PASS native statistics: settlement isolation, weighted ratios, missing telemetry, zero denominators, per-map totals, history pagination\n"
+    },
+    "mariadb-game_readiness.log": {
+      "sha256": "242ca70d13fa334b763a46420364d4ca2dc821f3f09874b3356f62aff53e6a6d",
+      "output": "PASS readiness, connected non-ready cooldown, incident exemption, idempotency, late drain, idle release, capability gates\n"
+    }
+  },
+  "ui": {
+    "type": "read-only localhost synthetic fixture",
+    "screenshots": {
+      "timeline-en-preview.png": "6769110bd243450344f028b43621e651838320df30e26294bbf294da20d30233",
+      "timeline-pl-mobile.png": "ef6f9b59b55782a7cb8dba835e0b31f1cb1220a4da9f70b10a567624764c8d28",
+      "live-stats-preview.png": "9561d396aaf0538e83d4a680f193a9d726d3505aa58ec5e3c6aed9e5393fc09c"
+    },
+    "verified": [
+      "PL/EN",
+      "desktop and 390px mobile without page overflow",
+      "MR8 and MR15 overtime groups",
+      "round selection details",
+      "terminal progress strip absent",
+      "legacy reasons remain unknown",
+      "live K/D/A ADR HS%",
+      "automatic update from 3:3 to 3:4 without page reload",
+      "kills 4 to 5 and HS% 50 to 40 after completed-round snapshot",
+      "no browser console errors"
+    ]
+  },
+  "real_steam_acceptance": false,
+  "game_server_deployed": false
+}

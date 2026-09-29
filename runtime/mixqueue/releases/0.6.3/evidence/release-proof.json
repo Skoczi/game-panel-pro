@@ -1,0 +1,11 @@
+{
+  "controller_version": "0.6.3",
+  "production_sha256": "cbc24d3b18018db4589581327ae8bc3f120c8de6736129024a053e27868dc4da",
+  "qa_sha256": "258a13394307aa6bd195aeb1ed5c778ac8106203031d407791f90031f32ce8d8",
+  "evidence_files": {
+    "automated-063-proof.json": "af21156691e59f56094c6e529fa912081825b9d5de4cf4a956444d7275b3cb25",
+    "production-063-proof.json": "7b32c350418aafa25b9d46c8331622e9fa276208a4ceb85c24c313efdab07004",
+    "profiles-063-proof.json": "63039a23ab9f568a35232013fd3454cac3980f60746da54fdbab5928c9bca60f",
+    "release-install-063-proof.json": "0c06a99dea18c0e2bd4b17248239482090007c01711f3c3fe66ca960b15dc49a"
+  }
+}
