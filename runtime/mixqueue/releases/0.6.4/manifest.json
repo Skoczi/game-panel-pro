@@ -1,0 +1,152 @@
+{
+  "version": "0.6.4",
+  "controller": "matchbot",
+  "controller_version": "0.6.4",
+  "agent_version": "0.6.1",
+  "agent_unchanged": true,
+  "web_version": "0.7.6",
+  "minimum_agent_version": "0.6.1",
+  "minimum_web_version": "0.7.6",
+  "game": "cs16",
+  "platform": "linux-i386",
+  "agent_protocol": 2,
+  "assignment_contract": 3,
+  "stats_version": 2,
+  "ruleset": 2,
+  "map_inventory_contract": 1,
+  "load_rejection_contract": 1,
+  "event_additions": [],
+  "load_rejection_codes_added": [],
+  "event_fields_added": {},
+  "sourceHashes": {
+    "matchbot_csco_mm.so": "af5ed8c138180a7614be80dc981b10d878a19e9dfe9e16549adcd9ffa711ca31",
+    "mq_agent.py": "2f14a107c210ae69d65a85ea3614c66c854b52ee6dcf3ea6ccb7dd72b027970a"
+  },
+  "reused_agent_package": {
+    "file": "mixqueue2-agent-0.6.1.zip",
+    "sha256": "f8d80c3e7deb4fe2608ac7e536d226f8bc8caa0f88728472659949c6272c432f"
+  },
+  "files": {
+    "ACCEPTANCE.md": "e23a63c1f4363762b21933eb6442926669fc9b22fecb386b5fe9fe8fd830c67c",
+    "CVAR-AUDIT.md": "7744ffb3577dbd95a332de0a46662471e2957aa2d76e8c845d86e0203278ac95",
+    "HOST-STARTUP.example.cfg": "e1f2578cd997aa1833ae164201191e4bf34ea46c0f8d57d142e81b2210a035d2",
+    "INSTALL.pl.md": "1939989a6270ffa9d92bfba359c00da4410451494d989e267073c1dacc09173c",
+    "MR-AUDIT.md": "5c39905d9f2474d1a4886ffad512049a1036c72949b0a2844ef47b90c1e26fb5",
+    "PROMPT-ESERV.md": "f4c40962055afe903cee2afb248ecd8123754388313704e100003339b0ca35ca",
+    "RELEASE-CS16-0.6.4.md": "af94b5eec94eb66720a63f35b7465d375b18586a3d8dae466258c9da7071fa9f",
+    "ROUND-STATS-AUDIT.md": "8ee1d61b4c9ebf2062bb840c8d17f169c7f7e8c2599641e737ef7fd7a2f91dbf",
+    "RULES.pl.md": "82cd399498ea42bd783ff7efc29e471c158e63c88dd6353d05180319617f1843",
+    "UI-ACCEPTANCE.md": "fd54f5e4dd3ce6c50952aad69d8dd20932f763ae03ec43e5372b9d09a1660f08",
+    "WWW-AUDIT.md": "0fefdb60ca7c14a5edb9d189578a8d5578195fef05bd7530baf47f6d766b923e",
+    "dependencies.json": "cc9cf988b5f3224a7058890ac6cd61d6b9b21e1a230226914467d5318aca95e8",
+    "evidence/format-lab-064-qa-proof.json": "9573e9194b9ca16628323530af0dda01d74d3f65b9801d929a977a1a77a1e6dc",
+    "evidence/formats-064-proof.json": "6474a5bae7fdf38bbe733a8246311333220d850608159e540b336171d101b33d",
+    "evidence/native-final-064-proof.json": "2338e24fbb9f9f3398b310a422d91ee6994d549e64eb3af4836f5cfc233871dd",
+    "evidence/native-unit-build-064-proof.json": "0727298eca10b56efa12f58f4d934775c977d32da3704c4e92a02e2756dab7ab",
+    "evidence/production-064-proof.json": "1b54c2359f518da98f81e3115d7087f16bc0ef12c0f072452e2fec5956411503",
+    "evidence/release-install-064-proof.json": "587a4137fd39ce07ad963f9d261cfa9a239ce5df5fd74bc1a6862a6dd4646a5e",
+    "evidence/release-proof.json": "3f0953a21b5bbb174cf9b90b10c6ca3e49937d4801425a022c759b5d71be8def",
+    "navigation/de_dust2.nav": "9a44381363572f05d42fa4f82b293f54e49c93d60a4471d2fe8396ecceb77753",
+    "navigation/nav-proof.json": "4d772b2c95ca34fcaf1dbf8ad525884b1c3722b0eb6d0017fc4fcc4eb2e62571",
+    "packages/mixqueue2-agent-0.6.1.zip": "f8d80c3e7deb4fe2608ac7e536d226f8bc8caa0f88728472659949c6272c432f",
+    "packages/mixqueue2-cs16-0.6.4-source.zip": "05c85ecb2444d3abf90ef32bfb26e410c73748388f8ed464f00708bd4ebb96c1",
+    "packages/mixqueue2-cs16-0.6.4.zip": "799d3da30f7844181b39060653f0d85b3d2f2b6b7b20cc38e95530862e24b5a3",
+    "packages/mixqueue2-web-0.7.6.zip": "97e012dbe010db6a35c732f7cb6381095acac25f0558e91a7795f9f7b8250ca1",
+    "resources/bot-dependencies.json": "f62ed12bf6cca8c943bbf4b335177b9b2716251e15ae59164a9cc7674c739dd4",
+    "resources/bot_profiles-5.30.0.814.zip": "39e6e8a137dbbbdef842cdb4318ef1069b3467127a0cc19bdc6eca1d5d693e38",
+    "resources/upstream-LICENSE": "c2ad4def946a60034ae933109dbf5b0470c81872e5952bc81a502ea6e7f8b780",
+    "resources/upstream-LICENSE-TRANSITION.md": "95f065ae6d51b35a90c09d70a0e6bb3eaca111bd7de20d4a67d52de48b025333",
+    "runtime/mixqueue/mq_agent.py": "2f14a107c210ae69d65a85ea3614c66c854b52ee6dcf3ea6ccb7dd72b027970a",
+    "scripts/check-cs16-bot-navigation.py": "1e2c618778d32da5c3249ed16479b35ed4d23a0744fb7702a7641a990411df5c"
+  },
+  "restart_game_required": true,
+  "runtime_agent_rebuild_required": false,
+  "target": "ESERV universal WAW1/WAW2 installer; empty SRV-107 without lease",
+  "live_game_deployed_by_csco": false,
+  "public_pool_eligibility": "keep disabled",
+  "preserve": [
+    "configuration",
+    "keys",
+    "server_id",
+    "broker isolation",
+    "RCON",
+    "spool.sqlite/WAL",
+    "journal",
+    "generation",
+    "active-matchbot",
+    "original-hostname",
+    "original-bots.txt",
+    "recovery",
+    "history",
+    "unrelated AMXX"
+  ],
+  "reviewed_conflicts_retained": [
+    "mq2_match.amxx",
+    "statsx.amxx"
+  ],
+  "policy": {
+    "ranked_modes": {
+      "5v5": {
+        "mr_allowed": [
+          12,
+          15
+        ],
+        "default_mr": 15,
+        "round_seconds": 105,
+        "freeze_seconds": 10,
+        "sv_maxrate": 30000,
+        "sv_maxupdaterate": 102
+      },
+      "2v2": {
+        "mr_allowed": [
+          8
+        ],
+        "round_seconds": 120,
+        "freeze_seconds": 8,
+        "sv_maxrate": 25000,
+        "sv_maxupdaterate": 100
+      }
+    },
+    "overtime_mr": 3,
+    "snapshot_scope": "cumulative completed round; exact journal sequence and generation",
+    "test_round_seconds": 30,
+    "c4_seconds": 35,
+    "game_ready_seconds": 300,
+    "halftime_break_seconds": 20,
+    "pre_overtime_break_seconds": 20,
+    "post_match_seconds": 180,
+    "post_match_release_authority": "WWW cleanup followed by confirmed idle",
+    "post_match_scope": [
+      "cs16 finished",
+      "cs16 surrendered",
+      "completed full_test",
+      "natural solo finish"
+    ],
+    "immediate_cleanup": [
+      "admin test stop",
+      "test timeout",
+      "abort",
+      "server error"
+    ],
+    "profile_reference": "RULES.pl.md",
+    "startup_log_command": "host configuration only; log on once",
+    "sv_voiceenable": 1,
+    "pausable": 0,
+    "test_bot_engine": "ReGameDLL native zBot",
+    "test_bot_difficulty": 1,
+    "bot_auto_unpause": false,
+    "test_elo": false,
+    "test_penalties": false,
+    "tactical_pauses_per_team": 3,
+    "tactical_seconds": 30,
+    "disconnect_pauses_per_team": 1,
+    "disconnect_pause_seconds": 90,
+    "navigation_prepared_before_lease": true
+  },
+  "acceptance": {
+    "automated": "see ACCEPTANCE.md and evidence/release-proof.json",
+    "real_steam_064": "pending",
+    "all_map_navigation": "pending ESERV per-BSP preparation",
+    "ten_real_clients": "pending"
+  }
+}

@@ -1,0 +1,47 @@
+{
+  "schema_version": 1,
+  "dependency": "ReGameDLL_CS zBot profiles",
+  "version": "5.30.0.814",
+  "commit": "781a68ae1c6fb652cf4fbc894970b4fb4dde19f9",
+  "source": "https://raw.githubusercontent.com/rehlds/ReGameDLL_CS/781a68ae1c6fb652cf4fbc894970b4fb4dde19f9/regamedll/extra/zBot/bot_profiles.zip",
+  "local": ".reference/regamedll-bots-5.30.0.814/bot_profiles.zip",
+  "sha256": "39e6e8a137dbbbdef842cdb4318ef1069b3467127a0cc19bdc6eca1d5d693e38",
+  "bytes": 7251139,
+  "archive_entries": 493,
+  "regular_files": 489,
+  "db_files": [
+    {
+      "path": "cstrike/BotProfile.db",
+      "sha256": "b1ee270d717d7bef6b2cd53e851cf1b558cd2ecdde89a4e45267481183673fba",
+      "size": 10588
+    },
+    {
+      "path": "cstrike/BotChatter.db",
+      "sha256": "d371bafbb585db3bdf25eed889095d66af9159685437e3087448a050890da302",
+      "size": 31794
+    }
+  ],
+  "sound_wav_files": 487,
+  "nav_files": 0,
+  "archive_licenses": 0,
+  "upstream_license": "https://github.com/rehlds/ReGameDLL_CS/blob/781a68ae1c6fb652cf4fbc894970b4fb4dde19f9/LICENSE",
+  "upstream_transition": "https://github.com/rehlds/ReGameDLL_CS/blob/781a68ae1c6fb652cf4fbc894970b4fb4dde19f9/LICENSE-TRANSITION.md",
+  "notices": [
+    "DB headers credit Michael S. Booth, Turtle Rock Studios. Preserve headers and official archive provenance.",
+    "ReGameDLL repository license is MIT; bot_profiles.zip contains no separate license. Do not invent an asset-specific license statement."
+  ],
+  "enable": {
+    "requires_full_restart": true,
+    "old_bots_cli_needed": false,
+    "file": "cstrike/game_init.cfg",
+    "setting": "bot_enable 1"
+  },
+  "navigation": {
+    "bsp_correlation": "NAV stores BSP byte size only; upstream mismatch warns, does not reject loading.",
+    "magic": "0xFEEDFACE",
+    "official_pinned_repository_has_nav_pack": false,
+    "version": 5,
+    "handoff_requirement": "Prepare navigation before assigning a match. Record both BSP SHA-256 and NAV SHA-256. Never run analysis during active lease. Preserve manually edited NAV files."
+  },
+  "inspection_scope": "Pinned source, official docs, archive contents; no game-server mutation and no real Steam acceptance."
+}

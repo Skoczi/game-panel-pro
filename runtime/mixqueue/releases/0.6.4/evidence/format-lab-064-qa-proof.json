@@ -1,0 +1,8 @@
+{
+  "retained": {
+    "serverfiles/cstrike/addons/amxmodx/configs/mq2/generation-matchbot.txt": "ce678067b339bdf19e0ed36e1f3a8c007439b2135a412cfda3ea1169e32dd1fc",
+    "serverfiles/cstrike/addons/amxmodx/data/mq2/events.jsonl": "fcd4ca663850a7c499f94865186bd25b88b2b2dd3907b9f06ac0332b56132a8f"
+  },
+  "qa_sha256": "c7a77c900547081d5332326319745531f602413855ce47b27f07b807ac549387",
+  "prior_production_sha256": "cbc24d3b18018db4589581327ae8bc3f120c8de6736129024a053e27868dc4da"
+}

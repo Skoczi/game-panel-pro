@@ -1,0 +1,11 @@
+{
+  "container": "mq2-matchbot-063-profile",
+  "stopped": true,
+  "network": "none",
+  "bind": "/opt/csco-lab/matchbot-063-profile",
+  "production_sha256": "af5ed8c138180a7614be80dc981b10d878a19e9dfe9e16549adcd9ffa711ca31",
+  "generation": 118,
+  "journal_sha256": "551e788c21266e61613d2cae6126b3a8cc07eefd355e195b3205e19bb09fbb39",
+  "journal_events": 2169,
+  "original_hostname_restored": true
+}

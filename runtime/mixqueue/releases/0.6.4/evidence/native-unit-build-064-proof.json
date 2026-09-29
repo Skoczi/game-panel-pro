@@ -1,0 +1,42 @@
+{
+  "controller_version": "0.6.4",
+  "sanitizers": [
+    "address",
+    "undefined"
+  ],
+  "unit_suites": [
+    "contract",
+    "feedback",
+    "safety",
+    "statistics",
+    "bots",
+    "break",
+    "end"
+  ],
+  "logs": {
+    "unit-tests.log": "76276060afa28f975e486c022b52beee2d4a8b1c88d37a144e650927f503e1b6",
+    "build-qa.log": "e6b53ffdfef4c92f1165f8f0923617948bba8b79d14d1badf7e384ffc2a5bb01",
+    "build-release.log": "9c52a86fae49474033189d5d2da5dc3bf1c71dd25f695426ee822bf1093b623c",
+    "runtime.log": "6f3907faa49792c3e0fb60529260f581e11eb92892e4898505a493da53a8aac0",
+    "production.log": "2d1880d83060f55b569f55b2b33654a3912070c8cae0f6731f1a4baf0302e31b",
+    "production-recovery.log": "68d62ed543e9db4ea17b19a9064e312c0305920a063ccbd244c41a7702e3a32d"
+  },
+  "sources": {
+    "games/cs16/matchbot/MatchBot/MatchCSCO.cpp": "95fca5091fe0f6828e1a68c6adb8fb1cfb991ff7ac7f543ea0c8f545c2599b78",
+    "games/cs16/matchbot/MatchBot/MatchCSCO.h": "ae9f13058d847d048184a7f32a953bd50e1a3bbd9c2e23a5c3c8835357eb8df1",
+    "games/cs16/matchbot/MatchBot/MatchCSCOContract.h": "0573e08de7eaf50030daa1d34e88d9282aeb247c7ac775de2bad51583e4a99d6",
+    "games/cs16/matchbot/MatchBot/MatchCSCOSafety.h": "b64145f0d79f550f9ab2883f4a8e264a2635b16394dc2da7b6761500dc309944",
+    "tests/cs16_contract_test.cpp": "0e09bf331dcb5a303946f2d254e57cfffd8e661686936c8260c6ba384664bdf3",
+    "tests/cs16_feedback_test.cpp": "152eba25cbc10d52539894577cbea3a2cdbedccbf5ad1d88b6d05b91f3ffa1be",
+    "tests/cs16_safety_test.cpp": "2ca2d15c3e50bcfbed0bfcae9812b539ea903b5db4f65a78a2b625519091d605",
+    "tests/cs16_statistics_test.cpp": "df40e138a3c4c21e22e89ac799129b519e1380a3ecdc4f14f01b1c361a3c1b63",
+    "tests/cs16_bots_test.cpp": "a480a9a2892f4a2472989cccb40f60c7305d01608ef2d432f7a7574108f5b7e2",
+    "tests/cs16_break_test.cpp": "1c5d38b1b0e431876b7fa2fc640b71e275666e8e79023dba8222adfa19535287",
+    "tests/cs16_end_test.cpp": "c724c2ab6661ff156909b8a91868f1f6f4438ebf887a708e6fb0063b51ce437b",
+    "tests/cs16_formats_064_runtime.py": "31c701b7403a2d975cd1315fbc897a9f9620d5fc8ac2c39b99abdf9ddf90c67c",
+    "tests/cs16_064_release_smoke.py": "44343f027ebeb3c82fefbbacc1459db207e60932bcea8e298f471c630bad1a9d",
+    "bin/build-matchbot.sh": "15ae4d30d4abd1a542862ee10de33c6acecae7ba4649e350a581628eca2ff05c"
+  },
+  "qa_sha256": "c7a77c900547081d5332326319745531f602413855ce47b27f07b807ac549387",
+  "production_sha256": "af5ed8c138180a7614be80dc981b10d878a19e9dfe9e16549adcd9ffa711ca31"
+}
