@@ -1,0 +1,13 @@
+{
+  "controller_version": "0.6.4",
+  "qa_sha256": "c7a77c900547081d5332326319745531f602413855ce47b27f07b807ac549387",
+  "production_sha256": "af5ed8c138180a7614be80dc981b10d878a19e9dfe9e16549adcd9ffa711ca31",
+  "evidence_files": {
+    "format-lab-064-qa-proof.json": "9573e9194b9ca16628323530af0dda01d74d3f65b9801d929a977a1a77a1e6dc",
+    "formats-064-proof.json": "6474a5bae7fdf38bbe733a8246311333220d850608159e540b336171d101b33d",
+    "native-final-064-proof.json": "2338e24fbb9f9f3398b310a422d91ee6994d549e64eb3af4836f5cfc233871dd",
+    "native-unit-build-064-proof.json": "0727298eca10b56efa12f58f4d934775c977d32da3704c4e92a02e2756dab7ab",
+    "production-064-proof.json": "1b54c2359f518da98f81e3115d7087f16bc0ef12c0f072452e2fec5956411503",
+    "release-install-064-proof.json": "587a4137fd39ce07ad963f9d261cfa9a239ce5df5fd74bc1a6862a6dd4646a5e"
+  }
+}

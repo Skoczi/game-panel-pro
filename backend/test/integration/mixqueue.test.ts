@@ -88,7 +88,7 @@ test(
         assert.equal(body.observation.assignment_contract, 3);
         assert.equal(body.observation.full_test, true);
         assert.equal(body.observation.controller, 'matchbot');
-        assert.equal(body.observation.controller_version, '0.6.3');
+        assert.equal(body.observation.controller_version, '0.6.4');
         assert.equal(body.observation.rules_ready, true);
         assert.equal(body.observation.stats_version, 2);
         assert.equal(body.observation.pause_policy, 2);
@@ -160,7 +160,7 @@ test(
               }
               assert.equal(command, "mq2_status");
               return JSON.stringify({bridge: 1, healthy: a.runtimeKey !== keys[0] || firstControllerHealthy,
-                idle: true, controller: 'matchbot', controller_version: '0.6.3', assignment_contract: 3, stats_version: 2,
+                idle: true, controller: 'matchbot', controller_version: '0.6.4', assignment_contract: 3, stats_version: 2,
                 pause_policy: 2, reconnect_budget: 1, tactical_limit: 3, tactical_seconds: 30, ready_seconds: 300,
                 full_test: true, rules_ready: true, solo_test: true});
             },
