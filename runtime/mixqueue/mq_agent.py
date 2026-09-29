@@ -136,7 +136,7 @@ class Get5Adapter:
         value = json.loads(raw)
         if value.get('bridge') != 1:
             raise RuntimeError('MixQueue2 SourceMod bridge is not installed')
-        return {**value, 'agent_protocol': 2}
+        return {**value, 'agent_protocol': 2, 'agent_version': '0.5.0'}
 
     @staticmethod
     def cleanup_complete(status):
@@ -149,7 +149,7 @@ class Get5Adapter:
         # Confirm the fresh idle observation instead of clearing the server again.
         if not self.cleanup_complete(status):
             try:
-                self.rcon.command('mq2_clear')
+                self.rcon.command(self.clear_command(command, status))
             except Exception:
                 # Transport outcome is ambiguous. Only an independent status
                 # read can prove completion; otherwise preserve the failure.
@@ -160,6 +160,9 @@ class Get5Adapter:
                     return
         self.spool.put({'event_id': 'idle-' + command['id'], 'match_id': command['match_id'],
                         'generation': int(command['generation']), 'type': 'idle', 'data': {}})
+
+    def clear_command(self, command, status):
+        return 'mq2_clear'
 
     @staticmethod
     def build(payload):
@@ -177,7 +180,7 @@ class Get5Adapter:
             roster = {p['steam_id']: p['name'] for p in payload['players'] if int(p['team']) == team}
             if len(roster) != size or any(not re.fullmatch(r'7656119\d{10}', steam) for steam in roster):
                 raise ValueError('Invalid Steam roster')
-            teams['team' + str(team)] = {'name': 'Team ' + str(team), 'players': roster}
+            teams['team' + str(team)] = {'name': payload.get('teams', {}).get(str(team), 'Team ' + str(team)), 'players': roster}
         return {'matchid': payload['match_id'] + ':' + str(payload['generation']), 'num_maps': 1, 'skip_veto': True,
                 'wingman': size == 2, 'players_per_team': size, 'min_players_to_ready': size, 'coaches_per_team': 0,
                 'maplist': [payload['map']], 'map_sides': ['knife'], 'side_type': 'always_knife', **teams,
@@ -249,6 +252,20 @@ class GoldSrcRcon:
 
 
 class AmxxAdapter(Get5Adapter):
+    REASONS = ('test_admin', 'test_timeout', 'match_finished', 'not_roster', 'no_match', 'steam_timeout', 'server_error')
+
+    @staticmethod
+    def label(value, limit=64):
+        if not isinstance(value, str) or not value or len(value.encode('utf-8')) > limit or any(ord(c)<32 or ord(c)==127 or c in ';"\\' for c in value):
+            raise ValueError('Invalid assignment label')
+        return value.encode('utf-8').hex()
+
+    def clear_command(self, command, status):
+        reason = command.get('payload', {}).get('reason', 'server_error')
+        if reason not in self.REASONS:
+            raise ValueError('Invalid cleanup reason')
+        return 'mq2_clear ' + reason if status.get('assignment_contract') == 2 else 'mq2_clear'
+
     def __init__(self, config, spool):
         self.config, self.spool = config, spool
         self.root = Path(config['game_root']).resolve()
@@ -260,27 +277,64 @@ class AmxxAdapter(Get5Adapter):
             raise ValueError('Invalid GoldSrc match')
         size = int(payload['team_size'])
         test = payload['rules'].get('test') is True
+        full = test and payload['rules'].get('test_type') == 'full'
+        v2 = payload.get('contract_version') == 2
+        if full and (not v2 or size != 5 or not re.fullmatch(r'7e5700[a-f0-9]{18}', payload['match_id'])):
+            raise ValueError('Invalid full test assignment')
         count = len(payload['players'])
-        if size not in (2, 5) or count != (1 if test else size * 2):
+        if size not in (2, 5) or count != (1 if test and not full else size * 2):
             raise ValueError('Invalid roster')
-        lines = [f"{payload['match_id']} {payload['generation']} {payload['map']} {size} {payload['rules']['mr']} {payload['rules']['ot_mr']} {payload['config_hash']} {1 if test else 0}"]
+        lines = [f"{'MQ2V2 ' if v2 else ''}{payload['match_id']} {payload['generation']} {payload['map']} {size} {payload['rules']['mr']} {payload['rules']['ot_mr']} {payload['config_hash']} {2 if full else 1 if test else 0}"]
+        if v2:
+            names = payload.get('teams', {})
+            owner = payload.get('test_owner', '-')
+            if owner != '-' and not re.fullmatch(r'7656119\d{10}', owner):
+                raise ValueError('Invalid test owner')
+            lines.append(owner+' '+AmxxAdapter.label(names.get('1'))+' '+AmxxAdapter.label(names.get('2')))
         seen = set()
         teams = {1: 0, 2: 0}
+        captains = {1: 0, 2: 0}
+        humans = set()
+        valid_bots = {'bot:'+hashlib.sha256(f"{payload['match_id']}:{payload['generation']}:{t}:{i}".encode()).hexdigest()[:24] for t in (1,2) for i in range(1,33)}
         for player in payload['players']:
             steam = player['steam_id']
-            if not re.fullmatch(r'7656119\d{10}', steam) or steam in seen:
-                raise ValueError('Invalid Steam ID')
-            account = int(steam) - 76561197960265728
-            if not 0 <= account <= 4294967295:
-                raise ValueError('Steam account out of range')
+            bot = player.get('bot', False)
+            if not isinstance(bot, bool) or steam in seen:
+                raise ValueError('Invalid or duplicate identity')
+            if bot:
+                if not full or steam not in valid_bots:
+                    raise ValueError('Bot outside this test assignment')
+                auth = 'BOT'
+            else:
+                if not re.fullmatch(r'7656119\d{10}', steam):
+                    raise ValueError('Invalid Steam ID')
+                account = int(steam) - 76561197960265728
+                if not 0 <= account <= 4294967295:
+                    raise ValueError('Steam account out of range')
+                auth = f'STEAM_0:{account % 2}:{account // 2}'
+                humans.add(steam)
             team = int(player['team'])
             if team not in teams:
                 raise ValueError('Unknown team')
             teams[team] += 1
             seen.add(steam)
-            lines.append(f'STEAM_0:{account % 2}:{account // 2} {steam} {team}')
-        if teams != ({1: 1, 2: 0} if test else {1: size, 2: size}):
+            row = f'{auth} {steam} {team}'
+            if v2:
+                captain = player.get('captain', 0)
+                locale = player.get('locale', 'en')
+                if captain not in (0, 1) or locale not in ('pl', 'en'):
+                    raise ValueError('Invalid player metadata')
+                captains[team] += captain
+                if captain and names[str(team)] != player['name']+' team':
+                    raise ValueError('Captain label mismatch')
+                row += f" {int(bot)} {captain} {locale} {AmxxAdapter.label(player['name'], 48)}"
+            lines.append(row)
+        if teams != ({1: 1, 2: 0} if test and not full else {1: size, 2: size}):
             raise ValueError('Unbalanced roster')
+        if v2 and (not test or full) and captains != {1:1, 2:1}:
+            raise ValueError('Invalid captains')
+        if full and owner not in humans:
+            raise ValueError('Missing real test owner')
         return '\n'.join(lines) + '\n'
 
     def execute(self, command):
@@ -303,18 +357,29 @@ class AmxxAdapter(Get5Adapter):
             if active:
                 return
             p = command['payload']
+            if p['rules'].get('test_type') == 'full' and (status.get('full_test') is not True or status.get('assignment_contract') != 2):
+                raise RuntimeError('Full tests require controller 0.5.0')
             if p['rules'].get('test') is True and status.get('solo_test') is not True:
                 raise RuntimeError('Controller does not support solo tests')
             if p['match_id'] != match_id or int(p['generation']) != generation:
                 raise ValueError('Payload assignment mismatch')
             path = self.root / 'addons/amxmodx/configs/mq2' / (match_id + '-' + str(generation) + '.txt')
             path.parent.mkdir(parents=True, exist_ok=True)
-            content = self.build(p)
+            wire = p if status.get('assignment_contract') == 2 else {**p, 'contract_version': 1}
+            content = self.build(wire)
             if path.exists() and path.read_text(encoding='utf-8') != content:
                 raise RuntimeError('Immutable configuration conflict')
             with path.open('w', encoding='utf-8') as stream:
                 stream.write(content); stream.flush(); os.fsync(stream.fileno())
             self.rcon.command(f'mq2_load {match_id} {generation}')
+        elif command['type'] == 'finish_test':
+            reason = command.get('payload', {}).get('reason')
+            if reason not in ('test_admin', 'test_timeout', 'server_error') or not match_id.startswith('7e5700'):
+                raise ValueError('Invalid test ending')
+            if active == assignment and status.get('full_test') is True:
+                self.rcon.command('mq2_endtest ' + reason)
+            else:
+                raise RuntimeError('Test assignment is not active')
         elif command['type'] in ('abort', 'cleanup'):
             self.cleanup(command, status)
         else:

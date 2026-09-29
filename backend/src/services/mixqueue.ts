@@ -381,6 +381,7 @@ export async function mixqueueStatus(id: number) {
     key = keyFor(server);
   const executors = await runtime.list(),
     running = executors.get(key)?.running || false;
+  const nodeStatus = await mixqueueNodeStatus();
   const runtimeUpdateRequired = running && executors.get(key)?.image !== await mixqueueImage();
   let state: any = null;
   try {
@@ -435,7 +436,7 @@ export async function mixqueueStatus(id: number) {
   } catch {}
   return {
     supported,
-    node: await mixqueueNodeStatus(),
+    node: nodeStatus,
     configured: Boolean(assigned),
     enabled: assigned?.enabled || false,
     serverId: assigned?.serverId || null,
@@ -447,7 +448,7 @@ export async function mixqueueStatus(id: number) {
     rcon: fresh && state.rcon === true,
     journal: fresh && state.journal === true,
     heartbeat: fresh && state.heartbeat === true,
-    ready: fresh && state.ready === true && pluginInstalled && (profile.game !== 'cs16' || installedPluginVersion === MATCHBOT_VERSION) && !runtimeUpdateRequired,
+    ready: fresh && state.ready === true && pluginInstalled && (profile.game !== 'cs16' || installedPluginVersion === MATCHBOT_VERSION) && !runtimeUpdateRequired && nodeStatus.installed && !nodeStatus.updateAvailable,
     lastCheck: fresh ? state.checkedAt : null,
     error: errors.get(key) || (running ? null : supervisor.status(key).error),
     logs,

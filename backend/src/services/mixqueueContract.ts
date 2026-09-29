@@ -83,11 +83,13 @@ export function allowedMixqueueCommand(
   command: unknown,
   game: string,
 ): command is string {
-  if (typeof command !== "string" || command.length > 200) return false;
+  if (typeof command !== "string" || command.length > 200 || /[\x00-\x1f\x7f]/.test(command)) return false;
   return (
     ["mq2_status", "mq2_clear"].includes(command) ||
     (game === "cs16"
-      ? /^mq2_load [a-f0-9]{24} [1-9][0-9]{0,8}$/.test(command)
+      ? (/^mq2_load [a-f0-9]{24} [1-9][0-9]{0,8}$/.test(command)
+          || ["test_admin", "test_timeout", "match_finished", "not_roster", "no_match", "steam_timeout", "server_error"].some(reason => command === "mq2_clear " + reason)
+          || ["test_admin", "test_timeout", "server_error"].some(reason => command === "mq2_endtest " + reason))
       : /^get5_loadmatch addons\/sourcemod\/configs\/mq2\/[a-f0-9]{24}-[1-9][0-9]{0,8}\.json$/.test(
           command,
         ))

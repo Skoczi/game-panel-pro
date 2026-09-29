@@ -84,3 +84,13 @@ MatchBot CSCO 0.4.1 requires CSCO WWW 0.5.2 or newer for reconnect, abandon and 
 Use the same reviewed installation on an empty, stopped, unleased server. The versioned archive and production binary are independently pinned; 0.4.0 artifacts remain unchanged. Preserve private settings, unrelated plugins, journal, spool and generation. If an existing server.cfg overrides `mb_log_tag`, back up the file and update only that setting to `"CSCO.GG"` when requested. The installer does not replace operator configuration.
 
 The release is in `runtime/mixqueue/releases/0.4.1/`; full GPL sources are in `runtime/mixqueue/source-bundles/mixqueue2-cs16-0.4.1.zip`. Real Steam solo/reconnect and ten-player gameplay acceptance remain separate from installer/heartbeat checks. Public queues must remain disabled until acceptance; 0.4.1 does not claim to fix an unidentified client crash.
+
+## MatchBot and agent 0.5.0
+
+The universal node installer bundles controller and Python agent 0.5.0. It requires CSCO web 0.6.0 or later; ESERV does not deploy or downgrade that website. Published 0.4.0/0.4.1 controller packages remain immutable. The reviewed controller installation retains native backups, private bindings, plugin state and per-file recovery.
+
+Install/update the node runtime to build the new Python image, then recreate the assigned executor. Restarting a container based on the old image does not update Python. Readiness remains false while either the node image or executor requires an update. Keep each game empty and without an active lease for controller installation and its required game restart.
+
+Full tests require a fresh heartbeat with controller_version=0.5.0, assignment_contract=2, full_test=true, agent_version=0.5.0 and agent_protocol=2. All observation fields reach the signed CSCO poll unchanged. The broker accepts only the finite GoldSrc cleanup/end-test reason codes; it does not allow arbitrary RCON, extra arguments, separators or control characters. Runner scheduling, networking, mounts and secret storage are unchanged.
+
+Preserve original-hostname.txt along with existing assignment markers, journal, spool and generation. Never rewind databases/spools or delete recovery markers during rollback. Upstream isolated engine acceptance is bundled with the release; actual Steam 1+9/2+8, kick rendering and ten-person acceptance remain separate checks. Deployment must not enable public queues or delete test history.

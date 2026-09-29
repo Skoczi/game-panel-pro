@@ -51,8 +51,11 @@ test(
       const body = JSON.parse(raw);
       if (body.action === 'poll' && body.healthy) {
         assert.equal(body.observation.agent_protocol, 2);
+        assert.equal(body.observation.agent_version, '0.5.0');
+        assert.equal(body.observation.assignment_contract, 2);
+        assert.equal(body.observation.full_test, true);
         assert.equal(body.observation.controller, 'matchbot');
-        assert.equal(body.observation.controller_version, '0.4.0');
+        assert.equal(body.observation.controller_version, '0.5.0');
         assert.equal(body.observation.rules_ready, true);
         assert.equal(body.observation.solo_test, true);
       }
@@ -68,8 +71,11 @@ test(
       nodeId,
       async (a) => {
         const base = path.join(root, a.runtimeKey);
-        for (const name of ["config", "journal", "state", "broker"])
+        for (const name of ["config", "journal", "state", "broker"]) {
           await fs.mkdir(path.join(base, name), { recursive: true });
+          // Match production ownership for the unprivileged executor, including root-run CI.
+          await fs.chown(path.join(base, name), 1000, 1000);
+        }
         await fs.writeFile(
           path.join(base, "broker", "config.json"),
           JSON.stringify({
@@ -100,7 +106,7 @@ test(
             },
             async rcon(command) {
               assert.equal(command, "mq2_status");
-              return '{"bridge":1,"healthy":true,"idle":true,"controller":"matchbot","controller_version":"0.4.0","rules_ready":true,"solo_test":true}';
+              return '{"bridge":1,"healthy":true,"idle":true,"controller":"matchbot","controller_version":"0.5.0","assignment_contract":2,"full_test":true,"rules_ready":true,"solo_test":true}';
             },
           }),
         );

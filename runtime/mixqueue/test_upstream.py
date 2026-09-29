@@ -5,7 +5,7 @@ import tempfile
 import unittest
 from unittest.mock import Mock
 
-spec = importlib.util.spec_from_file_location('mq_agent', Path(__file__).with_name('mq_agent.py'))
+spec = importlib.util.spec_from_file_location('mq_agent', Path(__file__).parent / 'mq_agent.py')
 agent = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(agent)
 
@@ -172,5 +172,64 @@ class CleanupTests(unittest.TestCase):
                 self.assertEqual([1,2], [e['sequence'] for e in events])
                 self.assertEqual(1, sum(c.args[0]=='mq2_clear' for c in a.rcon.command.call_args_list))
 
+
+class FullTestContract(unittest.TestCase):
+    def fixture(self):
+        p=payload('cs16');p.update(match_id='7e5700'+'c'*18,team_size=5,mode='5v5',contract_version=2)
+        p['rules'].update(mr=15,test=True,test_type='full');p['players']=[]
+        for t in (1,2):
+            for i in range(1,6):
+                human=t==1 and i==1
+                identity='76561198000000001' if human else 'bot:'+agent.hashlib.sha256(f"{p['match_id']}:{p['generation']}:{t}:{i}".encode()).hexdigest()[:24]
+                p['players'].append(dict(steam_id=identity,team=t,bot=not human,captain=int(i==1),locale='pl' if human else 'en',name='Żółć Captain' if human else f'Bot {t}-{i}'))
+        p['test_owner']='76561198000000001';p['teams']={'1':'Żółć Captain team','2':'Bot 2-1 team'}
+        return p
+
+    def test_v2_is_utf8_safe_and_roster_scoped(self):
+        p=self.fixture();wire=agent.AmxxAdapter.build(p)
+        self.assertTrue(wire.startswith('MQ2V2 '));self.assertEqual(12,len(wire.splitlines()))
+        self.assertNotIn('Żółć',wire);self.assertIn('Żółć Captain'.encode().hex(),wire)
+        p['players'][2]['steam_id']='bot:'+'a'*24
+        with self.assertRaises(ValueError):agent.AmxxAdapter.build(p)
+
+    def test_ranked_never_accepts_bots_and_owner_must_be_real(self):
+        p=self.fixture();p['rules']['test']=False
+        with self.assertRaises(ValueError):agent.AmxxAdapter.build(p)
+        p=self.fixture();p['test_owner']=p['players'][1]['steam_id']
+        with self.assertRaises(ValueError):agent.AmxxAdapter.build(p)
+        p=self.fixture();p['players'][0]['bot']=True
+        with self.assertRaises(ValueError):agent.AmxxAdapter.build(p)
+
+    def test_labels_and_locale_cannot_inject_commands(self):
+        for name in ['name;quit','x\nquit','a"b','a\\b','x'*49]:
+            p=self.fixture();p['players'][0]['name']=name;p['teams']['1']=name+' team'
+            with self.assertRaises(ValueError):agent.AmxxAdapter.build(p)
+        p=self.fixture();p['players'][0]['locale']='pl;quit'
+        with self.assertRaises(ValueError):agent.AmxxAdapter.build(p)
+        p=self.fixture();p['teams']['1']='Another captain team'
+        with self.assertRaises(ValueError):agent.AmxxAdapter.build(p)
+
+    def test_finish_requires_same_test_assignment_and_enum(self):
+        mid='7e5700'+'a'*18
+        command={'id':'end-1','match_id':mid,'generation':2,'type':'finish_test','payload':{'reason':'test_admin'}}
+        adapter=agent.AmxxAdapter.__new__(agent.AmxxAdapter)
+        adapter.status=Mock(return_value={'matchid':mid+':2','full_test':True})
+        adapter.rcon=Mock();adapter.execute(command)
+        adapter.rcon.command.assert_called_once_with('mq2_endtest test_admin')
+        adapter.status.return_value={'matchid':mid+':3','full_test':True}
+        with self.assertRaises(RuntimeError):adapter.execute(command)
+        adapter.status.return_value={'matchid':mid+':2','full_test':True}
+        with self.assertRaises(ValueError):adapter.execute({**command,'payload':{'reason':'test_admin;quit'}})
+        adapter.status.return_value={'matchid':'b'*24+':2','full_test':True}
+        with self.assertRaises(ValueError):adapter.execute({**command,'match_id':'b'*24})
+        self.assertEqual(adapter.rcon.command.call_count,1)
+
+    def test_clear_reason_is_enum_and_old_controller_is_compatible(self):
+        a=agent.AmxxAdapter.__new__(agent.AmxxAdapter)
+        command={'payload':{'reason':'test_admin'}}
+        self.assertEqual('mq2_clear test_admin',a.clear_command(command,{'assignment_contract':2}))
+        self.assertEqual('mq2_clear',a.clear_command(command,{}))
+        command['payload']['reason']='test_admin;quit'
+        with self.assertRaises(ValueError):a.clear_command(command,{'assignment_contract':2})
 
 if __name__ == '__main__': unittest.main(verbosity=2)
