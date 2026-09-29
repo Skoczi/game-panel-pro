@@ -82,6 +82,8 @@ class AgentTests(unittest.TestCase):
     def test_legacy_controller_cannot_receive_a_new_cs16_assignment(self):
         a = agent.AmxxAdapter.__new__(agent.AmxxAdapter)
         a.root = Path(tempfile.gettempdir()) / "mq2-nonexistent-test-root"
+        a.spool = agent.Spool(':memory:')
+        self.addCleanup(a.spool.db.close)
         a.rcon = Mock()
         a.rcon.command.return_value = json.dumps({'bridge':1,'healthy':True,'idle':True,'matchid':'','solo_test':True,'controller_version':'0.3.0'})
         p = payload('cs16')
@@ -183,14 +185,14 @@ class FullTestContract(unittest.TestCase):
             for i in range(1,6):
                 human=t==1 and i==1
                 identity='76561198000000001' if human else 'bot:'+agent.hashlib.sha256(f"{p['match_id']}:{p['generation']}:{t}:{i}".encode()).hexdigest()[:24]
-                p['players'].append(dict(steam_id=identity,team=t,bot=not human,captain=int(i==1),locale='pl' if human else 'en',name='Żółć Captain' if human else f'Bot {t}-{i}'))
-        p['test_owner']='76561198000000001';p['teams']={'1':'Żółć Captain team','2':'Bot 2-1 team'}
+                p['players'].append(dict(steam_id=identity,team=t,bot=not human,captain=int(i==1),locale='pl' if human else 'en',name='Å»Ã³Å‚Ä‡ Captain' if human else f'Bot {t}-{i}'))
+        p['test_owner']='76561198000000001';p['teams']={'1':'Å»Ã³Å‚Ä‡ Captain team','2':'Bot 2-1 team'}
         return p
 
     def test_v2_is_utf8_safe_and_roster_scoped(self):
         p=self.fixture();wire=agent.AmxxAdapter.build(p)
         self.assertTrue(wire.startswith('MQ2V2 '));self.assertEqual(12,len(wire.splitlines()))
-        self.assertNotIn('Żółć',wire);self.assertIn('Żółć Captain'.encode().hex(),wire)
+        self.assertNotIn('Å»Ã³Å‚Ä‡',wire);self.assertIn('Å»Ã³Å‚Ä‡ Captain'.encode().hex(),wire)
         p['players'][2]['steam_id']='bot:'+'a'*24
         with self.assertRaises(ValueError):agent.AmxxAdapter.build(p)
 

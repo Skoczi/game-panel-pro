@@ -59,12 +59,19 @@ test(
       if (body.action === 'event') rejected.push({id, event: body.event});
       if (body.action === 'poll' && body.healthy) {
         assert.equal(body.observation.agent_protocol, 2);
-        assert.equal(body.observation.agent_version, '0.5.1');
-        assert.equal(body.observation.assignment_contract, 2);
+        assert.equal(body.observation.agent_version, '0.6.0');
+        assert.equal(body.observation.assignment_contract, 3);
         assert.equal(body.observation.full_test, true);
         assert.equal(body.observation.controller, 'matchbot');
-        assert.equal(body.observation.controller_version, '0.5.1');
+        assert.equal(body.observation.controller_version, '0.6.1');
         assert.equal(body.observation.rules_ready, true);
+        assert.equal(body.observation.stats_version, 2);
+        assert.equal(body.observation.pause_policy, 2);
+        assert.equal(body.observation.reconnect_budget, 1);
+        assert.equal(body.observation.tactical_limit, 3);
+        assert.equal(body.observation.tactical_seconds, 30);
+        assert.equal(body.observation.ready_seconds, 300);
+        assert.equal(typeof body.observation.delivery.pending, 'number');
         assert.equal(body.observation.solo_test, true);
       }
       requests.push({ id, action: body.action, healthy: body.healthy });
@@ -116,7 +123,8 @@ test(
             async rcon(command) {
               assert.equal(command, "mq2_status");
               return JSON.stringify({bridge: 1, healthy: a.runtimeKey !== keys[0] || firstControllerHealthy,
-                idle: true, controller: 'matchbot', controller_version: '0.5.1', assignment_contract: 2,
+                idle: true, controller: 'matchbot', controller_version: '0.6.1', assignment_contract: 3, stats_version: 2,
+                pause_policy: 2, reconnect_budget: 1, tactical_limit: 3, tactical_seconds: 30, ready_seconds: 300,
                 full_test: true, rules_ready: true, solo_test: true});
             },
           }),
@@ -201,6 +209,16 @@ test(
     await until(async () => rejected.length === 2);
     assert.equal(rejected[1].event.type, 'idle');
     assert.equal(rejected[1].event.sequence, 2);
+    // The controller owns this deadline; broker/runner must not recalculate or project it away.
+    const readyDeadline = Math.floor(Date.now() / 1000) + 300;
+    const loaded = {map: 'de_nuke', ready_deadline: readyDeadline};
+    await fs.appendFile(path.join(root, keys[0], 'journal', 'events.jsonl'), JSON.stringify({
+      event_id: 'fixture-loaded-v3', match_id: command.match_id, generation: 2, type: 'loaded', data: loaded,
+    }) + '\n');
+    await until(async () => rejected.length === 3);
+    assert.equal(rejected[2].event.type, 'loaded');
+    assert.equal(rejected[2].event.sequence, 3);
+    assert.deepEqual(rejected[2].event.data, loaded);
     firstControllerHealthy = true;
     await fs.rm(path.join(root, keys[0], 'maps', 'de_nuke.bsp'));
     await until(async () => observations.get(keys[0]).map_inventory.maps.length === 0);
