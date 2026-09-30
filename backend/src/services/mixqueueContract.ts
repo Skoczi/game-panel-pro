@@ -25,6 +25,45 @@ export function validMixqueueReport(body: any): boolean {
   }
   return true;
 }
+const MAX_OBSERVER_REVISION = 2147483647;
+const object = (value: any): value is Record<string, any> =>
+  value !== null && typeof value === 'object' && !Array.isArray(value);
+const positiveRevision = (value: unknown): value is number =>
+  typeof value === 'number' && Number.isInteger(value) && value > 0 && value <= MAX_OBSERVER_REVISION;
+
+/** An observer snapshot grants no paths, destinations or console capabilities. */
+export function validMixqueueObserverUpdate(command: any, now = Math.floor(Date.now() / 1000)): boolean {
+  if (!object(command) || command.type !== 'observer_update'
+    || typeof command.match_id !== 'string' || command.match_id.length !== 24 || !/^[a-f0-9]{24}$/.test(command.match_id)
+    || !positiveRevision(command.generation)) return false;
+  const payload = command.payload;
+  if (!object(payload) || Object.keys(payload).some(key => !['version', 'revision', 'expires_at', 'observers'].includes(key))
+    || payload.version !== 1 || !positiveRevision(payload.revision)
+    || !Number.isSafeInteger(payload.expires_at) || payload.expires_at <= now || payload.expires_at > now + 600
+    || !Array.isArray(payload.observers) || payload.observers.length > 16
+    || Buffer.byteLength(JSON.stringify(payload), 'utf8') > 8192) return false;
+  const seen = new Set<string>();
+  for (const observer of payload.observers) {
+    if (!object(observer) || Object.keys(observer).some(key => !['steam_id', 'role', 'xray', 'expires_at', 'locale'].includes(key))
+      || typeof observer.steam_id !== 'string' || observer.steam_id.length !== 17 || !/^[0-9]{17}$/.test(observer.steam_id)
+      || seen.has(observer.steam_id) || !['admin', 'commentator'].includes(observer.role)
+      || typeof observer.xray !== 'boolean' || !['pl', 'en'].includes(observer.locale)
+      || !Number.isSafeInteger(observer.expires_at) || observer.expires_at <= now
+      || observer.expires_at > payload.expires_at) return false;
+    const accountId = BigInt(observer.steam_id) - 76561197960265728n;
+    if (accountId <= 0n || accountId > 4294967295n) return false;
+    seen.add(observer.steam_id);
+  }
+  return true;
+}
+
+/** Invalid optional ACL updates must never prevent a later abort/cleanup. */
+export function filterMixqueueObserverUpdates(response: any, game: string, now = Math.floor(Date.now() / 1000)): any {
+  if (!object(response) || !Array.isArray(response.commands)) return response;
+  return {...response, commands: response.commands.filter((command: any) =>
+    command?.type !== 'observer_update' || (game === 'cs16' && validMixqueueObserverUpdate(command, now)))};
+}
+
 export function validateMixqueueImport(input: unknown, game: string) {
   const value = input as any;
   if (
@@ -112,6 +151,10 @@ export function allowedMixqueueCommand(
     ["mq2_status", "mq2_clear"].includes(command) ||
     (game === "cs16"
       ? (/^mq2_load [a-f0-9]{24} [1-9][0-9]{0,8}$/.test(command)
+          || (() => {
+            const observer = /^mq2_observers ([a-f0-9]{24}) ([1-9][0-9]{0,9}) ([1-9][0-9]{0,9})$/.exec(command);
+            return observer !== null && positiveRevision(Number(observer[2])) && positiveRevision(Number(observer[3]));
+          })()
           || ["test_admin", "test_timeout", "match_finished", "not_roster", "no_match", "steam_timeout", "server_error"].some(reason => command === "mq2_clear " + reason)
           || ["test_admin", "test_timeout", "server_error"].some(reason => command === "mq2_endtest " + reason))
       : /^get5_loadmatch addons\/sourcemod\/configs\/mq2\/[a-f0-9]{24}-[1-9][0-9]{0,8}\.json$/.test(

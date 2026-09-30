@@ -1,0 +1,13 @@
+Native 0.6.5 final unit evidence: C++11, ASan + UBSan, -Wall -Wextra -Werror
+UTC 2026-09-29T23:44:54Z
+g++ (Debian 14.2.0-19) 14.2.0
+6b9c588544bc3aa1088c081ff1e4615ba500d922b6d589d5db190424b2f76ee0  games/cs16/matchbot/MatchBot/MatchCSCOObservers.h
+d09253a94080738a1a5752da535c8e32321d994362fe0860c88044c164a4aad3  games/cs16/matchbot/MatchBot/MatchCSCOObserverProjection.h
+77fd0e98872eda765cfd1afd437b83ba7cf8dc3c91358f9835ea190bd4e798d6  games/cs16/matchbot/MatchBot/MatchCSCOObserverFile.h
+8c9f8cdc76609f25d8034d129f756a92cf4b1b5eda23e0b33c7896336a620c58  tests/cs16_observers_test.cpp
+65781c00ba727ff87b59a4e750383e8584e4da8e8defbc7ef1888af1070a4e2b  tests/cs16_observer_projection_test.cpp
+69b4a61af9e728c746b65f1e8a7d98ff327ed7d88e5c105289303e5c1d78a025  tests/cs16_observer_file_test.cpp
+observer contracts: identities, roster precedence, roles, expiry, replay, revocation and scope passed
+PASS observer marker projection: forward/side/yaw/pitch/roll, radial depth, stable angular size, backward/near-plane/invalid rejection, GoldSrc wire-coordinate bounds; no renderer or Steam acceptance implied
+PASS observer reader: bounded regular file, exact8192, oversized, FIFO nonblocking, symlink, directory and missing-file rejection
+PASS all three final native unit suites; no Steam/render acceptance implied

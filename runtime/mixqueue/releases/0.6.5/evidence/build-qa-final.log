@@ -1,0 +1,231 @@
+g++ -I. -Iinclude/cssdk/common -Iinclude/cssdk/dlls -Iinclude/cssdk/engine -Iinclude/cssdk/game_shared -Iinclude/cssdk/pm_shared -Iinclude/cssdk/public -Iinclude/metamod -std=c++11 -m32 -O2 -fPIC -fno-strict-aliasing -Wall -Wextra -Wno-unused-parameter -Wno-switch -Wno-unknown-pragmas -Wno-sign-compare -Dlinux -D__linux__ -D_GLIBCXX_USE_CXX11_ABI=0 -fvisibility=hidden -fvisibility-inlines-hidden -mstackrealign -DMQ2_QA -g -fno-omit-frame-pointer -MMD -MP -c MatchAdmin.cpp -o QA/MatchAdmin.o
+g++ -I. -Iinclude/cssdk/common -Iinclude/cssdk/dlls -Iinclude/cssdk/engine -Iinclude/cssdk/game_shared -Iinclude/cssdk/pm_shared -Iinclude/cssdk/public -Iinclude/metamod -std=c++11 -m32 -O2 -fPIC -fno-strict-aliasing -Wall -Wextra -Wno-unused-parameter -Wno-switch -Wno-unknown-pragmas -Wno-sign-compare -Dlinux -D__linux__ -D_GLIBCXX_USE_CXX11_ABI=0 -fvisibility=hidden -fvisibility-inlines-hidden -mstackrealign -DMQ2_QA -g -fno-omit-frame-pointer -MMD -MP -c MatchAdminMenu.cpp -o QA/MatchAdminMenu.o
+g++ -I. -Iinclude/cssdk/common -Iinclude/cssdk/dlls -Iinclude/cssdk/engine -Iinclude/cssdk/game_shared -Iinclude/cssdk/pm_shared -Iinclude/cssdk/public -Iinclude/metamod -std=c++11 -m32 -O2 -fPIC -fno-strict-aliasing -Wall -Wextra -Wno-unused-parameter -Wno-switch -Wno-unknown-pragmas -Wno-sign-compare -Dlinux -D__linux__ -D_GLIBCXX_USE_CXX11_ABI=0 -fvisibility=hidden -fvisibility-inlines-hidden -mstackrealign -DMQ2_QA -g -fno-omit-frame-pointer -MMD -MP -c MatchBot.cpp -o QA/MatchBot.o
+g++ -I. -Iinclude/cssdk/common -Iinclude/cssdk/dlls -Iinclude/cssdk/engine -Iinclude/cssdk/game_shared -Iinclude/cssdk/pm_shared -Iinclude/cssdk/public -Iinclude/metamod -std=c++11 -m32 -O2 -fPIC -fno-strict-aliasing -Wall -Wextra -Wno-unused-parameter -Wno-switch -Wno-unknown-pragmas -Wno-sign-compare -Dlinux -D__linux__ -D_GLIBCXX_USE_CXX11_ABI=0 -fvisibility=hidden -fvisibility-inlines-hidden -mstackrealign -DMQ2_QA -g -fno-omit-frame-pointer -MMD -MP -c MatchBugFix.cpp -o QA/MatchBugFix.o
+g++ -I. -Iinclude/cssdk/common -Iinclude/cssdk/dlls -Iinclude/cssdk/engine -Iinclude/cssdk/game_shared -Iinclude/cssdk/pm_shared -Iinclude/cssdk/public -Iinclude/metamod -std=c++11 -m32 -O2 -fPIC -fno-strict-aliasing -Wall -Wextra -Wno-unused-parameter -Wno-switch -Wno-unknown-pragmas -Wno-sign-compare -Dlinux -D__linux__ -D_GLIBCXX_USE_CXX11_ABI=0 -fvisibility=hidden -fvisibility-inlines-hidden -mstackrealign -DMQ2_QA -g -fno-omit-frame-pointer -MMD -MP -c MatchCSCO.cpp -o QA/MatchCSCO.o
+g++ -I. -Iinclude/cssdk/common -Iinclude/cssdk/dlls -Iinclude/cssdk/engine -Iinclude/cssdk/game_shared -Iinclude/cssdk/pm_shared -Iinclude/cssdk/public -Iinclude/metamod -std=c++11 -m32 -O2 -fPIC -fno-strict-aliasing -Wall -Wextra -Wno-unused-parameter -Wno-switch -Wno-unknown-pragmas -Wno-sign-compare -Dlinux -D__linux__ -D_GLIBCXX_USE_CXX11_ABI=0 -fvisibility=hidden -fvisibility-inlines-hidden -mstackrealign -DMQ2_QA -g -fno-omit-frame-pointer -MMD -MP -c MatchCSCOActivity.cpp -o QA/MatchCSCOActivity.o
+g++ -I. -Iinclude/cssdk/common -Iinclude/cssdk/dlls -Iinclude/cssdk/engine -Iinclude/cssdk/game_shared -Iinclude/cssdk/pm_shared -Iinclude/cssdk/public -Iinclude/metamod -std=c++11 -m32 -O2 -fPIC -fno-strict-aliasing -Wall -Wextra -Wno-unused-parameter -Wno-switch -Wno-unknown-pragmas -Wno-sign-compare -Dlinux -D__linux__ -D_GLIBCXX_USE_CXX11_ABI=0 -fvisibility=hidden -fvisibility-inlines-hidden -mstackrealign -DMQ2_QA -g -fno-omit-frame-pointer -MMD -MP -c MatchCSCOFeedback.cpp -o QA/MatchCSCOFeedback.o
+g++ -I. -Iinclude/cssdk/common -Iinclude/cssdk/dlls -Iinclude/cssdk/engine -Iinclude/cssdk/game_shared -Iinclude/cssdk/pm_shared -Iinclude/cssdk/public -Iinclude/metamod -std=c++11 -m32 -O2 -fPIC -fno-strict-aliasing -Wall -Wextra -Wno-unused-parameter -Wno-switch -Wno-unknown-pragmas -Wno-sign-compare -Dlinux -D__linux__ -D_GLIBCXX_USE_CXX11_ABI=0 -fvisibility=hidden -fvisibility-inlines-hidden -mstackrealign -DMQ2_QA -g -fno-omit-frame-pointer -MMD -MP -c MatchCSCOObservers.cpp -o QA/MatchCSCOObservers.o
+MatchCSCOActivity.cpp: In member function 'void CMatchCSCO::ActivityBegin()':
+MatchCSCOActivity.cpp:11:61: warning: implicitly-declared 'Vector& Vector::operator=(const Vector&)' is deprecated [-Wdeprecated-copy]
+   11 |             activityTrack[i]=true;activityOrigin[i]=p->pev->origin;activityAngles[i]=p->pev->v_angle;
+      |                                                             ^~~~~~
+In file included from include/cssdk/dlls/extdll.h:68,
+                 from precompiled.h:38,
+                 from MatchCSCOActivity.cpp:2:
+include/cssdk/dlls/vector.h:96:16: note: because 'Vector' has user-provided 'Vector::Vector(const Vector&)'
+   96 |         inline Vector(const Vector &v) { *(int*)&x = *(int*)&v.x; *(int*)&y = *(int*)&v.y; *(int*)&z = *(int*)&v.z; }
+      |                ^~~~~~
+MatchCSCOActivity.cpp:11:94: warning: implicitly-declared 'Vector& Vector::operator=(const Vector&)' is deprecated [-Wdeprecated-copy]
+   11 |             activityTrack[i]=true;activityOrigin[i]=p->pev->origin;activityAngles[i]=p->pev->v_angle;
+      |                                                                                              ^~~~~~~
+include/cssdk/dlls/vector.h:96:16: note: because 'Vector' has user-provided 'Vector::Vector(const Vector&)'
+   96 |         inline Vector(const Vector &v) { *(int*)&x = *(int*)&v.x; *(int*)&y = *(int*)&v.y; *(int*)&z = *(int*)&v.z; }
+      |                ^~~~~~
+g++ -I. -Iinclude/cssdk/common -Iinclude/cssdk/dlls -Iinclude/cssdk/engine -Iinclude/cssdk/game_shared -Iinclude/cssdk/pm_shared -Iinclude/cssdk/public -Iinclude/metamod -std=c++11 -m32 -O2 -fPIC -fno-strict-aliasing -Wall -Wextra -Wno-unused-parameter -Wno-switch -Wno-unknown-pragmas -Wno-sign-compare -Dlinux -D__linux__ -D_GLIBCXX_USE_CXX11_ABI=0 -fvisibility=hidden -fvisibility-inlines-hidden -mstackrealign -DMQ2_QA -g -fno-omit-frame-pointer -MMD -MP -c MatchCaptain.cpp -o QA/MatchCaptain.o
+g++ -I. -Iinclude/cssdk/common -Iinclude/cssdk/dlls -Iinclude/cssdk/engine -Iinclude/cssdk/game_shared -Iinclude/cssdk/pm_shared -Iinclude/cssdk/public -Iinclude/metamod -std=c++11 -m32 -O2 -fPIC -fno-strict-aliasing -Wall -Wextra -Wno-unused-parameter -Wno-switch -Wno-unknown-pragmas -Wno-sign-compare -Dlinux -D__linux__ -D_GLIBCXX_USE_CXX11_ABI=0 -fvisibility=hidden -fvisibility-inlines-hidden -mstackrealign -DMQ2_QA -g -fno-omit-frame-pointer -MMD -MP -c MatchChangeMap.cpp -o QA/MatchChangeMap.o
+g++ -I. -Iinclude/cssdk/common -Iinclude/cssdk/dlls -Iinclude/cssdk/engine -Iinclude/cssdk/game_shared -Iinclude/cssdk/pm_shared -Iinclude/cssdk/public -Iinclude/metamod -std=c++11 -m32 -O2 -fPIC -fno-strict-aliasing -Wall -Wextra -Wno-unused-parameter -Wno-switch -Wno-unknown-pragmas -Wno-sign-compare -Dlinux -D__linux__ -D_GLIBCXX_USE_CXX11_ABI=0 -fvisibility=hidden -fvisibility-inlines-hidden -mstackrealign -DMQ2_QA -g -fno-omit-frame-pointer -MMD -MP -c MatchCommand.cpp -o QA/MatchCommand.o
+g++ -I. -Iinclude/cssdk/common -Iinclude/cssdk/dlls -Iinclude/cssdk/engine -Iinclude/cssdk/game_shared -Iinclude/cssdk/pm_shared -Iinclude/cssdk/public -Iinclude/metamod -std=c++11 -m32 -O2 -fPIC -fno-strict-aliasing -Wall -Wextra -Wno-unused-parameter -Wno-switch -Wno-unknown-pragmas -Wno-sign-compare -Dlinux -D__linux__ -D_GLIBCXX_USE_CXX11_ABI=0 -fvisibility=hidden -fvisibility-inlines-hidden -mstackrealign -DMQ2_QA -g -fno-omit-frame-pointer -MMD -MP -c MatchCvarMenu.cpp -o QA/MatchCvarMenu.o
+g++ -I. -Iinclude/cssdk/common -Iinclude/cssdk/dlls -Iinclude/cssdk/engine -Iinclude/cssdk/game_shared -Iinclude/cssdk/pm_shared -Iinclude/cssdk/public -Iinclude/metamod -std=c++11 -m32 -O2 -fPIC -fno-strict-aliasing -Wall -Wextra -Wno-unused-parameter -Wno-switch -Wno-unknown-pragmas -Wno-sign-compare -Dlinux -D__linux__ -D_GLIBCXX_USE_CXX11_ABI=0 -fvisibility=hidden -fvisibility-inlines-hidden -mstackrealign -DMQ2_QA -g -fno-omit-frame-pointer -MMD -MP -c MatchLO3.cpp -o QA/MatchLO3.o
+g++ -I. -Iinclude/cssdk/common -Iinclude/cssdk/dlls -Iinclude/cssdk/engine -Iinclude/cssdk/game_shared -Iinclude/cssdk/pm_shared -Iinclude/cssdk/public -Iinclude/metamod -std=c++11 -m32 -O2 -fPIC -fno-strict-aliasing -Wall -Wextra -Wno-unused-parameter -Wno-switch -Wno-unknown-pragmas -Wno-sign-compare -Dlinux -D__linux__ -D_GLIBCXX_USE_CXX11_ABI=0 -fvisibility=hidden -fvisibility-inlines-hidden -mstackrealign -DMQ2_QA -g -fno-omit-frame-pointer -MMD -MP -c MatchLanguage.cpp -o QA/MatchLanguage.o
+g++ -I. -Iinclude/cssdk/common -Iinclude/cssdk/dlls -Iinclude/cssdk/engine -Iinclude/cssdk/game_shared -Iinclude/cssdk/pm_shared -Iinclude/cssdk/public -Iinclude/metamod -std=c++11 -m32 -O2 -fPIC -fno-strict-aliasing -Wall -Wextra -Wno-unused-parameter -Wno-switch -Wno-unknown-pragmas -Wno-sign-compare -Dlinux -D__linux__ -D_GLIBCXX_USE_CXX11_ABI=0 -fvisibility=hidden -fvisibility-inlines-hidden -mstackrealign -DMQ2_QA -g -fno-omit-frame-pointer -MMD -MP -c MatchMenu.cpp -o QA/MatchMenu.o
+g++ -I. -Iinclude/cssdk/common -Iinclude/cssdk/dlls -Iinclude/cssdk/engine -Iinclude/cssdk/game_shared -Iinclude/cssdk/pm_shared -Iinclude/cssdk/public -Iinclude/metamod -std=c++11 -m32 -O2 -fPIC -fno-strict-aliasing -Wall -Wextra -Wno-unused-parameter -Wno-switch -Wno-unknown-pragmas -Wno-sign-compare -Dlinux -D__linux__ -D_GLIBCXX_USE_CXX11_ABI=0 -fvisibility=hidden -fvisibility-inlines-hidden -mstackrealign -DMQ2_QA -g -fno-omit-frame-pointer -MMD -MP -c MatchMessage.cpp -o QA/MatchMessage.o
+g++ -I. -Iinclude/cssdk/common -Iinclude/cssdk/dlls -Iinclude/cssdk/engine -Iinclude/cssdk/game_shared -Iinclude/cssdk/pm_shared -Iinclude/cssdk/public -Iinclude/metamod -std=c++11 -m32 -O2 -fPIC -fno-strict-aliasing -Wall -Wextra -Wno-unused-parameter -Wno-switch -Wno-unknown-pragmas -Wno-sign-compare -Dlinux -D__linux__ -D_GLIBCXX_USE_CXX11_ABI=0 -fvisibility=hidden -fvisibility-inlines-hidden -mstackrealign -DMQ2_QA -g -fno-omit-frame-pointer -MMD -MP -c MatchMute.cpp -o QA/MatchMute.o
+MatchMessage.cpp: In member function 'bool CMatchMessage::WriteByte(int)':
+MatchMessage.cpp:134:45: warning: missing initializer for member 'MESSAGE_PARAM_S::iValue' [-Wmissing-field-initializers]
+  134 |                 P_MESSAGE_PARAM Param = { 0 };
+      |                                             ^
+MatchMessage.cpp:134:45: warning: missing initializer for member 'MESSAGE_PARAM_S::flValue' [-Wmissing-field-initializers]
+MatchMessage.cpp:134:45: warning: missing initializer for member 'MESSAGE_PARAM_S::szValue' [-Wmissing-field-initializers]
+MatchMessage.cpp: In member function 'bool CMatchMessage::WriteChar(int)':
+MatchMessage.cpp:151:45: warning: missing initializer for member 'MESSAGE_PARAM_S::iValue' [-Wmissing-field-initializers]
+  151 |                 P_MESSAGE_PARAM Param = { 0 };
+      |                                             ^
+MatchMessage.cpp:151:45: warning: missing initializer for member 'MESSAGE_PARAM_S::flValue' [-Wmissing-field-initializers]
+MatchMessage.cpp:151:45: warning: missing initializer for member 'MESSAGE_PARAM_S::szValue' [-Wmissing-field-initializers]
+MatchMessage.cpp: In member function 'bool CMatchMessage::WriteShort(int)':
+MatchMessage.cpp:168:45: warning: missing initializer for member 'MESSAGE_PARAM_S::iValue' [-Wmissing-field-initializers]
+  168 |                 P_MESSAGE_PARAM Param = { 0 };
+      |                                             ^
+MatchMessage.cpp:168:45: warning: missing initializer for member 'MESSAGE_PARAM_S::flValue' [-Wmissing-field-initializers]
+MatchMessage.cpp:168:45: warning: missing initializer for member 'MESSAGE_PARAM_S::szValue' [-Wmissing-field-initializers]
+MatchMessage.cpp: In member function 'bool CMatchMessage::WriteLong(int)':
+MatchMessage.cpp:185:45: warning: missing initializer for member 'MESSAGE_PARAM_S::iValue' [-Wmissing-field-initializers]
+  185 |                 P_MESSAGE_PARAM Param = { 0 };
+      |                                             ^
+MatchMessage.cpp:185:45: warning: missing initializer for member 'MESSAGE_PARAM_S::flValue' [-Wmissing-field-initializers]
+MatchMessage.cpp:185:45: warning: missing initializer for member 'MESSAGE_PARAM_S::szValue' [-Wmissing-field-initializers]
+MatchMessage.cpp: In member function 'bool CMatchMessage::WriteAngle(float)':
+MatchMessage.cpp:202:45: warning: missing initializer for member 'MESSAGE_PARAM_S::iValue' [-Wmissing-field-initializers]
+  202 |                 P_MESSAGE_PARAM Param = { 0 };
+      |                                             ^
+MatchMessage.cpp:202:45: warning: missing initializer for member 'MESSAGE_PARAM_S::flValue' [-Wmissing-field-initializers]
+MatchMessage.cpp:202:45: warning: missing initializer for member 'MESSAGE_PARAM_S::szValue' [-Wmissing-field-initializers]
+MatchMessage.cpp: In member function 'bool CMatchMessage::WriteCoord(float)':
+MatchMessage.cpp:219:45: warning: missing initializer for member 'MESSAGE_PARAM_S::iValue' [-Wmissing-field-initializers]
+  219 |                 P_MESSAGE_PARAM Param = { 0 };
+      |                                             ^
+MatchMessage.cpp:219:45: warning: missing initializer for member 'MESSAGE_PARAM_S::flValue' [-Wmissing-field-initializers]
+MatchMessage.cpp:219:45: warning: missing initializer for member 'MESSAGE_PARAM_S::szValue' [-Wmissing-field-initializers]
+MatchMessage.cpp: In member function 'bool CMatchMessage::WriteString(const char*)':
+MatchMessage.cpp:236:45: warning: missing initializer for member 'MESSAGE_PARAM_S::iValue' [-Wmissing-field-initializers]
+  236 |                 P_MESSAGE_PARAM Param = { 0 };
+      |                                             ^
+MatchMessage.cpp:236:45: warning: missing initializer for member 'MESSAGE_PARAM_S::flValue' [-Wmissing-field-initializers]
+MatchMessage.cpp:236:45: warning: missing initializer for member 'MESSAGE_PARAM_S::szValue' [-Wmissing-field-initializers]
+MatchMessage.cpp: In member function 'bool CMatchMessage::WriteEntity(int)':
+MatchMessage.cpp:254:45: warning: missing initializer for member 'MESSAGE_PARAM_S::iValue' [-Wmissing-field-initializers]
+  254 |                 P_MESSAGE_PARAM Param = { 0 };
+      |                                             ^
+MatchMessage.cpp:254:45: warning: missing initializer for member 'MESSAGE_PARAM_S::flValue' [-Wmissing-field-initializers]
+MatchMessage.cpp:254:45: warning: missing initializer for member 'MESSAGE_PARAM_S::szValue' [-Wmissing-field-initializers]
+g++ -I. -Iinclude/cssdk/common -Iinclude/cssdk/dlls -Iinclude/cssdk/engine -Iinclude/cssdk/game_shared -Iinclude/cssdk/pm_shared -Iinclude/cssdk/public -Iinclude/metamod -std=c++11 -m32 -O2 -fPIC -fno-strict-aliasing -Wall -Wextra -Wno-unused-parameter -Wno-switch -Wno-unknown-pragmas -Wno-sign-compare -Dlinux -D__linux__ -D_GLIBCXX_USE_CXX11_ABI=0 -fvisibility=hidden -fvisibility-inlines-hidden -mstackrealign -DMQ2_QA -g -fno-omit-frame-pointer -MMD -MP -c MatchPause.cpp -o QA/MatchPause.o
+g++ -I. -Iinclude/cssdk/common -Iinclude/cssdk/dlls -Iinclude/cssdk/engine -Iinclude/cssdk/game_shared -Iinclude/cssdk/pm_shared -Iinclude/cssdk/public -Iinclude/metamod -std=c++11 -m32 -O2 -fPIC -fno-strict-aliasing -Wall -Wextra -Wno-unused-parameter -Wno-switch -Wno-unknown-pragmas -Wno-sign-compare -Dlinux -D__linux__ -D_GLIBCXX_USE_CXX11_ABI=0 -fvisibility=hidden -fvisibility-inlines-hidden -mstackrealign -DMQ2_QA -g -fno-omit-frame-pointer -MMD -MP -c MatchPlayer.cpp -o QA/MatchPlayer.o
+g++ -I. -Iinclude/cssdk/common -Iinclude/cssdk/dlls -Iinclude/cssdk/engine -Iinclude/cssdk/game_shared -Iinclude/cssdk/pm_shared -Iinclude/cssdk/public -Iinclude/metamod -std=c++11 -m32 -O2 -fPIC -fno-strict-aliasing -Wall -Wextra -Wno-unused-parameter -Wno-switch -Wno-unknown-pragmas -Wno-sign-compare -Dlinux -D__linux__ -D_GLIBCXX_USE_CXX11_ABI=0 -fvisibility=hidden -fvisibility-inlines-hidden -mstackrealign -DMQ2_QA -g -fno-omit-frame-pointer -MMD -MP -c MatchReady.cpp -o QA/MatchReady.o
+g++ -I. -Iinclude/cssdk/common -Iinclude/cssdk/dlls -Iinclude/cssdk/engine -Iinclude/cssdk/game_shared -Iinclude/cssdk/pm_shared -Iinclude/cssdk/public -Iinclude/metamod -std=c++11 -m32 -O2 -fPIC -fno-strict-aliasing -Wall -Wextra -Wno-unused-parameter -Wno-switch -Wno-unknown-pragmas -Wno-sign-compare -Dlinux -D__linux__ -D_GLIBCXX_USE_CXX11_ABI=0 -fvisibility=hidden -fvisibility-inlines-hidden -mstackrealign -DMQ2_QA -g -fno-omit-frame-pointer -MMD -MP -c MatchRestrictItem.cpp -o QA/MatchRestrictItem.o
+g++ -I. -Iinclude/cssdk/common -Iinclude/cssdk/dlls -Iinclude/cssdk/engine -Iinclude/cssdk/game_shared -Iinclude/cssdk/pm_shared -Iinclude/cssdk/public -Iinclude/metamod -std=c++11 -m32 -O2 -fPIC -fno-strict-aliasing -Wall -Wextra -Wno-unused-parameter -Wno-switch -Wno-unknown-pragmas -Wno-sign-compare -Dlinux -D__linux__ -D_GLIBCXX_USE_CXX11_ABI=0 -fvisibility=hidden -fvisibility-inlines-hidden -mstackrealign -DMQ2_QA -g -fno-omit-frame-pointer -MMD -MP -c MatchRetry.cpp -o QA/MatchRetry.o
+g++ -I. -Iinclude/cssdk/common -Iinclude/cssdk/dlls -Iinclude/cssdk/engine -Iinclude/cssdk/game_shared -Iinclude/cssdk/pm_shared -Iinclude/cssdk/public -Iinclude/metamod -std=c++11 -m32 -O2 -fPIC -fno-strict-aliasing -Wall -Wextra -Wno-unused-parameter -Wno-switch -Wno-unknown-pragmas -Wno-sign-compare -Dlinux -D__linux__ -D_GLIBCXX_USE_CXX11_ABI=0 -fvisibility=hidden -fvisibility-inlines-hidden -mstackrealign -DMQ2_QA -g -fno-omit-frame-pointer -MMD -MP -c MatchRound.cpp -o QA/MatchRound.o
+g++ -I. -Iinclude/cssdk/common -Iinclude/cssdk/dlls -Iinclude/cssdk/engine -Iinclude/cssdk/game_shared -Iinclude/cssdk/pm_shared -Iinclude/cssdk/public -Iinclude/metamod -std=c++11 -m32 -O2 -fPIC -fno-strict-aliasing -Wall -Wextra -Wno-unused-parameter -Wno-switch -Wno-unknown-pragmas -Wno-sign-compare -Dlinux -D__linux__ -D_GLIBCXX_USE_CXX11_ABI=0 -fvisibility=hidden -fvisibility-inlines-hidden -mstackrealign -DMQ2_QA -g -fno-omit-frame-pointer -MMD -MP -c MatchStats.cpp -o QA/MatchStats.o
+g++ -I. -Iinclude/cssdk/common -Iinclude/cssdk/dlls -Iinclude/cssdk/engine -Iinclude/cssdk/game_shared -Iinclude/cssdk/pm_shared -Iinclude/cssdk/public -Iinclude/metamod -std=c++11 -m32 -O2 -fPIC -fno-strict-aliasing -Wall -Wextra -Wno-unused-parameter -Wno-switch -Wno-unknown-pragmas -Wno-sign-compare -Dlinux -D__linux__ -D_GLIBCXX_USE_CXX11_ABI=0 -fvisibility=hidden -fvisibility-inlines-hidden -mstackrealign -DMQ2_QA -g -fno-omit-frame-pointer -MMD -MP -c MatchTask.cpp -o QA/MatchTask.o
+g++ -I. -Iinclude/cssdk/common -Iinclude/cssdk/dlls -Iinclude/cssdk/engine -Iinclude/cssdk/game_shared -Iinclude/cssdk/pm_shared -Iinclude/cssdk/public -Iinclude/metamod -std=c++11 -m32 -O2 -fPIC -fno-strict-aliasing -Wall -Wextra -Wno-unused-parameter -Wno-switch -Wno-unknown-pragmas -Wno-sign-compare -Dlinux -D__linux__ -D_GLIBCXX_USE_CXX11_ABI=0 -fvisibility=hidden -fvisibility-inlines-hidden -mstackrealign -DMQ2_QA -g -fno-omit-frame-pointer -MMD -MP -c MatchTimer.cpp -o QA/MatchTimer.o
+MatchStats.cpp: In member function 'void CMatchStats::RoundEvent(GameEventType, CBasePlayer*, CBasePlayer*)':
+MatchStats.cpp:634:73: warning: implicitly-declared 'Vector& Vector::operator=(const Vector&)' is deprecated [-Wdeprecated-copy]
+  634 |                                 Event.VictimOrigin = Victim->edict()->v.origin;
+      |                                                                         ^~~~~~
+In file included from include/cssdk/dlls/extdll.h:68,
+                 from precompiled.h:38,
+                 from MatchStats.cpp:1:
+include/cssdk/dlls/vector.h:96:16: note: because 'Vector' has user-provided 'Vector::Vector(const Vector&)'
+   96 |         inline Vector(const Vector &v) { *(int*)&x = *(int*)&v.x; *(int*)&y = *(int*)&v.y; *(int*)&z = *(int*)&v.z; }
+      |                ^~~~~~
+MatchStats.cpp:664:73: warning: implicitly-declared 'Vector& Vector::operator=(const Vector&)' is deprecated [-Wdeprecated-copy]
+  664 |                                 Event.KillerOrigin = Killer->edict()->v.origin;
+      |                                                                         ^~~~~~
+include/cssdk/dlls/vector.h:96:16: note: because 'Vector' has user-provided 'Vector::Vector(const Vector&)'
+   96 |         inline Vector(const Vector &v) { *(int*)&x = *(int*)&v.x; *(int*)&y = *(int*)&v.y; *(int*)&z = *(int*)&v.z; }
+      |                ^~~~~~
+MatchStats.cpp:692:73: warning: implicitly-declared 'Vector& Vector::operator=(const Vector&)' is deprecated [-Wdeprecated-copy]
+  692 |                                 Event.KillerOrigin = Killer->edict()->v.origin;
+      |                                                                         ^~~~~~
+include/cssdk/dlls/vector.h:96:16: note: because 'Vector' has user-provided 'Vector::Vector(const Vector&)'
+   96 |         inline Vector(const Vector &v) { *(int*)&x = *(int*)&v.x; *(int*)&y = *(int*)&v.y; *(int*)&z = *(int*)&v.z; }
+      |                ^~~~~~
+MatchStats.cpp:699:65: warning: implicitly-declared 'Vector& Vector::operator=(const Vector&)' is deprecated [-Wdeprecated-copy]
+  699 |                         Event.VictimOrigin = { 0.0f, 0.0f, 0.0f };
+      |                                                                 ^
+include/cssdk/dlls/vector.h:96:16: note: because 'Vector' has user-provided 'Vector::Vector(const Vector&)'
+   96 |         inline Vector(const Vector &v) { *(int*)&x = *(int*)&v.x; *(int*)&y = *(int*)&v.y; *(int*)&z = *(int*)&v.z; }
+      |                ^~~~~~
+MatchStats.cpp:721:65: warning: implicitly-declared 'Vector& Vector::operator=(const Vector&)' is deprecated [-Wdeprecated-copy]
+  721 |                         Event.KillerOrigin = { 0.0f, 0.0f, 0.0f };
+      |                                                                 ^
+include/cssdk/dlls/vector.h:96:16: note: because 'Vector' has user-provided 'Vector::Vector(const Vector&)'
+   96 |         inline Vector(const Vector &v) { *(int*)&x = *(int*)&v.x; *(int*)&y = *(int*)&v.y; *(int*)&z = *(int*)&v.z; }
+      |                ^~~~~~
+MatchStats.cpp:729:73: warning: implicitly-declared 'Vector& Vector::operator=(const Vector&)' is deprecated [-Wdeprecated-copy]
+  729 |                                 Event.VictimOrigin = Victim->edict()->v.origin;
+      |                                                                         ^~~~~~
+include/cssdk/dlls/vector.h:96:16: note: because 'Vector' has user-provided 'Vector::Vector(const Vector&)'
+   96 |         inline Vector(const Vector &v) { *(int*)&x = *(int*)&v.x; *(int*)&y = *(int*)&v.y; *(int*)&z = *(int*)&v.z; }
+      |                ^~~~~~
+MatchStats.cpp:754:73: warning: implicitly-declared 'Vector& Vector::operator=(const Vector&)' is deprecated [-Wdeprecated-copy]
+  754 |                                 Event.KillerOrigin = Killer->edict()->v.origin;
+      |                                                                         ^~~~~~
+include/cssdk/dlls/vector.h:96:16: note: because 'Vector' has user-provided 'Vector::Vector(const Vector&)'
+   96 |         inline Vector(const Vector &v) { *(int*)&x = *(int*)&v.x; *(int*)&y = *(int*)&v.y; *(int*)&z = *(int*)&v.z; }
+      |                ^~~~~~
+MatchStats.cpp:761:65: warning: implicitly-declared 'Vector& Vector::operator=(const Vector&)' is deprecated [-Wdeprecated-copy]
+  761 |                         Event.VictimOrigin = { 0.0f, 0.0f, 0.0f };
+      |                                                                 ^
+include/cssdk/dlls/vector.h:96:16: note: because 'Vector' has user-provided 'Vector::Vector(const Vector&)'
+   96 |         inline Vector(const Vector &v) { *(int*)&x = *(int*)&v.x; *(int*)&y = *(int*)&v.y; *(int*)&z = *(int*)&v.z; }
+      |                ^~~~~~
+MatchStats.cpp:786:73: warning: implicitly-declared 'Vector& Vector::operator=(const Vector&)' is deprecated [-Wdeprecated-copy]
+  786 |                                 Event.KillerOrigin = Killer->edict()->v.origin;
+      |                                                                         ^~~~~~
+include/cssdk/dlls/vector.h:96:16: note: because 'Vector' has user-provided 'Vector::Vector(const Vector&)'
+   96 |         inline Vector(const Vector &v) { *(int*)&x = *(int*)&v.x; *(int*)&y = *(int*)&v.y; *(int*)&z = *(int*)&v.z; }
+      |                ^~~~~~
+MatchStats.cpp:796:65: warning: implicitly-declared 'Vector& Vector::operator=(const Vector&)' is deprecated [-Wdeprecated-copy]
+  796 |                         Event.VictimOrigin = { 0.0f, 0.0f, 0.0f };
+      |                                                                 ^
+include/cssdk/dlls/vector.h:96:16: note: because 'Vector' has user-provided 'Vector::Vector(const Vector&)'
+   96 |         inline Vector(const Vector &v) { *(int*)&x = *(int*)&v.x; *(int*)&y = *(int*)&v.y; *(int*)&z = *(int*)&v.z; }
+      |                ^~~~~~
+MatchStats.cpp:820:73: warning: implicitly-declared 'Vector& Vector::operator=(const Vector&)' is deprecated [-Wdeprecated-copy]
+  820 |                                 Event.KillerOrigin = Killer->edict()->v.origin;
+      |                                                                         ^~~~~~
+include/cssdk/dlls/vector.h:96:16: note: because 'Vector' has user-provided 'Vector::Vector(const Vector&)'
+   96 |         inline Vector(const Vector &v) { *(int*)&x = *(int*)&v.x; *(int*)&y = *(int*)&v.y; *(int*)&z = *(int*)&v.z; }
+      |                ^~~~~~
+MatchStats.cpp:827:65: warning: implicitly-declared 'Vector& Vector::operator=(const Vector&)' is deprecated [-Wdeprecated-copy]
+  827 |                         Event.VictimOrigin = { 0.0f, 0.0f, 0.0f };
+      |                                                                 ^
+include/cssdk/dlls/vector.h:96:16: note: because 'Vector' has user-provided 'Vector::Vector(const Vector&)'
+   96 |         inline Vector(const Vector &v) { *(int*)&x = *(int*)&v.x; *(int*)&y = *(int*)&v.y; *(int*)&z = *(int*)&v.z; }
+      |                ^~~~~~
+MatchStats.cpp:860:65: warning: implicitly-declared 'Vector& Vector::operator=(const Vector&)' is deprecated [-Wdeprecated-copy]
+  860 |                         Event.KillerOrigin = { 0.0f, 0.0f, 0.0f };
+      |                                                                 ^
+include/cssdk/dlls/vector.h:96:16: note: because 'Vector' has user-provided 'Vector::Vector(const Vector&)'
+   96 |         inline Vector(const Vector &v) { *(int*)&x = *(int*)&v.x; *(int*)&y = *(int*)&v.y; *(int*)&z = *(int*)&v.z; }
+      |                ^~~~~~
+MatchStats.cpp:866:65: warning: implicitly-declared 'Vector& Vector::operator=(const Vector&)' is deprecated [-Wdeprecated-copy]
+  866 |                         Event.VictimOrigin = { 0.0f, 0.0f, 0.0f };
+      |                                                                 ^
+include/cssdk/dlls/vector.h:96:16: note: because 'Vector' has user-provided 'Vector::Vector(const Vector&)'
+   96 |         inline Vector(const Vector &v) { *(int*)&x = *(int*)&v.x; *(int*)&y = *(int*)&v.y; *(int*)&z = *(int*)&v.z; }
+      |                ^~~~~~
+MatchStats.cpp:890:65: warning: implicitly-declared 'Vector& Vector::operator=(const Vector&)' is deprecated [-Wdeprecated-copy]
+  890 |                         Event.KillerOrigin = { 0.0f, 0.0f, 0.0f };
+      |                                                                 ^
+include/cssdk/dlls/vector.h:96:16: note: because 'Vector' has user-provided 'Vector::Vector(const Vector&)'
+   96 |         inline Vector(const Vector &v) { *(int*)&x = *(int*)&v.x; *(int*)&y = *(int*)&v.y; *(int*)&z = *(int*)&v.z; }
+      |                ^~~~~~
+MatchStats.cpp:896:65: warning: implicitly-declared 'Vector& Vector::operator=(const Vector&)' is deprecated [-Wdeprecated-copy]
+  896 |                         Event.VictimOrigin = { 0.0f, 0.0f, 0.0f };
+      |                                                                 ^
+include/cssdk/dlls/vector.h:96:16: note: because 'Vector' has user-provided 'Vector::Vector(const Vector&)'
+   96 |         inline Vector(const Vector &v) { *(int*)&x = *(int*)&v.x; *(int*)&y = *(int*)&v.y; *(int*)&z = *(int*)&v.z; }
+      |                ^~~~~~
+g++ -I. -Iinclude/cssdk/common -Iinclude/cssdk/dlls -Iinclude/cssdk/engine -Iinclude/cssdk/game_shared -Iinclude/cssdk/pm_shared -Iinclude/cssdk/public -Iinclude/metamod -std=c++11 -m32 -O2 -fPIC -fno-strict-aliasing -Wall -Wextra -Wno-unused-parameter -Wno-switch -Wno-unknown-pragmas -Wno-sign-compare -Dlinux -D__linux__ -D_GLIBCXX_USE_CXX11_ABI=0 -fvisibility=hidden -fvisibility-inlines-hidden -mstackrealign -DMQ2_QA -g -fno-omit-frame-pointer -MMD -MP -c MatchUtil.cpp -o QA/MatchUtil.o
+g++ -I. -Iinclude/cssdk/common -Iinclude/cssdk/dlls -Iinclude/cssdk/engine -Iinclude/cssdk/game_shared -Iinclude/cssdk/pm_shared -Iinclude/cssdk/public -Iinclude/metamod -std=c++11 -m32 -O2 -fPIC -fno-strict-aliasing -Wall -Wextra -Wno-unused-parameter -Wno-switch -Wno-unknown-pragmas -Wno-sign-compare -Dlinux -D__linux__ -D_GLIBCXX_USE_CXX11_ABI=0 -fvisibility=hidden -fvisibility-inlines-hidden -mstackrealign -DMQ2_QA -g -fno-omit-frame-pointer -MMD -MP -c MatchVoteMap.cpp -o QA/MatchVoteMap.o
+g++ -I. -Iinclude/cssdk/common -Iinclude/cssdk/dlls -Iinclude/cssdk/engine -Iinclude/cssdk/game_shared -Iinclude/cssdk/pm_shared -Iinclude/cssdk/public -Iinclude/metamod -std=c++11 -m32 -O2 -fPIC -fno-strict-aliasing -Wall -Wextra -Wno-unused-parameter -Wno-switch -Wno-unknown-pragmas -Wno-sign-compare -Dlinux -D__linux__ -D_GLIBCXX_USE_CXX11_ABI=0 -fvisibility=hidden -fvisibility-inlines-hidden -mstackrealign -DMQ2_QA -g -fno-omit-frame-pointer -MMD -MP -c MatchVoteMenu.cpp -o QA/MatchVoteMenu.o
+MatchUtil.cpp: In member function 'int CMatchUtil::MakeDirectory(const char*)':
+MatchUtil.cpp:9:30: warning: missing initializer for member 'stat::__pad1' [-Wmissing-field-initializers]
+    9 |         struct stat st = { 0 };
+      |                              ^
+MatchUtil.cpp:9:30: warning: missing initializer for member 'stat::st_ino' [-Wmissing-field-initializers]
+MatchUtil.cpp:9:30: warning: missing initializer for member 'stat::st_mode' [-Wmissing-field-initializers]
+MatchUtil.cpp:9:30: warning: missing initializer for member 'stat::st_nlink' [-Wmissing-field-initializers]
+MatchUtil.cpp:9:30: warning: missing initializer for member 'stat::st_uid' [-Wmissing-field-initializers]
+MatchUtil.cpp:9:30: warning: missing initializer for member 'stat::st_gid' [-Wmissing-field-initializers]
+MatchUtil.cpp:9:30: warning: missing initializer for member 'stat::st_rdev' [-Wmissing-field-initializers]
+MatchUtil.cpp:9:30: warning: missing initializer for member 'stat::__pad2' [-Wmissing-field-initializers]
+MatchUtil.cpp:9:30: warning: missing initializer for member 'stat::st_size' [-Wmissing-field-initializers]
+MatchUtil.cpp:9:30: warning: missing initializer for member 'stat::st_blksize' [-Wmissing-field-initializers]
+MatchUtil.cpp:9:30: warning: missing initializer for member 'stat::st_blocks' [-Wmissing-field-initializers]
+MatchUtil.cpp:9:30: warning: missing initializer for member 'stat::st_atim' [-Wmissing-field-initializers]
+MatchUtil.cpp:9:30: warning: missing initializer for member 'stat::st_mtim' [-Wmissing-field-initializers]
+MatchUtil.cpp:9:30: warning: missing initializer for member 'stat::st_ctim' [-Wmissing-field-initializers]
+MatchUtil.cpp:9:30: warning: missing initializer for member 'stat::__glibc_reserved4' [-Wmissing-field-initializers]
+MatchUtil.cpp:9:30: warning: missing initializer for member 'stat::__glibc_reserved5' [-Wmissing-field-initializers]
+g++ -I. -Iinclude/cssdk/common -Iinclude/cssdk/dlls -Iinclude/cssdk/engine -Iinclude/cssdk/game_shared -Iinclude/cssdk/pm_shared -Iinclude/cssdk/public -Iinclude/metamod -std=c++11 -m32 -O2 -fPIC -fno-strict-aliasing -Wall -Wextra -Wno-unused-parameter -Wno-switch -Wno-unknown-pragmas -Wno-sign-compare -Dlinux -D__linux__ -D_GLIBCXX_USE_CXX11_ABI=0 -fvisibility=hidden -fvisibility-inlines-hidden -mstackrealign -DMQ2_QA -g -fno-omit-frame-pointer -MMD -MP -c MatchVoteOvertime.cpp -o QA/MatchVoteOvertime.o
+g++ -I. -Iinclude/cssdk/common -Iinclude/cssdk/dlls -Iinclude/cssdk/engine -Iinclude/cssdk/game_shared -Iinclude/cssdk/pm_shared -Iinclude/cssdk/public -Iinclude/metamod -std=c++11 -m32 -O2 -fPIC -fno-strict-aliasing -Wall -Wextra -Wno-unused-parameter -Wno-switch -Wno-unknown-pragmas -Wno-sign-compare -Dlinux -D__linux__ -D_GLIBCXX_USE_CXX11_ABI=0 -fvisibility=hidden -fvisibility-inlines-hidden -mstackrealign -DMQ2_QA -g -fno-omit-frame-pointer -MMD -MP -c MatchVoteSwapTeam.cpp -o QA/MatchVoteSwapTeam.o
+g++ -I. -Iinclude/cssdk/common -Iinclude/cssdk/dlls -Iinclude/cssdk/engine -Iinclude/cssdk/game_shared -Iinclude/cssdk/pm_shared -Iinclude/cssdk/public -Iinclude/metamod -std=c++11 -m32 -O2 -fPIC -fno-strict-aliasing -Wall -Wextra -Wno-unused-parameter -Wno-switch -Wno-unknown-pragmas -Wno-sign-compare -Dlinux -D__linux__ -D_GLIBCXX_USE_CXX11_ABI=0 -fvisibility=hidden -fvisibility-inlines-hidden -mstackrealign -DMQ2_QA -g -fno-omit-frame-pointer -MMD -MP -c MatchVoteTeam.cpp -o QA/MatchVoteTeam.o
+g++ -I. -Iinclude/cssdk/common -Iinclude/cssdk/dlls -Iinclude/cssdk/engine -Iinclude/cssdk/game_shared -Iinclude/cssdk/pm_shared -Iinclude/cssdk/public -Iinclude/metamod -std=c++11 -m32 -O2 -fPIC -fno-strict-aliasing -Wall -Wextra -Wno-unused-parameter -Wno-switch -Wno-unknown-pragmas -Wno-sign-compare -Dlinux -D__linux__ -D_GLIBCXX_USE_CXX11_ABI=0 -fvisibility=hidden -fvisibility-inlines-hidden -mstackrealign -DMQ2_QA -g -fno-omit-frame-pointer -MMD -MP -c MatchWarmup.cpp -o QA/MatchWarmup.o
+g++ -I. -Iinclude/cssdk/common -Iinclude/cssdk/dlls -Iinclude/cssdk/engine -Iinclude/cssdk/game_shared -Iinclude/cssdk/pm_shared -Iinclude/cssdk/public -Iinclude/metamod -std=c++11 -m32 -O2 -fPIC -fno-strict-aliasing -Wall -Wextra -Wno-unused-parameter -Wno-switch -Wno-unknown-pragmas -Wno-sign-compare -Dlinux -D__linux__ -D_GLIBCXX_USE_CXX11_ABI=0 -fvisibility=hidden -fvisibility-inlines-hidden -mstackrealign -DMQ2_QA -g -fno-omit-frame-pointer -MMD -MP -c MetaDLL.cpp -o QA/MetaDLL.o
+g++ -I. -Iinclude/cssdk/common -Iinclude/cssdk/dlls -Iinclude/cssdk/engine -Iinclude/cssdk/game_shared -Iinclude/cssdk/pm_shared -Iinclude/cssdk/public -Iinclude/metamod -std=c++11 -m32 -O2 -fPIC -fno-strict-aliasing -Wall -Wextra -Wno-unused-parameter -Wno-switch -Wno-unknown-pragmas -Wno-sign-compare -Dlinux -D__linux__ -D_GLIBCXX_USE_CXX11_ABI=0 -fvisibility=hidden -fvisibility-inlines-hidden -mstackrealign -DMQ2_QA -g -fno-omit-frame-pointer -MMD -MP -c MetaEngine.cpp -o QA/MetaEngine.o
+g++ -I. -Iinclude/cssdk/common -Iinclude/cssdk/dlls -Iinclude/cssdk/engine -Iinclude/cssdk/game_shared -Iinclude/cssdk/pm_shared -Iinclude/cssdk/public -Iinclude/metamod -std=c++11 -m32 -O2 -fPIC -fno-strict-aliasing -Wall -Wextra -Wno-unused-parameter -Wno-switch -Wno-unknown-pragmas -Wno-sign-compare -Dlinux -D__linux__ -D_GLIBCXX_USE_CXX11_ABI=0 -fvisibility=hidden -fvisibility-inlines-hidden -mstackrealign -DMQ2_QA -g -fno-omit-frame-pointer -MMD -MP -c MetaMod.cpp -o QA/MetaMod.o
+g++ -I. -Iinclude/cssdk/common -Iinclude/cssdk/dlls -Iinclude/cssdk/engine -Iinclude/cssdk/game_shared -Iinclude/cssdk/pm_shared -Iinclude/cssdk/public -Iinclude/metamod -std=c++11 -m32 -O2 -fPIC -fno-strict-aliasing -Wall -Wextra -Wno-unused-parameter -Wno-switch -Wno-unknown-pragmas -Wno-sign-compare -Dlinux -D__linux__ -D_GLIBCXX_USE_CXX11_ABI=0 -fvisibility=hidden -fvisibility-inlines-hidden -mstackrealign -DMQ2_QA -g -fno-omit-frame-pointer -MMD -MP -c ReAPI.cpp -o QA/ReAPI.o
+g++ -I. -Iinclude/cssdk/common -Iinclude/cssdk/dlls -Iinclude/cssdk/engine -Iinclude/cssdk/game_shared -Iinclude/cssdk/pm_shared -Iinclude/cssdk/public -Iinclude/metamod -std=c++11 -m32 -O2 -fPIC -fno-strict-aliasing -Wall -Wextra -Wno-unused-parameter -Wno-switch -Wno-unknown-pragmas -Wno-sign-compare -Dlinux -D__linux__ -D_GLIBCXX_USE_CXX11_ABI=0 -fvisibility=hidden -fvisibility-inlines-hidden -mstackrealign -DMQ2_QA -g -fno-omit-frame-pointer -MMD -MP -c ReGameDLL.cpp -o QA/ReGameDLL.o
+g++ -I. -Iinclude/cssdk/common -Iinclude/cssdk/dlls -Iinclude/cssdk/engine -Iinclude/cssdk/game_shared -Iinclude/cssdk/pm_shared -Iinclude/cssdk/public -Iinclude/metamod -std=c++11 -m32 -O2 -fPIC -fno-strict-aliasing -Wall -Wextra -Wno-unused-parameter -Wno-switch -Wno-unknown-pragmas -Wno-sign-compare -Dlinux -D__linux__ -D_GLIBCXX_USE_CXX11_ABI=0 -fvisibility=hidden -fvisibility-inlines-hidden -mstackrealign -DMQ2_QA -g -fno-omit-frame-pointer -MMD -MP -c precompiled.cpp -o QA/precompiled.o
+In file included from ReAPI.cpp:4:
+include/cssdk/public/interface.cpp: In function 'CSysModule* Sys_LoadModule(const char*)':
+include/cssdk/public/interface.cpp:172:46: warning: '%s' directive output may be truncated writing up to 1023 bytes into a region of size 512 [-Wformat-truncation=]
+  172 |                 _snprintf(str, sizeof(str), "%s.so", szAbsoluteModuleName);
+      |                                              ^~      ~~~~~~~~~~~~~~~~~~~~
+include/cssdk/public/interface.cpp:172:26: note: 'snprintf' output between 4 and 1027 bytes into a destination of size 512
+  172 |                 _snprintf(str, sizeof(str), "%s.so", szAbsoluteModuleName);
+g++ -m32 -shared -static-libstdc++ -static-libgcc -Wl,--exclude-libs,ALL -Wl,-Bsymbolic QA/MatchAdmin.o QA/MatchAdminMenu.o QA/MatchBot.o QA/MatchBugFix.o QA/MatchCSCO.o QA/MatchCSCOActivity.o QA/MatchCSCOFeedback.o QA/MatchCSCOObservers.o QA/MatchCaptain.o QA/MatchChangeMap.o QA/MatchCommand.o QA/MatchCvarMenu.o QA/MatchLO3.o QA/MatchLanguage.o QA/MatchMenu.o QA/MatchMessage.o QA/MatchMute.o QA/MatchPause.o QA/MatchPlayer.o QA/MatchReady.o QA/MatchRestrictItem.o QA/MatchRetry.o QA/MatchRound.o QA/MatchStats.o QA/MatchTask.o QA/MatchTimer.o QA/MatchUtil.o QA/MatchVoteMap.o QA/MatchVoteMenu.o QA/MatchVoteOvertime.o QA/MatchVoteSwapTeam.o QA/MatchVoteTeam.o QA/MatchWarmup.o QA/MetaDLL.o QA/MetaEngine.o QA/MetaMod.o QA/ReAPI.o QA/ReGameDLL.o QA/precompiled.o -o QA/matchbot_csco_qa_mm.so
+PASS: MatchBot CSCO Plugin_info.version=0.6.5 expected=0.6.5

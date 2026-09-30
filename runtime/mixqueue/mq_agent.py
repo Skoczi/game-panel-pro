@@ -153,7 +153,7 @@ class Get5Adapter:
         value = json.loads(raw)
         if value.get('bridge') != 1:
             raise RuntimeError('MixQueue2 SourceMod bridge is not installed')
-        return {**value, 'agent_protocol': 2, 'agent_version': '0.6.1', 'delivery': self.spool.metrics()}
+        return {**value, 'agent_protocol': 2, 'agent_version': '0.6.2', 'delivery': self.spool.metrics()}
 
     @staticmethod
     def cleanup_complete(status):
@@ -318,7 +318,138 @@ class AmxxAdapter(Get5Adapter):
         return result
 
     def status(self):
-        return {**super().status(), 'map_inventory': self.map_inventory()}
+        value = super().status()
+        # Native capabilities are passed through by older agents too. WWW must
+        # require this adapter capability in addition to the native ACL version.
+        return {**value, 'map_inventory': self.map_inventory(), 'observer_agent_version': 1}
+
+    @staticmethod
+    def build_observers(match_id, generation, payload, now=None):
+        now = int(time.time()) if now is None else now
+        if not isinstance(match_id, str) or not re.fullmatch(r'[a-f0-9]{24}', match_id):
+            raise ValueError('Invalid observer scope')
+        if type(generation) is not int or not 1 <= generation <= 2147483647:
+            raise ValueError('Invalid observer generation')
+        if not isinstance(payload, dict) or type(payload.get('version')) is not int or payload['version'] != 1:
+            raise ValueError('Invalid observer contract')
+        revision, until = payload.get('revision'), payload.get('expires_at')
+        if type(revision) is not int or not 1 <= revision <= 2147483647:
+            raise ValueError('Invalid observer revision')
+        if type(until) is not int or not now < until <= now + 600:
+            raise ValueError('Expired or unbounded observer lease')
+        observers = payload.get('observers')
+        if not isinstance(observers, list) or len(observers) > 16:
+            raise ValueError('Invalid observer list')
+        lines = [f'MQ2OBS1 {match_id} {generation} {revision} {until}']
+        seen = set()
+        for row in observers:
+            if not isinstance(row, dict):
+                raise ValueError('Invalid observer entry')
+            steam, role, xray = row.get('steam_id'), row.get('role'), row.get('xray')
+            expires, locale = row.get('expires_at'), row.get('locale')
+            if not isinstance(steam, str) or not re.fullmatch(r'\d{17}', steam):
+                raise ValueError('Invalid observer Steam identity')
+            if steam in seen or not 0 < int(steam) - 76561197960265728 <= 4294967295:
+                raise ValueError('Duplicate or out-of-range observer identity')
+            if role not in ('admin', 'commentator') or type(xray) is not bool or locale not in ('pl', 'en'):
+                raise ValueError('Invalid observer permissions')
+            if type(expires) is not int or not now < expires <= until:
+                raise ValueError('Invalid observer expiry')
+            seen.add(steam)
+            lines.append(f'{steam} {role} {int(xray)} {expires} {locale}')
+        return '\n'.join(lines) + '\n'
+
+    @staticmethod
+    def read_observer_snapshot(path):
+        """Read one bounded regular revision without following a replacement link."""
+        limit = 8192  # Same wire limit as the native observer parser.
+        before = path.lstat()
+        if not stat.S_ISREG(before.st_mode) or before.st_size > limit:
+            raise ValueError('Unsafe observer snapshot file')
+        flags = os.O_RDONLY | getattr(os, 'O_BINARY', 0)
+        flags |= getattr(os, 'O_NOFOLLOW', 0) | getattr(os, 'O_NONBLOCK', 0)
+        fd = os.open(path, flags)
+        try:
+            opened = os.fstat(fd)
+            # NOFOLLOW/NONBLOCK protect the POSIX open itself, including a FIFO
+            # substituted after lstat. Identity checks also cover platforms
+            # without those flags; never read a different inode or special file.
+            def identity(info):
+                # Windows path/handle stats can report different ctime values
+                # for the same hard link; device/inode still identify the file.
+                return (info.st_dev, info.st_ino, info.st_size, info.st_mtime_ns,
+                        info.st_ctime_ns if os.name != 'nt' else None)
+            if not stat.S_ISREG(opened.st_mode) or identity(before) != identity(opened):
+                raise ValueError('Unsafe observer snapshot file')
+            with os.fdopen(fd, 'rb', closefd=False) as stream:
+                content = stream.read(limit + 1)
+            current = path.lstat()
+            if (len(content) > limit or not stat.S_ISREG(current.st_mode)
+                    or identity(opened) != identity(os.fstat(fd))
+                    or identity(opened) != identity(current)):
+                raise ValueError('Observer snapshot changed during read')
+            return content
+        finally:
+            os.close(fd)
+
+    def update_observers(self, command, status):
+        match_id, generation = command['match_id'], int(command['generation'])
+        scope = match_id + ':' + str(generation)
+        if (status.get('healthy') is not True or status.get('matchid') != scope
+                or status.get('controller') != 'matchbot'
+                or type(status.get('observer_acl_version')) is not int
+                or status['observer_acl_version'] != 1):
+            raise RuntimeError('Observer update requires an active healthy capable controller')
+        payload = command.get('payload')
+        content = self.build_observers(match_id, generation, payload)
+        revision = payload['revision']
+        current = status.get('observer_revision', 0)
+        if type(current) is not int or current < 0:
+            raise RuntimeError('Invalid observer status')
+        if current > revision:
+            return  # Superseded command; never replay a revoked permission.
+        path = self.root / 'addons/amxmodx/configs/mq2' / f'{match_id}-{generation}-observers-{revision}.txt'
+        temporary = path.with_suffix('.' + uuid.uuid4().hex + '.next')
+        try:
+            path.parent.mkdir(parents=True, exist_ok=True)
+            try:
+                existing = self.read_observer_snapshot(path)
+            except FileNotFoundError:
+                existing = None
+            if existing is not None:
+                if existing != content.encode('utf-8'):
+                    raise ValueError('Immutable observer revision conflict')
+            else:
+                with temporary.open('x', encoding='utf-8', newline='\n') as stream:
+                    stream.write(content)
+                    stream.flush()
+                    os.fsync(stream.fileno())
+                # Link atomically without replacing a revision another runner
+                # may already have written. No fallback to destructive replace.
+                try:
+                    os.link(temporary, path)
+                except FileExistsError:
+                    if self.read_observer_snapshot(path) != content.encode('utf-8'):
+                        raise ValueError('Immutable observer revision conflict') from None
+                if os.name != 'nt':
+                    fd = os.open(path.parent, os.O_RDONLY | os.O_DIRECTORY)
+                    try:
+                        os.fsync(fd)
+                    finally:
+                        os.close(fd)
+            reply = self.rcon.command(f'mq2_observers {match_id} {generation} {revision}')
+            lines = [line.strip() for line in reply.splitlines() if line.strip()]
+            if any(line in ('observer_invalid', 'observer_stale', 'observer_scope', 'observer_storage') for line in lines):
+                raise RuntimeError('Controller rejected observer update')
+            if not any(line in ('observer_updated', 'observer_already_updated') for line in lines):
+                raise ConnectionError('Unconfirmed observer update')
+            observed = self.status()
+            if (observed.get('healthy') is not True or observed.get('matchid') != scope
+                    or observed.get('observer_revision') != revision
+                    or observed.get('observer_expires_at') != payload['expires_at']):
+                raise ConnectionError('Observer update not confirmed by controller status')
+        finally:
+            temporary.unlink(missing_ok=True)
 
     @classmethod
     def check_load_reply(cls, reply):
@@ -482,6 +613,8 @@ class AmxxAdapter(Get5Adapter):
                     pass
             self.check_load_reply(self.rcon.command(f'mq2_load {match_id} {generation}'))
             # Submission alone never emits loaded. Only the controller journal can.
+        elif command['type'] == 'observer_update':
+            self.update_observers(command, status)
         elif command['type'] == 'finish_test':
             reason = command.get('payload', {}).get('reason')
             if reason not in ('test_admin', 'test_timeout', 'server_error') or not match_id.startswith('7e5700'):
@@ -543,6 +676,15 @@ class Agent:
         ESERV must call this instead of adapter.execute to persist a safe refusal.
         A return is NOT a loaded acknowledgement; the journal remains authoritative.
         """
+        if command['type'] == 'observer_update':
+            try:
+                self.adapter.execute(command)
+            except Exception:
+                # Optional observer control must never block a later abort or
+                # cleanup in this poll/broker batch. WWW reconciles the native
+                # revision; returning here is deliberately NOT an ACL ack.
+                logging.warning('Observer update unconfirmed; controller status remains authoritative')
+            return
         rejection_id = 'load-rejected-' + command['id']
         if command['type'] == 'load' and self.spool.db.execute(
                 'SELECT 1 FROM events WHERE id=?', (rejection_id,)).fetchone():

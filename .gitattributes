@@ -5,3 +5,4 @@ runtime/mixqueue/releases/*/language.txt -text -diff
 runtime/mixqueue/releases/*/resources/bot-dependencies.json -text
 runtime/mixqueue/releases/0.6.3/** -text
 runtime/mixqueue/releases/0.6.4/** -text
+runtime/mixqueue/releases/0.6.5/** -text

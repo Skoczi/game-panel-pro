@@ -54,6 +54,7 @@ def cycle(agent):
         state['heartbeat'] = True
         for command in response['commands']:
             if healthy or command['type'] != 'load':
+                # dispatch contains optional observer failures so cleanup later in this batch still runs.
                 agent.dispatch(command, response.get('load_rejection_contract', 0))
         state['ready'] = healthy and state['idle']
     except Exception:

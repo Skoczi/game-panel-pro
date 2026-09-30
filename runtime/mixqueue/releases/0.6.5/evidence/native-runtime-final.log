@@ -1,0 +1,7 @@
+PASS live spectator routing; roster admin denied; both-team camera only for observer; ready/team/chat isolation; per-grant xray
+PASS observer exit/reconnect preserves score and roster connectivity; no disconnect pause; fresh session xray off
+PASS empty ACL revokes connected observers; stale revision denied; no reconnect pause
+PASS real observer ACL expiry fails closed and cannot be replayed
+PASS observer identities absent from participant statistics, penalties and connection journal
+PASS recovery clears observer grants and rejects updates
+PASS normal cleanup/idle; generation and journal retained; Steam rendering/authentication still requires acceptance

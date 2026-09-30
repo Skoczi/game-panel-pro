@@ -1,0 +1,2 @@
+PASS explicit failed-scope cleanup; history and generation retained before fresh run
+PASS cleanup-only: idle, no replacement assignment loaded

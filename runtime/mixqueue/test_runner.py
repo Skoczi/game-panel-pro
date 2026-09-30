@@ -52,20 +52,24 @@ class RunnerTests(unittest.TestCase):
         adapter = object.__new__(AmxxAdapter)
         adapter.root = Path('/unavailable-game-inventory')
         adapter.spool = SimpleNamespace(metrics=lambda: {'pending': 0, 'oldest_pending_seconds': None, 'database_bytes': 4096})
-        adapter.rcon = SimpleNamespace(command=lambda command: '{"bridge":1,"solo_test":true,"healthy":true,"idle":true,"controller":"matchbot","controller_version":"0.6.4","assignment_contract":3,"stats_version":2,"pause_policy":2,"ready_seconds":300,"full_test":true,"rules_ready":true}')
+        adapter.rcon = SimpleNamespace(command=lambda command: '{"bridge":1,"solo_test":true,"healthy":true,"idle":true,"controller":"matchbot","controller_version":"0.6.5","assignment_contract":3,"stats_version":2,"pause_policy":2,"ready_seconds":300,"full_test":true,"rules_ready":true,"observer_acl_version":1,"observer_revision":2,"observer_expires_at":1800000300,"observer_slots":2,"connected_observers":1,"observer_xray":"markers_v1"}')
         agent.adapter = adapter
         self.assertTrue(cycle(agent)['ready'])
         self.assertEqual(calls[-1]['observation']['agent_protocol'], 2)
         self.assertEqual(calls[-1]['observation']['controller'], 'matchbot')
         self.assertIs(calls[-1]['observation']['rules_ready'], True)
         self.assertIs(calls[-1]['observation']['solo_test'], True)
-        self.assertEqual(calls[-1]['observation']['controller_version'], '0.6.4')
-        self.assertEqual(calls[-1]['observation']['agent_version'], '0.6.1')
+        self.assertEqual(calls[-1]['observation']['controller_version'], '0.6.5')
+        self.assertEqual(calls[-1]['observation']['agent_version'], '0.6.2')
         self.assertEqual(calls[-1]['observation']['assignment_contract'], 3)
         self.assertIs(calls[-1]['observation']['full_test'], True)
         self.assertEqual(calls[-1]['observation']['stats_version'], 2)
         self.assertEqual(calls[-1]['observation']['pause_policy'], 2)
         self.assertEqual(calls[-1]['observation']['ready_seconds'], 300)
+        for key, value in {'observer_acl_version': 1, 'observer_agent_version': 1, 'observer_revision': 2,
+                           'observer_expires_at': 1800000300, 'observer_slots': 2,
+                           'connected_observers': 1, 'observer_xray': 'markers_v1'}.items():
+            self.assertEqual(calls[-1]['observation'][key], value)
         self.assertEqual(calls[-1]['observation']['delivery'], adapter.spool.metrics())
         self.assertEqual(calls[-1]['observation']['map_inventory'],
                          {'version': 1, 'source': 'bsp_v30', 'complete': False, 'maps': []})
@@ -86,6 +90,40 @@ class RunnerTests(unittest.TestCase):
                 expected = commands if healthy else commands[1:]
                 self.assertEqual([((command, 1),) for command in expected],
                                  [(call.args,) for call in agent.dispatch.call_args_list])
+
+    def test_real_dispatch_contains_optional_observer_failures_before_cleanup(self):
+        from mq_agent import Agent, Spool
+        from unittest.mock import Mock
+        for healthy in (True, False):
+            for failure in (ValueError('invalid ACL secret'), ConnectionError('RCON secret')):
+                with self.subTest(healthy=healthy, failure=type(failure).__name__), tempfile.TemporaryDirectory() as directory:
+                    journal = Path(directory) / 'events.jsonl'
+                    journal.write_text('')
+                    agent = object.__new__(Agent)
+                    agent.config = {'journal': str(journal), 'game': 'cs16'}
+                    agent.spool = Spool(str(Path(directory) / 'spool.sqlite'))
+                    commands = [
+                        {'id': 'a'*24, 'type': 'observer_update'},
+                        {'id': 'b'*24, 'type': 'cleanup'},
+                    ]
+                    executed = []
+                    def execute(command):
+                        executed.append(command)
+                        if command['type'] == 'observer_update':
+                            raise failure
+                    agent.adapter = SimpleNamespace(status=lambda: {'healthy': healthy, 'idle': False}, execute=execute)
+                    agent.send = Mock(return_value={'commands': commands, 'load_rejection_contract': 1})
+                    try:
+                        with self.assertLogs(level='WARNING') as logs:
+                            state = cycle(agent)
+                        self.assertEqual(executed, commands)
+                        self.assertTrue(state['heartbeat'])
+                        self.assertIsNone(state['error'])
+                        self.assertFalse(state['ready'])
+                        self.assertEqual(agent.spool.metrics()['pending'], 0)
+                        self.assertNotIn('secret', '\n'.join(logs.output))
+                    finally:
+                        agent.spool.db.close()
 
     def test_missing_contract_remains_unnegotiated(self):
         from unittest.mock import Mock
