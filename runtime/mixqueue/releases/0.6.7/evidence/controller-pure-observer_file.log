@@ -1,0 +1,4 @@
+Scope: local source pure tests only, no production build or deployment.
+Build exit: 0
+Run exit: 0
+PASS observer reader: bounded regular file, exact8192, oversized, FIFO nonblocking, symlink, directory and missing-file rejection

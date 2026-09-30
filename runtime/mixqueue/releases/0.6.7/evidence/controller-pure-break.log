@@ -1,0 +1,4 @@
+Scope: local source pure tests only, no production build or deployment.
+Build exit: 0
+Run exit: 0
+PASS scoped 20-second break and MR8/MR12/MR15 overtime boundaries

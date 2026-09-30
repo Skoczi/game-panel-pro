@@ -1,0 +1,4 @@
+Scope: local source pure tests only, no production build or deployment.
+Build exit: 0
+Run exit: 0
+Round statistics: trades, KAST, clutches, nested damage, duplicate/late hooks, objectives, disconnect clutch sizes, reconnect participation, inactive rounds, reset OK

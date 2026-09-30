@@ -14,7 +14,7 @@ import { startMixqueueBroker } from "../../src/services/mixqueueBroker.js";
 
 test(
   "one supervisor runs two isolated Python executors with independent journal faults and restart",
-  { skip: !process.env.MIXQUEUE_TEST_IMAGE, timeout: 60000 },
+  { skip: !process.env.MIXQUEUE_TEST_IMAGE, timeout: 90000 },
   async (t) => {
     const docker = new Docker();
     const image = (
@@ -73,6 +73,21 @@ test(
       payload: {reason: 'test_admin'}};
     let observerPhase = 'none', observerRevision = 0, observerExpires = 0;
     const observerRcon: string[] = [];
+    const botOnlyMatch = '7e5700' + '6'.repeat(18), botOnlyGeneration = 25;
+    const botOnlyOwner = '76561198000000001';
+    const botOnlyPlayers = [1, 2].flatMap(team => Array.from({length: 5}, (_, slot) => ({
+      steam_id: 'bot:' + createHash('sha256').update(`${botOnlyMatch}:${botOnlyGeneration}:${team}:${slot + 1}`).digest('hex').slice(0, 24),
+      team, bot: true, captain: Number(slot === 0), locale: 'en', name: `Bot ${team}-${slot + 1}`,
+    })));
+    const botOnlyLoad = {id: '6'.repeat(24), type: 'load', match_id: botOnlyMatch, generation: botOnlyGeneration,
+      payload: {match_id: botOnlyMatch, generation: botOnlyGeneration, game: 'cs16', map: 'de_nuke', team_size: 5,
+        contract_version: 3, starting_ct_team: 1, config_hash: 'b'.repeat(64),
+        rules: {test: true, test_type: 'full', bot_only: true, mr: 12, ot_mr: 3}, players: botOnlyPlayers,
+        test_owner: botOnlyOwner, teams: {'1': 'Bot 1-1 team', '2': 'Bot 2-1 team'}}};
+    const botOnlyCleanup = {id: '7'.repeat(24), type: 'cleanup', match_id: botOnlyMatch, generation: botOnlyGeneration,
+      payload: {reason: 'test_admin'}};
+    let botOnlyPhase = 'none', botOnlyReadyDeadline = 0;
+    const botOnlyRcon: string[] = [];
     const originalFetch = globalThis.fetch;
     globalThis.fetch = (async (url, options) => {
       assert.equal(url, "https://csco.gg/mq2-agent");
@@ -95,11 +110,11 @@ test(
       if (body.action === 'event') rejected.push({id, event: body.event});
       if (body.action === 'poll' && body.healthy) {
         assert.equal(body.observation.agent_protocol, 2);
-        assert.equal(body.observation.agent_version, '0.6.2');
+        assert.equal(body.observation.agent_version, '0.6.3');
         assert.equal(body.observation.assignment_contract, 3);
         assert.equal(body.observation.full_test, true);
         assert.equal(body.observation.controller, 'matchbot');
-        assert.equal(body.observation.controller_version, '0.6.5');
+        assert.equal(body.observation.controller_version, '0.6.7');
         assert.equal(body.observation.rules_ready, true);
         assert.equal(body.observation.stats_version, 2);
         assert.equal(body.observation.pause_policy, 2);
@@ -107,6 +122,9 @@ test(
         assert.equal(body.observation.tactical_limit, 3);
         assert.equal(body.observation.tactical_seconds, 30);
         assert.equal(body.observation.ready_seconds, 300);
+        assert.equal(body.observation.bot_only_test, true);
+        assert.equal(body.observation.bot_only_ready_seconds, 15);
+        assert.equal(body.observation.ruleset, 2);
         assert.equal(body.observation.observer_acl_version, 1);
         assert.equal(body.observation.observer_agent_version, 1);
         assert.equal(body.observation.observer_slots, 2);
@@ -118,7 +136,8 @@ test(
         assert.equal(body.observation.solo_test, true);
       }
       requests.push({ id, action: body.action, healthy: body.healthy });
-      const commands = id !== keys[0] ? [] : observerPhase === 'apply' ? [observerUpdate]
+      const commands = id !== keys[0] ? [] : botOnlyPhase === 'requested' ? [botOnlyLoad]
+        : botOnlyPhase === 'cleanup' ? [botOnlyCleanup] : observerPhase === 'apply' ? [observerUpdate]
         : observerPhase === 'unconfirmed' ? [
           {...observerUpdate, payload: {...observerUpdate.payload, revision: 0, path: '/private'}},
           {...observerUpdate, id: '2'.repeat(24), payload: {...observerUpdate.payload, revision: 2, observers: []}}, observerCleanup,
@@ -168,6 +187,31 @@ test(
               };
             },
             async rcon(command) {
+              if (command === `mq2_load ${botOnlyMatch} ${botOnlyGeneration}`) {
+                assert.equal(a.runtimeKey, keys[0]);
+                assert.equal(botOnlyPhase, 'requested');
+                const wire = await fs.readFile(path.join(base, 'config', `${botOnlyMatch}-${botOnlyGeneration}.txt`), 'utf8');
+                const lines = wire.trim().split('\n'), rows = lines.slice(2).map(line => line.split(' '));
+                assert.deepEqual(lines[0].split(' '), ['MQ2V3', botOnlyMatch, String(botOnlyGeneration), 'de_nuke', '5', '12', '3', 'b'.repeat(64), '3', '1']);
+                assert.equal(lines[1].split(' ')[0], botOnlyOwner);
+                assert.equal(rows.length, 10);
+                assert.ok(rows.every(row => row[0] === 'BOT' && row[3] === '1' && row[1] !== botOnlyOwner));
+                for (const team of ['1', '2']) {
+                  const roster = rows.filter(row => row[2] === team);
+                  assert.equal(roster.length, 5);
+                  assert.equal(roster.filter(row => row[4] === '1').length, 1);
+                }
+                assert.deepEqual(new Set(rows.map(row => row[1])), new Set(botOnlyPlayers.map(player => player.steam_id)));
+                botOnlyRcon.push(command);
+                botOnlyPhase = 'active';
+                botOnlyReadyDeadline = Math.floor(Date.now() / 1000) + 300;
+                // Fixture controller journal, not an acknowledgement synthesized by the agent.
+                await fs.appendFile(path.join(base, 'journal', 'events.jsonl'), JSON.stringify({
+                  event_id: 'bot-only-loaded', match_id: botOnlyMatch, generation: botOnlyGeneration, type: 'loaded',
+                  data: {map: 'de_nuke', ready_deadline: botOnlyReadyDeadline},
+                }) + '\n');
+                return 'loaded';
+              }
               if (command.startsWith('mq2_load ')) {
                 assert.equal(a.runtimeKey, keys[0]);
                 const load = aiLoads.find(item => command === `mq2_load ${item.command.match_id} ${item.command.generation}`);
@@ -175,6 +219,7 @@ test(
                 const wire = await fs.readFile(path.join(base, 'config', `${load.command.match_id}-${load.command.generation}.txt`), 'utf8');
                 assert.ok(wire.startsWith('MQ2V3 '));
                 assert.equal(wire.trim().split('\n').length, 12);
+                assert.equal(wire.split('\n')[0].split(' ')[8], '2', 'ordinary full 1+9 remains mode 2');
                 aiRconCalls.push(command);
                 // The actual agent must map only the exact safe line, dropping all other RCON text.
                 return `private-controller-diagnostic\n${load.code}\n`;
@@ -193,6 +238,12 @@ test(
                 observerExpires = observerUntil;
                 return 'observer_updated';
               }
+              if (command === 'mq2_clear test_admin' && botOnlyPhase === 'cleanup') {
+                assert.equal(a.runtimeKey, keys[0]);
+                botOnlyRcon.push(command);
+                botOnlyPhase = 'done';
+                return 'cleared';
+              }
               if (command === 'mq2_clear test_admin') {
                 assert.equal(a.runtimeKey, keys[0]);
                 assert.equal(observerRcon.at(-1), `mq2_observers ${observerMatch} ${observerGeneration} 2`);
@@ -202,15 +253,16 @@ test(
               }
               assert.equal(command, "mq2_status");
               return JSON.stringify({bridge: 1, healthy: a.runtimeKey !== keys[0] || firstControllerHealthy,
-                idle: a.runtimeKey !== keys[0] || !['apply', 'unconfirmed'].includes(observerPhase),
-                matchid: a.runtimeKey === keys[0] && ['apply', 'unconfirmed'].includes(observerPhase)
+                idle: a.runtimeKey !== keys[0] || (!['apply', 'unconfirmed'].includes(observerPhase) && !['active', 'cleanup'].includes(botOnlyPhase)),
+                matchid: a.runtimeKey === keys[0] && ['active', 'cleanup'].includes(botOnlyPhase)
+                  ? `${botOnlyMatch}:${botOnlyGeneration}` : a.runtimeKey === keys[0] && ['apply', 'unconfirmed'].includes(observerPhase)
                   ? `${observerMatch}:${observerGeneration}` : '',
                 observer_acl_version: 1, observer_revision: a.runtimeKey === keys[0] ? observerRevision : 0,
                 observer_expires_at: a.runtimeKey === keys[0] ? observerExpires : 0,
                 observer_slots: 2, connected_observers: a.runtimeKey === keys[0] && observerRevision > 0 ? 1 : 0,
-                observer_xray: 'markers_v1', controller: 'matchbot', controller_version: '0.6.5', assignment_contract: 3, stats_version: 2,
+                observer_xray: 'markers_v1', controller: 'matchbot', controller_version: '0.6.7', assignment_contract: 3, stats_version: 2,
                 pause_policy: 2, reconnect_budget: 1, tactical_limit: 3, tactical_seconds: 30, ready_seconds: 300,
-                full_test: true, rules_ready: true, solo_test: true});
+                full_test: true, bot_only_test: true, bot_only_ready_seconds: 15, ruleset: 2, rules_ready: true, solo_test: true});
             },
           }),
         );
@@ -370,6 +422,21 @@ test(
     assert.equal(await fs.readFile(snapshotPath, 'utf8'), firstSnapshot);
     assert.ok(!(await fs.readdir(path.join(root, keys[0], 'config'))).some(file => file.includes('-observers-0')));
     assert.ok(!JSON.stringify(rejected).includes('private-unconfirmed-observer-diagnostic'));
+    // New mode goes through the unchanged signed broker and strict mq2_load capability.
+    botOnlyPhase = 'requested';
+    await until(async () => observations.get(keys[0]).matchid === `${botOnlyMatch}:${botOnlyGeneration}`
+      && rejected.some(item => item.event.event_id === 'bot-only-loaded') && !(await status(keys[0])).ready);
+    assert.equal((await status(keys[0])).idle, false, 'native warmup is still an allocated match');
+    assert.equal(observations.get(keys[0]).bot_only_ready_seconds, 15);
+    assert.equal(observations.get(keys[0]).ready_seconds, 300);
+    const botOnlyLoaded = rejected.find(item => item.event.event_id === 'bot-only-loaded');
+    assert.equal(botOnlyLoaded.id, keys[0]);
+    assert.deepEqual(botOnlyLoaded.event.data, {map: 'de_nuke', ready_deadline: botOnlyReadyDeadline});
+    assert.equal((await fs.readdir(path.join(root, keys[1], 'config'))).length, 0, 'bot assignment never reaches other executor');
+    botOnlyPhase = 'cleanup';
+    await until(async () => botOnlyPhase === 'done' && rejected.some(item => item.event.event_id === 'idle-' + botOnlyCleanup.id)
+      && (await status(keys[0])).ready);
+    assert.deepEqual(botOnlyRcon, [`mq2_load ${botOnlyMatch} ${botOnlyGeneration}`, 'mq2_clear test_admin']);
     await fs.rm(path.join(root, keys[0], 'maps', 'de_nuke.bsp'));
     await until(async () => observations.get(keys[0]).map_inventory.maps.length === 0);
     assert.deepEqual(observations.get(keys[1]).map_inventory.maps, ['de_train']);

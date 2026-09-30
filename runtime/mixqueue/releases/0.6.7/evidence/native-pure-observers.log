@@ -1,0 +1,4 @@
+Scope: local pure tests / existing-binary metadata; no production rebuild, game host, lab or Steam client.
+Command: ['wsl.exe', '-e', 'sh', '-c', 'ulimit -c 0; exec /tmp/cs16-067-observers-1fa6d43f662f4a32ae59e953dd16c367']
+Exit: 0
+observer contracts: identities, roster precedence, roles, expiry, replay, revocation and scope passed

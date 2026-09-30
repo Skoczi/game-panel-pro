@@ -1,0 +1,7 @@
+PASS scoped rules, default MR15/MR8, MR3 only, idempotence, install retention, queue remains disabled
+PASS MR12 fresh controller gate before reservation; frozen match and signed hash survive format switch/restart
+PASS downgrade during veto aborts without load, ELO, penalties or history deletion
+PASS MR12/MR15/MR8 regulation and repeated MR3 results, invalid ties rejected, frozen settlement and 180s grace
+PASS full test MR override, capability gate, retry immutability and start recheck
+PASS solo test MR12/MR15 and fixed MR8, retained signed format, default queue format, old controller rejection
+PASS admin authorization, strict MR input and state contract

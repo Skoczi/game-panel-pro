@@ -1,0 +1,6 @@
+PASS fresh verified inventory, odd subset, invalid/stale/missing inventory, UI veto scope
+PASS all safe rejection codes, retries, late loaded drain, abort/idle release, history/generation preservation
+PASS loaded journal is acceptance authority
+PASS map disappears after lobby/veto: normal cancellation and idle release
+PASS ranked pool uses same inventory gate
+PASS solo rejection and idle release

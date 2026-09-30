@@ -1,0 +1,4 @@
+Scope: local pure tests / existing-binary metadata; no production rebuild, game host, lab or Steam client.
+Command: ['wsl.exe', '-e', 'sh', '-c', 'ulimit -c 0; exec /tmp/cs16-067-safety-e405b18a631b496d94c0c4053d613efc']
+Exit: 0
+PASS bounded reconnect budget and mode/phase/test/overtime/pause tournament rules

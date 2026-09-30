@@ -1,0 +1,57 @@
+{
+  "scope": "Read-only controller and pinned upstream source review; no game process, lab, deployment or package build",
+  "result": "No source-level human-presence blocker found for signed bot-only test on dedicated server",
+  "runtime_acceptance": "NOT_TESTED",
+  "steam_acceptance": "NOT_TESTED",
+  "reviewed_versions": {
+    "controller": "0.6.7 source",
+    "regamedll": "5.30.0.814 commit 781a68ae1c6fb652cf4fbc894970b4fb4dde19f9",
+    "rehlds": "3.15.0.896"
+  },
+  "findings": [
+    {
+      "topic": "Native quota",
+      "evidence": "MatchCSCO.cpp:21-28,911-926,947-961; cs_bot_manager.cpp:882-979",
+      "conclusion": "Native settings use normal quota, join_after_player=0, auto_vacate=0, join_delay=0, stop/freeze/zombie/mimic=0. No-human early return applies only to a listen server. REGAMEDLL_ADD uses quota_mode; legacy quota_match branch does not apply."
+    },
+    {
+      "topic": "AI execution",
+      "evidence": "bot_manager.cpp:194-205; bot.cpp:65-80; cs_bot_update.cpp:274; .reference/regamedll-5.30/client.cpp:3918-3933",
+      "conclusion": "Every valid native bot receives BotThink then Update and ExecuteCommand on engine time. No human-count guard. Bot stop must remain zero; controller enforces it until finished."
+    },
+    {
+      "topic": "Engine ticks",
+      "evidence": "rehlds-sv_main.cpp:8081-8087,8122-8134; rehlds-host.cpp:678-693",
+      "conclusion": "An active unpaused multiplayer server advances physics and game time without real clients. Dedicated ticrate path has no human-count condition."
+    },
+    {
+      "topic": "Match readiness and live",
+      "evidence": "MatchCSCO.cpp:227-253,521-524,550-552,1572-1576; MatchReady.cpp:47-78; MatchVoteTeam.cpp:203-206,234; MatchLO3.cpp:5-17",
+      "conclusion": "15-second ready clock starts in actual warmup after changelevel and native factory creation. All roster bots must be JOINED and on assigned sides. Timer tasks, fixed team mode and LO3 do not require a human."
+    },
+    {
+      "topic": "Warmup and rounds",
+      "evidence": "MatchBot.cpp:605-607; MatchCSCO.cpp:557-579,1058-1061; MatchCSCOSafety.h:46-47,65; .reference/regamedll-5.30/multiplay_gamerules.cpp:945-996,1064-1088",
+      "conclusion": "Synchronous profile overrides legacy warmup bot_deathmatch, and live restores ordinary respawn/objective rules. GameDLL spawnable-team counts include bots. Career-only condition is outside the dedicated multiplayer mode."
+    },
+    {
+      "topic": "No-player safety",
+      "evidence": "MetaDLL.cpp:115-118; MatchUtil.cpp:270-287; MatchPause.cpp:29-38; repository/source search",
+      "conclusion": "Controller tasks and Frame run every engine frame. Automatic shortage counts bots. No SafetyFrameLimitNoPlayers symbol found in reviewed controller/pinned sources; this is not a statement about unknown external plugins."
+    }
+  ],
+  "assumptions": [
+    "Dedicated multiplayer server; active process and map; not engine-paused.",
+    "Supported REGAMEDLL_ADD native bot build with bot_enable=1.",
+    "Validated BSP-matched NAV, BotProfile.db and BotChatter.db available.",
+    "At least ten player slots; no external plugin, wrapper or host sleep condition that stops ticks.",
+    "Real AI motion, combat and full match remain runtime acceptance, not established by pure tests/source review."
+  ],
+  "local_lab": {
+    "status": "NOT_FOUND_IN_INSPECTED_LOCATIONS",
+    "evidence": "Docker inventory had only local ESERV web/backend containers; no game container. /opt/csco-lab absent. Targeted binary search in WSL /home/skoczi, /tmp and repository found no installed HLDS/GameDLL runtime.",
+    "conclusion": "Existing isolated runtime could not be used. No new lab, WAW1/WAW2 or QA/teleport flow started."
+  },
+  "upstream_source_base": "https://raw.githubusercontent.com/rehlds/ReGameDLL_CS/781a68ae1c6fb652cf4fbc894970b4fb4dde19f9/",
+  "rehlds_source_base": "https://raw.githubusercontent.com/rehlds/ReHLDS/3.15.0.896/rehlds/engine/"
+}

@@ -1,0 +1,4 @@
+Scope: local pure tests / existing-binary metadata; no production rebuild, game host, lab or Steam client.
+Command: ['wsl.exe', '-e', 'sh', '-c', 'ulimit -c 0; exec /tmp/cs16-067-observer_projection-4155eaf8a683467597ec2374f3c41c7a']
+Exit: 0
+PASS observer marker projection: forward/side/yaw/pitch/roll, radial depth, stable angular size, backward/near-plane/invalid rejection, GoldSrc wire-coordinate bounds; no renderer or Steam acceptance implied

@@ -21,7 +21,8 @@ test('Unix broker preserves observer status and applies bounded ACL commands wit
     ]}};
   const cleanup = {id: 'c'.repeat(24), type: 'cleanup', match_id: match, generation: 1};
   const commands = [{...update, payload: {...update.payload, command: 'quit'}}, update, cleanup];
-  const observation = {controller: 'matchbot', controller_version: '0.6.5', agent_version: '0.6.2',
+  const observation = {controller: 'matchbot', controller_version: '0.6.7', agent_version: '0.6.3',
+    bot_only_test: true, bot_only_ready_seconds: 15, ready_seconds: 300, ruleset: 2,
     observer_acl_version: 1, observer_agent_version: 1, observer_revision: 2, observer_expires_at: now + 300,
     observer_slots: 2, connected_observers: 1, observer_xray: 'markers_v1'};
   const poll = {action: 'poll', healthy: true, observation};

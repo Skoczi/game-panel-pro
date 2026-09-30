@@ -1,0 +1,1 @@
+PASS shared 300s window, invalid deadlines, immutable assignment, duplicate/delayed ready, LO3, disconnect, test/no-show cancellation, idle-only release, no ELO/penalties

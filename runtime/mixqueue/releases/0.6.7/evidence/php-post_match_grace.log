@@ -1,0 +1,7 @@
+PASS ranked: immediate result/stats/ELO, durable 179/180 deadline, retries, queue exclusion and idle-only release
+PASS cleanup delivery remains bound to the exact lease generation
+PASS surrender: partial score and one settlement retained during grace
+PASS full test: natural finish gets 180 seconds; no ELO/penalty; expiry cannot shorten grace
+PASS admin/test timeout/server error and abort remain immediate
+PASS CS:GO and Classic Offensive keep immediate cleanup
+PASS solo: sequenced finish/replay, durable 179/180 cleanup, result retained and idle-only release

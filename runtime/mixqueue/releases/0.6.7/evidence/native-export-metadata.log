@@ -1,0 +1,8 @@
+Scope: local pure tests / existing-binary metadata; no production rebuild, game host, lab or Steam client.
+Command: ['wsl.exe', '-e', 'docker', 'run', '--rm', '--network', 'none', '-v', '/mnt/d/Projects/Skoczi/csco-matchmaking/games/cs16/matchbot/MatchBot:/includes:ro', '-v', '/mnt/d/Projects/Skoczi/csco-matchmaking/var/implementation-067:/proof:ro', '--entrypoint', 'sh', 'csco-matchbot-builder:bookworm', '-c', 'g++ -std=c++11 -m32 -I/includes /proof/native-metadata-probe.cpp -ldl -o /tmp/native-metadata-probe && /tmp/native-metadata-probe /proof/build-final/Release/matchbot_csco_mm.so 0.6.7']
+Exit: 0
+name=MatchBot CSCO
+version=0.6.7
+author=Skoczi / CSCO.gg
+url=https://csco.gg
+result=PASS

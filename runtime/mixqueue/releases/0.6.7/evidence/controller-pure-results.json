@@ -1,0 +1,57 @@
+[
+  {
+    "suite": "contract",
+    "build_exit": 0,
+    "run_exit": 0
+  },
+  {
+    "suite": "bot_ready",
+    "build_exit": 0,
+    "run_exit": 0
+  },
+  {
+    "suite": "safety",
+    "build_exit": 0,
+    "run_exit": 0
+  },
+  {
+    "suite": "feedback",
+    "build_exit": 0,
+    "run_exit": 0
+  },
+  {
+    "suite": "break",
+    "build_exit": 0,
+    "run_exit": 0
+  },
+  {
+    "suite": "end",
+    "build_exit": 0,
+    "run_exit": 0
+  },
+  {
+    "suite": "bots",
+    "build_exit": 0,
+    "run_exit": 0
+  },
+  {
+    "suite": "statistics",
+    "build_exit": 0,
+    "run_exit": 0
+  },
+  {
+    "suite": "observers",
+    "build_exit": 0,
+    "run_exit": 0
+  },
+  {
+    "suite": "observer_projection",
+    "build_exit": 0,
+    "run_exit": 0
+  },
+  {
+    "suite": "observer_file",
+    "build_exit": 0,
+    "run_exit": 0
+  }
+]

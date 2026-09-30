@@ -1,0 +1,4 @@
+PASS full test 1 humans: lobby, bots, ready/veto, partial snapshot, no ELO, cleanup, delete/retry
+PASS full test 2 humans: lobby, bots, ready/veto, partial snapshot, no ELO, cleanup, delete/retry
+PASS full test 10 humans: lobby, bots, ready/veto, partial snapshot, no ELO, cleanup, delete/retry
+PASS permissions, team swap, captain, ready decline without penalties

@@ -1,0 +1,3 @@
+PASS cancellation in all 6 phases; agent loss fallback, lease waits for idle, late journal drains
+PASS ready, veto, preparation timeouts without penalties
+PASS offline detection, atomic bulk deletion, foreign generation rejection and minimum-version gate

@@ -1,0 +1,415 @@
+{
+  "recorded_at_utc": "2026-09-30T01:47:48.401830+00:00",
+  "controller_version": "0.6.7",
+  "agent_version": "0.6.3",
+  "scope": "Current source pure tests plus exported metadata of the existing production ELF. No production rebuild, game host or lab operation.",
+  "artifact": {
+    "path": "D:\\Projects\\Skoczi\\csco-matchmaking\\var\\implementation-067\\build-final\\Release\\matchbot_csco_mm.so",
+    "sha256": "7a12e1659823c77f3e6d4dacd5cfcccf2463885cb2753e57bab52e590e1741d2",
+    "bytes": 2185956,
+    "elf32": true,
+    "mq2_qa_absent": true,
+    "hash_unchanged_after_probe": true,
+    "export_probe_exit": 0,
+    "exported_plugin_info": {
+      "name": "MatchBot CSCO",
+      "version": "0.6.7",
+      "author": "Skoczi / CSCO.gg",
+      "url": "https://csco.gg",
+      "result": "PASS"
+    },
+    "inspection_log": "native-binary-inspection.log",
+    "metadata_log": "native-export-metadata.log"
+  },
+  "acceptance": {
+    "pure_native_suite_count": 11,
+    "pure_native_passed": true,
+    "agent_linux": {
+      "exit": 0,
+      "tests": 44,
+      "skipped": 0,
+      "log": "native-agent-linux.log"
+    },
+    "observer_agent_linux": {
+      "exit": 0,
+      "tests": 15,
+      "skipped": 0,
+      "log": "native-observer-agent-linux.log"
+    },
+    "exported_metadata": "PASS",
+    "game_dll_runtime": "NOT_TESTED",
+    "real_steam_authentication": "NOT_TESTED",
+    "real_steam_observer_rendering": "NOT_TESTED",
+    "deployment": "NOT_PERFORMED"
+  },
+  "results": [
+    {
+      "suite": "native-pure-contract-build",
+      "exit": 0,
+      "log": "native-pure-contract-build.log",
+      "command": [
+        "wsl.exe",
+        "-e",
+        "g++",
+        "-std=c++14",
+        "-Wall",
+        "-Wextra",
+        "/mnt/d/Projects/Skoczi/csco-matchmaking/tests/cs16_contract_test.cpp",
+        "-o",
+        "/tmp/cs16-067-contract-c406c30ffe7447d39c6cf80e522a1ee4"
+      ]
+    },
+    {
+      "suite": "native-pure-contract",
+      "exit": 0,
+      "log": "native-pure-contract.log",
+      "command": [
+        "wsl.exe",
+        "-e",
+        "sh",
+        "-c",
+        "ulimit -c 0; exec /tmp/cs16-067-contract-c406c30ffe7447d39c6cf80e522a1ee4"
+      ]
+    },
+    {
+      "suite": "native-pure-bot_ready-build",
+      "exit": 0,
+      "log": "native-pure-bot_ready-build.log",
+      "command": [
+        "wsl.exe",
+        "-e",
+        "g++",
+        "-std=c++14",
+        "-Wall",
+        "-Wextra",
+        "/mnt/d/Projects/Skoczi/csco-matchmaking/tests/cs16_bot_ready_test.cpp",
+        "-o",
+        "/tmp/cs16-067-bot_ready-2b1e2cf0ef5943e8959d8ae1993c85c4"
+      ]
+    },
+    {
+      "suite": "native-pure-bot_ready",
+      "exit": 0,
+      "log": "native-pure-bot_ready.log",
+      "command": [
+        "wsl.exe",
+        "-e",
+        "sh",
+        "-c",
+        "ulimit -c 0; exec /tmp/cs16-067-bot_ready-2b1e2cf0ef5943e8959d8ae1993c85c4"
+      ]
+    },
+    {
+      "suite": "native-pure-safety-build",
+      "exit": 0,
+      "log": "native-pure-safety-build.log",
+      "command": [
+        "wsl.exe",
+        "-e",
+        "g++",
+        "-std=c++14",
+        "-Wall",
+        "-Wextra",
+        "/mnt/d/Projects/Skoczi/csco-matchmaking/tests/cs16_safety_test.cpp",
+        "-o",
+        "/tmp/cs16-067-safety-e405b18a631b496d94c0c4053d613efc"
+      ]
+    },
+    {
+      "suite": "native-pure-safety",
+      "exit": 0,
+      "log": "native-pure-safety.log",
+      "command": [
+        "wsl.exe",
+        "-e",
+        "sh",
+        "-c",
+        "ulimit -c 0; exec /tmp/cs16-067-safety-e405b18a631b496d94c0c4053d613efc"
+      ]
+    },
+    {
+      "suite": "native-pure-feedback-build",
+      "exit": 0,
+      "log": "native-pure-feedback-build.log",
+      "command": [
+        "wsl.exe",
+        "-e",
+        "g++",
+        "-std=c++14",
+        "-Wall",
+        "-Wextra",
+        "/mnt/d/Projects/Skoczi/csco-matchmaking/tests/cs16_feedback_test.cpp",
+        "-o",
+        "/tmp/cs16-067-feedback-8137469e3db944e6a3477d9403e0982f"
+      ]
+    },
+    {
+      "suite": "native-pure-feedback",
+      "exit": 0,
+      "log": "native-pure-feedback.log",
+      "command": [
+        "wsl.exe",
+        "-e",
+        "sh",
+        "-c",
+        "ulimit -c 0; exec /tmp/cs16-067-feedback-8137469e3db944e6a3477d9403e0982f"
+      ]
+    },
+    {
+      "suite": "native-pure-break-build",
+      "exit": 0,
+      "log": "native-pure-break-build.log",
+      "command": [
+        "wsl.exe",
+        "-e",
+        "g++",
+        "-std=c++14",
+        "-Wall",
+        "-Wextra",
+        "/mnt/d/Projects/Skoczi/csco-matchmaking/tests/cs16_break_test.cpp",
+        "-o",
+        "/tmp/cs16-067-break-5a8368ea7e7d42e1b8a4946d635efa70"
+      ]
+    },
+    {
+      "suite": "native-pure-break",
+      "exit": 0,
+      "log": "native-pure-break.log",
+      "command": [
+        "wsl.exe",
+        "-e",
+        "sh",
+        "-c",
+        "ulimit -c 0; exec /tmp/cs16-067-break-5a8368ea7e7d42e1b8a4946d635efa70"
+      ]
+    },
+    {
+      "suite": "native-pure-end-build",
+      "exit": 0,
+      "log": "native-pure-end-build.log",
+      "command": [
+        "wsl.exe",
+        "-e",
+        "g++",
+        "-std=c++14",
+        "-Wall",
+        "-Wextra",
+        "/mnt/d/Projects/Skoczi/csco-matchmaking/tests/cs16_end_test.cpp",
+        "-o",
+        "/tmp/cs16-067-end-b5ea4a2cf7834ce281808c975f901fbe"
+      ]
+    },
+    {
+      "suite": "native-pure-end",
+      "exit": 0,
+      "log": "native-pure-end.log",
+      "command": [
+        "wsl.exe",
+        "-e",
+        "sh",
+        "-c",
+        "ulimit -c 0; exec /tmp/cs16-067-end-b5ea4a2cf7834ce281808c975f901fbe"
+      ]
+    },
+    {
+      "suite": "native-pure-bots-build",
+      "exit": 0,
+      "log": "native-pure-bots-build.log",
+      "command": [
+        "wsl.exe",
+        "-e",
+        "g++",
+        "-std=c++14",
+        "-Wall",
+        "-Wextra",
+        "/mnt/d/Projects/Skoczi/csco-matchmaking/tests/cs16_bots_test.cpp",
+        "-o",
+        "/tmp/cs16-067-bots-c1dea8a392d840a097a2c6697984311e"
+      ]
+    },
+    {
+      "suite": "native-pure-bots",
+      "exit": 0,
+      "log": "native-pure-bots.log",
+      "command": [
+        "wsl.exe",
+        "-e",
+        "sh",
+        "-c",
+        "ulimit -c 0; exec /tmp/cs16-067-bots-c1dea8a392d840a097a2c6697984311e"
+      ]
+    },
+    {
+      "suite": "native-pure-statistics-build",
+      "exit": 0,
+      "log": "native-pure-statistics-build.log",
+      "command": [
+        "wsl.exe",
+        "-e",
+        "g++",
+        "-std=c++14",
+        "-Wall",
+        "-Wextra",
+        "/mnt/d/Projects/Skoczi/csco-matchmaking/tests/cs16_statistics_test.cpp",
+        "-o",
+        "/tmp/cs16-067-statistics-0c3a0bbdc8674fb092fa19cab9af06ca"
+      ]
+    },
+    {
+      "suite": "native-pure-statistics",
+      "exit": 0,
+      "log": "native-pure-statistics.log",
+      "command": [
+        "wsl.exe",
+        "-e",
+        "sh",
+        "-c",
+        "ulimit -c 0; exec /tmp/cs16-067-statistics-0c3a0bbdc8674fb092fa19cab9af06ca"
+      ]
+    },
+    {
+      "suite": "native-pure-observers-build",
+      "exit": 0,
+      "log": "native-pure-observers-build.log",
+      "command": [
+        "wsl.exe",
+        "-e",
+        "g++",
+        "-std=c++14",
+        "-Wall",
+        "-Wextra",
+        "/mnt/d/Projects/Skoczi/csco-matchmaking/tests/cs16_observers_test.cpp",
+        "-o",
+        "/tmp/cs16-067-observers-1fa6d43f662f4a32ae59e953dd16c367"
+      ]
+    },
+    {
+      "suite": "native-pure-observers",
+      "exit": 0,
+      "log": "native-pure-observers.log",
+      "command": [
+        "wsl.exe",
+        "-e",
+        "sh",
+        "-c",
+        "ulimit -c 0; exec /tmp/cs16-067-observers-1fa6d43f662f4a32ae59e953dd16c367"
+      ]
+    },
+    {
+      "suite": "native-pure-observer_projection-build",
+      "exit": 0,
+      "log": "native-pure-observer_projection-build.log",
+      "command": [
+        "wsl.exe",
+        "-e",
+        "g++",
+        "-std=c++14",
+        "-Wall",
+        "-Wextra",
+        "/mnt/d/Projects/Skoczi/csco-matchmaking/tests/cs16_observer_projection_test.cpp",
+        "-o",
+        "/tmp/cs16-067-observer_projection-4155eaf8a683467597ec2374f3c41c7a"
+      ]
+    },
+    {
+      "suite": "native-pure-observer_projection",
+      "exit": 0,
+      "log": "native-pure-observer_projection.log",
+      "command": [
+        "wsl.exe",
+        "-e",
+        "sh",
+        "-c",
+        "ulimit -c 0; exec /tmp/cs16-067-observer_projection-4155eaf8a683467597ec2374f3c41c7a"
+      ]
+    },
+    {
+      "suite": "native-pure-observer_file-build",
+      "exit": 0,
+      "log": "native-pure-observer_file-build.log",
+      "command": [
+        "wsl.exe",
+        "-e",
+        "g++",
+        "-std=c++14",
+        "-Wall",
+        "-Wextra",
+        "/mnt/d/Projects/Skoczi/csco-matchmaking/tests/cs16_observer_file_test.cpp",
+        "-o",
+        "/tmp/cs16-067-observer_file-61536561402d46e481d9c3cdf815c56c"
+      ]
+    },
+    {
+      "suite": "native-pure-observer_file",
+      "exit": 0,
+      "log": "native-pure-observer_file.log",
+      "command": [
+        "wsl.exe",
+        "-e",
+        "sh",
+        "-c",
+        "ulimit -c 0; exec /tmp/cs16-067-observer_file-61536561402d46e481d9c3cdf815c56c"
+      ]
+    },
+    {
+      "suite": "native-agent-linux",
+      "exit": 0,
+      "log": "native-agent-linux.log",
+      "command": [
+        "wsl.exe",
+        "-e",
+        "python3",
+        "-B",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "/mnt/d/Projects/Skoczi/csco-matchmaking/tests",
+        "-p",
+        "test_agent*.py"
+      ]
+    },
+    {
+      "suite": "native-observer-agent-linux",
+      "exit": 0,
+      "log": "native-observer-agent-linux.log",
+      "command": [
+        "wsl.exe",
+        "-e",
+        "python3",
+        "-B",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "/mnt/d/Projects/Skoczi/csco-matchmaking/tests",
+        "-p",
+        "test_observer_agent.py"
+      ]
+    },
+    {
+      "suite": "native-export-metadata",
+      "exit": 0,
+      "log": "native-export-metadata.log",
+      "command": [
+        "wsl.exe",
+        "-e",
+        "docker",
+        "run",
+        "--rm",
+        "--network",
+        "none",
+        "-v",
+        "/mnt/d/Projects/Skoczi/csco-matchmaking/games/cs16/matchbot/MatchBot:/includes:ro",
+        "-v",
+        "/mnt/d/Projects/Skoczi/csco-matchmaking/var/implementation-067:/proof:ro",
+        "--entrypoint",
+        "sh",
+        "csco-matchbot-builder:bookworm",
+        "-c",
+        "g++ -std=c++11 -m32 -I/includes /proof/native-metadata-probe.cpp -ldl -o /tmp/native-metadata-probe && /tmp/native-metadata-probe /proof/build-final/Release/matchbot_csco_mm.so 0.6.7"
+      ]
+    }
+  ],
+  "verification_passed": true
+}

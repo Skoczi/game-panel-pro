@@ -1,0 +1,4 @@
+Scope: local source pure tests only, no production build or deployment.
+Build exit: 0
+Run exit: 0
+PASS observer marker projection: forward/side/yaw/pitch/roll, radial depth, stable angular size, backward/near-plane/invalid rejection, GoldSrc wire-coordinate bounds; no renderer or Steam acceptance implied

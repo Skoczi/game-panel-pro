@@ -1,0 +1,4 @@
+Scope: local pure tests / existing-binary metadata; no production rebuild, game host, lab or Steam client.
+Command: ['wsl.exe', '-e', 'sh', '-c', 'ulimit -c 0; exec /tmp/cs16-067-observer_file-61536561402d46e481d9c3cdf815c56c']
+Exit: 0
+PASS observer reader: bounded regular file, exact8192, oversized, FIFO nonblocking, symlink, directory and missing-file rejection

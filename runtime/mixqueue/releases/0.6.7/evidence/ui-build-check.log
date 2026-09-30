@@ -1,0 +1,4 @@
+
+> check
+> node bin/build-locales.mjs --check && node --check module/Resources/assets/mixqueue.js && node --check module/Resources/assets/mixqueue.en.js && node --check module/Resources/assets/servers.js && node --check module/Resources/assets/servers.en.js
+

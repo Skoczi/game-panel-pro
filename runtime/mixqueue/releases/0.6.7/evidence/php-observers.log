@@ -1,0 +1,4 @@
+PASS observer permissions, identity validation, old-agent gate, native confirmation, connection privacy, roster exclusion, revoke and restart replay
+PASS observer match/global scope, explicit scope override, replacement audit, bounded renewal, grant expiry
+PASS observer capacity boundary and transaction rollback
+PASS observer registry health, quarantine, lease mismatch and terminal command retirement

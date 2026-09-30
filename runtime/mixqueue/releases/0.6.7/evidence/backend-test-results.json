@@ -1,0 +1,62 @@
+[
+  {
+    "test": "tests/run.php",
+    "exit_code": 0,
+    "pass_lines": 32
+  },
+  {
+    "test": "tests/test_matches.php",
+    "exit_code": 0,
+    "pass_lines": 4
+  },
+  {
+    "test": "tests/test_match_failures.php",
+    "exit_code": 0,
+    "pass_lines": 3
+  },
+  {
+    "test": "tests/match_rules.php",
+    "exit_code": 0,
+    "pass_lines": 7
+  },
+  {
+    "test": "tests/post_match_grace.php",
+    "exit_code": 0,
+    "pass_lines": 7
+  },
+  {
+    "test": "tests/map_inventory.php",
+    "exit_code": 0,
+    "pass_lines": 6
+  },
+  {
+    "test": "tests/ready_window.php",
+    "exit_code": 0,
+    "pass_lines": 1
+  },
+  {
+    "test": "tests/game_readiness.php",
+    "exit_code": 0,
+    "pass_lines": 1
+  },
+  {
+    "test": "tests/statistics.php",
+    "exit_code": 0,
+    "pass_lines": 1
+  },
+  {
+    "test": "tests/observers.php",
+    "exit_code": 0,
+    "pass_lines": 4
+  },
+  {
+    "test": "tests/bot_only_matches.php",
+    "exit_code": 0,
+    "pass_lines": 5
+  },
+  {
+    "test": "tests/ranked_access.php",
+    "exit_code": 0,
+    "pass_lines": 3
+  }
+]

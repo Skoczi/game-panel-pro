@@ -1,0 +1,1 @@
+PASS readiness, connected non-ready cooldown, incident exemption, idempotency, late drain, idle release, capability gates
