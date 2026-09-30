@@ -153,7 +153,7 @@ class Get5Adapter:
         value = json.loads(raw)
         if value.get('bridge') != 1:
             raise RuntimeError('MixQueue2 SourceMod bridge is not installed')
-        return {**value, 'agent_protocol': 2, 'agent_version': '0.6.2', 'delivery': self.spool.metrics()}
+        return {**value, 'agent_protocol': 2, 'agent_version': '0.6.3', 'delivery': self.spool.metrics()}
 
     @staticmethod
     def cleanup_complete(status):
@@ -485,8 +485,13 @@ class AmxxAdapter(Get5Adapter):
         size = int(payload['team_size'])
         test = payload['rules'].get('test') is True
         full = test and payload['rules'].get('test_type') == 'full'
+        bot_only = payload['rules'].get('bot_only', False)
+        if type(bot_only) is not bool:
+            raise ValueError('Invalid bot-only flag')
         v3 = payload.get('contract_version') == 3
         v2 = v3 or payload.get('contract_version') == 2
+        if bot_only and (not full or type(payload.get('contract_version')) is not int or not v3):
+            raise ValueError('Bot-only matches require full test contract 3')
         if v3 and (type(payload.get('starting_ct_team')) is not int or payload['starting_ct_team'] not in (1, 2)):
             raise ValueError('Invalid starting side')
         if full and (not v2 or size != 5 or not re.fullmatch(r'7e5700[a-f0-9]{18}', payload['match_id'])):
@@ -494,14 +499,16 @@ class AmxxAdapter(Get5Adapter):
         count = len(payload['players'])
         if size not in (2, 5) or count != (1 if test and not full else size * 2):
             raise ValueError('Invalid roster')
-        lines = [f"{'MQ2V3 ' if v3 else 'MQ2V2 ' if v2 else ''}{payload['match_id']} {payload['generation']} {payload['map']} {size} {payload['rules']['mr']} {payload['rules']['ot_mr']} {payload['config_hash']} {2 if full else 1 if test else 0}"]
+        lines = [f"{'MQ2V3 ' if v3 else 'MQ2V2 ' if v2 else ''}{payload['match_id']} {payload['generation']} {payload['map']} {size} {payload['rules']['mr']} {payload['rules']['ot_mr']} {payload['config_hash']} {3 if bot_only else 2 if full else 1 if test else 0}"]
         if v3:
             lines[0] += ' ' + str(payload['starting_ct_team'])
         if v2:
             names = payload.get('teams', {})
             owner = payload.get('test_owner', '-')
-            if owner != '-' and not re.fullmatch(r'7656119\d{10}', owner):
+            if owner != '-' and (not isinstance(owner, str) or not re.fullmatch(r'7656119\d{10}', owner)):
                 raise ValueError('Invalid test owner')
+            if bot_only and (owner == '-' or not 0 < int(owner) - 76561197960265728 <= 4294967295):
+                raise ValueError('Bot-only test requires a real external owner')
             lines.append(owner+' '+AmxxAdapter.label(names.get('1'))+' '+AmxxAdapter.label(names.get('2')))
         seen = set()
         teams = {1: 0, 2: 0}
@@ -545,7 +552,9 @@ class AmxxAdapter(Get5Adapter):
             raise ValueError('Unbalanced roster')
         if v2 and (not test or full) and captains != {1:1, 2:1}:
             raise ValueError('Invalid captains')
-        if full and owner not in humans:
+        if bot_only and (humans or owner in seen):
+            raise ValueError('Bot-only test roster must contain only bots')
+        if full and not bot_only and owner not in humans:
             raise ValueError('Missing real test owner')
         return '\n'.join(lines) + '\n'
 
@@ -569,6 +578,14 @@ class AmxxAdapter(Get5Adapter):
             if active:
                 return
             p = command['payload']
+            if p['rules'].get('bot_only') is True and (
+                    tuple(map(int, version.split('.'))) < (0, 6, 7)
+                    or status.get('bot_only_test') is not True
+                    or type(status.get('bot_only_ready_seconds')) is not int
+                    or status['bot_only_ready_seconds'] != 15
+                    or type(status.get('assignment_contract')) is not int
+                    or status['assignment_contract'] != 3):
+                raise RuntimeError('Bot-only tests require controller 0.6.7 and the 15-second ready capability')
             if p['rules'].get('test_type') == 'full' and (status.get('full_test') is not True or status.get('assignment_contract') not in (2, 3)):
                 raise RuntimeError('Full tests require controller 0.5.0')
             if p['rules'].get('test') is True and status.get('solo_test') is not True:

@@ -1,0 +1,3 @@
+PASS CS16 observer-only member rejected atomically through both production factories and real PlayController
+PASS eligible party allowed, empty list denied, legacy waiting claim retired without penalty
+PASS accepted eligible players requeue; removed eligibility does not create a new claim or penalty

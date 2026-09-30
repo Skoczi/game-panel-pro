@@ -1,0 +1,4 @@
+Scope: local pure tests / existing-binary metadata; no production rebuild, game host, lab or Steam client.
+Command: ['wsl.exe', '-e', 'sh', '-c', 'ulimit -c 0; exec /tmp/cs16-067-bot_ready-2b1e2cf0ef5943e8959d8ae1993c85c4']
+Exit: 0
+PASS bot-only ready: 15-second loaded deadline, exact boundary, immutable scope, repeated start, map clock, cleanup/recovery reset and nonfinite rejection

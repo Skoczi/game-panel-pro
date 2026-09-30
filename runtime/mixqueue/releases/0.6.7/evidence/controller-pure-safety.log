@@ -1,0 +1,4 @@
+Scope: local source pure tests only, no production build or deployment.
+Build exit: 0
+Run exit: 0
+PASS bounded reconnect budget and mode/phase/test/overtime/pause tournament rules

@@ -1,0 +1,4 @@
+Scope: local pure tests / existing-binary metadata; no production rebuild, game host, lab or Steam client.
+Command: ['wsl.exe', '-e', 'sh', '-c', 'ulimit -c 0; exec /tmp/cs16-067-end-b5ea4a2cf7834ce281808c975f901fbe']
+Exit: 0
+PASS scoped postmatch retention and named GameDLL round reasons

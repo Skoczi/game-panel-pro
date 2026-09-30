@@ -1,0 +1,9 @@
+Scope: local pure tests / existing-binary metadata; no production rebuild, game host, lab or Steam client.
+Command: ['wsl.exe', '-e', 'python3', '-B', '-m', 'unittest', 'discover', '-s', '/mnt/d/Projects/Skoczi/csco-matchmaking/tests', '-p', 'test_agent*.py']
+Exit: 0
+........................WARNING:root:Load rejected: missing_map
+....................
+----------------------------------------------------------------------
+Ran 44 tests in 0.065s
+
+OK

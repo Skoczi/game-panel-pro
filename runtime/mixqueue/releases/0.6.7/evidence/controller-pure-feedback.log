@@ -1,0 +1,4 @@
+Scope: local source pure tests only, no production build or deployment.
+Build exit: 0
+Run exit: 0
+PASS captain consent scope/orders/duplicates/reset; measured HP; final-hit snapshot; identity epoch; dealt/taken/world/team; PL/EN; safe text

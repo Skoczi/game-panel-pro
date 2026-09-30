@@ -1,0 +1,5 @@
+PASS bot-only runtime/capability gate fails before reservation and is exposed to administration
+PASS explicit admin-only boolean mode and verified map required; invalid input rolls back
+PASS bot-only MR12: auto-load, owner outside roster, 15s readiness journal, natural finish/history/idle/remove; no ELO or penalties
+PASS bot-only MR15: auto-load, owner outside roster, 15s readiness journal, natural finish/history/idle/remove; no ELO or penalties
+PASS owner stop, AI load failure and bot readiness timeout retain test-only cleanup and no sanctions

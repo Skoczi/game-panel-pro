@@ -1,0 +1,4 @@
+Scope: local source pure tests only, no production build or deployment.
+Build exit: 0
+Run exit: 0
+PASS bot-only ready: 15-second loaded deadline, exact boundary, immutable scope, repeated start, map clock, cleanup/recovery reset and nonfinite rejection

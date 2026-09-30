@@ -52,20 +52,23 @@ class RunnerTests(unittest.TestCase):
         adapter = object.__new__(AmxxAdapter)
         adapter.root = Path('/unavailable-game-inventory')
         adapter.spool = SimpleNamespace(metrics=lambda: {'pending': 0, 'oldest_pending_seconds': None, 'database_bytes': 4096})
-        adapter.rcon = SimpleNamespace(command=lambda command: '{"bridge":1,"solo_test":true,"healthy":true,"idle":true,"controller":"matchbot","controller_version":"0.6.5","assignment_contract":3,"stats_version":2,"pause_policy":2,"ready_seconds":300,"full_test":true,"rules_ready":true,"observer_acl_version":1,"observer_revision":2,"observer_expires_at":1800000300,"observer_slots":2,"connected_observers":1,"observer_xray":"markers_v1"}')
+        adapter.rcon = SimpleNamespace(command=lambda command: '{"bridge":1,"solo_test":true,"healthy":true,"idle":true,"controller":"matchbot","controller_version":"0.6.7","assignment_contract":3,"stats_version":2,"pause_policy":2,"ready_seconds":300,"full_test":true,"bot_only_test":true,"bot_only_ready_seconds":15,"ruleset":2,"rules_ready":true,"observer_acl_version":1,"observer_revision":2,"observer_expires_at":1800000300,"observer_slots":2,"connected_observers":1,"observer_xray":"markers_v1"}')
         agent.adapter = adapter
         self.assertTrue(cycle(agent)['ready'])
         self.assertEqual(calls[-1]['observation']['agent_protocol'], 2)
         self.assertEqual(calls[-1]['observation']['controller'], 'matchbot')
         self.assertIs(calls[-1]['observation']['rules_ready'], True)
         self.assertIs(calls[-1]['observation']['solo_test'], True)
-        self.assertEqual(calls[-1]['observation']['controller_version'], '0.6.5')
-        self.assertEqual(calls[-1]['observation']['agent_version'], '0.6.2')
+        self.assertEqual(calls[-1]['observation']['controller_version'], '0.6.7')
+        self.assertEqual(calls[-1]['observation']['agent_version'], '0.6.3')
         self.assertEqual(calls[-1]['observation']['assignment_contract'], 3)
         self.assertIs(calls[-1]['observation']['full_test'], True)
         self.assertEqual(calls[-1]['observation']['stats_version'], 2)
         self.assertEqual(calls[-1]['observation']['pause_policy'], 2)
         self.assertEqual(calls[-1]['observation']['ready_seconds'], 300)
+        self.assertIs(calls[-1]['observation']['bot_only_test'], True)
+        self.assertEqual(calls[-1]['observation']['bot_only_ready_seconds'], 15)
+        self.assertEqual(calls[-1]['observation']['ruleset'], 2)
         for key, value in {'observer_acl_version': 1, 'observer_agent_version': 1, 'observer_revision': 2,
                            'observer_expires_at': 1800000300, 'observer_slots': 2,
                            'connected_observers': 1, 'observer_xray': 'markers_v1'}.items():
@@ -124,6 +127,103 @@ class RunnerTests(unittest.TestCase):
                         self.assertNotIn('secret', '\n'.join(logs.output))
                     finally:
                         agent.spool.db.close()
+
+    def bot_only_payload(self):
+        import hashlib
+        match, generation = '7e5700' + 'a'*18, 25
+        players = [{'steam_id': 'bot:' + hashlib.sha256(f'{match}:{generation}:{team}:{slot}'.encode()).hexdigest()[:24],
+                    'team': team, 'bot': True, 'captain': int(slot == 1), 'locale': 'en', 'name': f'Bot {team}-{slot}'}
+                   for team in (1, 2) for slot in range(1, 6)]
+        return {'match_id': match, 'generation': generation, 'game': 'cs16', 'map': 'de_nuke', 'team_size': 5,
+                'contract_version': 3, 'starting_ct_team': 1, 'config_hash': 'a'*64,
+                'rules': {'test': True, 'test_type': 'full', 'bot_only': True, 'mr': 12, 'ot_mr': 3},
+                'players': players, 'test_owner': '76561198000000001',
+                'teams': {'1': 'Bot 1-1 team', '2': 'Bot 2-1 team'}}
+
+    def test_bot_only_mode3_keeps_owner_outside_roster_and_normal_full_mode2(self):
+        import copy
+        from mq_agent import AmxxAdapter
+        for mr in (12, 15):
+            with self.subTest(mr=mr):
+                payload = self.bot_only_payload()
+                payload['rules']['mr'] = mr
+                lines = AmxxAdapter.build(payload).strip().splitlines()
+                self.assertEqual(lines[0].split(), ['MQ2V3', payload['match_id'], '25', 'de_nuke', '5', str(mr), '3', 'a'*64, '3', '1'])
+                self.assertEqual(lines[1].split()[0], payload['test_owner'])
+                self.assertEqual(len(lines[2:]), 10)
+                self.assertTrue(all(line.split()[0] == 'BOT' and line.split()[3] == '1' for line in lines[2:]))
+                self.assertNotIn(payload['test_owner'], '\n'.join(lines[2:]))
+                for team in ('1', '2'):
+                    roster = [line.split() for line in lines[2:] if line.split()[2] == team]
+                    self.assertEqual(len(roster), 5)
+                    self.assertEqual(sum(int(row[4]) for row in roster), 1)
+                normal = copy.deepcopy(payload)
+                normal['rules'].pop('bot_only')
+                normal['players'][0].update(steam_id=payload['test_owner'], bot=False)
+                old_lines = AmxxAdapter.build(normal).strip().splitlines()
+                self.assertEqual(old_lines[0].split()[8], '2')
+                self.assertEqual(old_lines[2].split()[1], payload['test_owner'])
+                for patch in ({'bot_only': 'true'}, {'test': False}, {'test_type': 'solo'}):
+                    bad = copy.deepcopy(payload)
+                    bad['rules'].update(patch)
+                    with self.assertRaises(ValueError):
+                        AmxxAdapter.build(bad)
+                # Missing explicit bot-only must not silently accept an ownerless ordinary full test.
+                bad = copy.deepcopy(payload)
+                bad['rules'].pop('bot_only')
+                with self.assertRaises(ValueError):
+                    AmxxAdapter.build(bad)
+                normal['rules']['bot_only'] = True
+                with self.assertRaises(ValueError):
+                    AmxxAdapter.build(normal)
+
+    def test_bot_only_dispatch_fails_closed_for_old_or_malformed_capabilities(self):
+        from mq_agent import Agent, AmxxAdapter, Spool
+        from unittest.mock import Mock
+        for patch in ({'controller_version': '0.6.6'}, {'bot_only_test': False}, {'bot_only_test': 1},
+                      {'bot_only_ready_seconds': 14}, {'bot_only_ready_seconds': '15'}, {'assignment_contract': 2}):
+            with self.subTest(patch=patch), tempfile.TemporaryDirectory() as directory:
+                payload = self.bot_only_payload()
+                journal = Path(directory) / 'events.jsonl'
+                journal.write_text('')
+                native = {'bridge': 1, 'healthy': True, 'idle': True, 'controller': 'matchbot',
+                          'controller_version': '0.6.7', 'assignment_contract': 3, 'full_test': True,
+                          'solo_test': True, 'bot_only_test': True, 'bot_only_ready_seconds': 15,
+                          'map_inventory': {'version': 1, 'source': 'bsp_v30', 'complete': True, 'maps': ['de_nuke']}, **patch}
+                agent = object.__new__(Agent)
+                agent.config = {'journal': str(journal), 'game': 'cs16'}
+                agent.spool = Spool(str(Path(directory) / 'spool.sqlite'))
+                adapter = object.__new__(AmxxAdapter)
+                adapter.root = Path(directory) / 'game'
+                adapter.spool = agent.spool
+                adapter.status = lambda: native
+                adapter.rcon = Mock()
+                agent.adapter = adapter
+                command = {'id': 'b'*24, 'type': 'load', 'match_id': payload['match_id'], 'generation': payload['generation'], 'payload': payload}
+                agent.send = Mock(return_value={'commands': [command], 'load_rejection_contract': 1})
+                try:
+                    result = cycle(agent)
+                    self.assertFalse(result['ready'])
+                    self.assertTrue(result['heartbeat'])
+                    self.assertEqual(result['error'], 'matchmaking_or_command')
+                    self.assertFalse(adapter.root.exists())
+                    adapter.rcon.command.assert_not_called()
+                    self.assertEqual(agent.spool.metrics()['pending'], 0)
+                finally:
+                    agent.spool.db.close()
+
+    def test_bot_warmup_preserves_native_ready_deadline_without_freeing_assignment(self):
+        agent, calls = self.agent()
+        native = {'healthy': True, 'idle': False, 'matchid': '7e5700'+'a'*18+':25', 'phase': 'warmup',
+                  'bot_only_test': True, 'bot_only_ready_seconds': 15, 'ready_seconds': 300,
+                  'ready_deadline': 1800000300}
+        agent.adapter.status = lambda: native
+        result = cycle(agent)
+        self.assertTrue(result['heartbeat'])
+        self.assertFalse(result['idle'])
+        self.assertFalse(result['ready'])
+        self.assertTrue(calls[-1]['healthy'])
+        self.assertEqual(calls[-1]['observation'], native)
 
     def test_missing_contract_remains_unnegotiated(self):
         from unittest.mock import Mock

@@ -1,16 +1,16 @@
 // Immutable release pins; agent and controller versions are independent.
-export const MATCHBOT_VERSION = '0.6.5';
-export const MATCHBOT_MIN_WEB_VERSION = '0.7.8';
-export const MATCHBOT_SOURCE = 'releases/0.6.5/matchbot_csco_mm.so';
-export const MATCHBOT_LANGUAGE = 'releases/0.6.5/language.txt';
-export const MATCHBOT_ARCHIVE = 'source-bundles/mixqueue2-cs16-0.6.5.zip';
-export const MATCHBOT_BOT_PROFILES = 'releases/0.6.5/resources/bot_profiles-5.30.0.814.zip';
-export const MATCHBOT_NAV_PROOF = 'releases/0.6.5/navigation/nav-proof.json';
-export const MATCHBOT_NAV = 'releases/0.6.5/navigation/de_dust2.nav';
+export const MATCHBOT_VERSION = '0.6.7';
+export const MATCHBOT_MIN_WEB_VERSION = '0.8.0';
+export const MATCHBOT_SOURCE = 'releases/0.6.7/matchbot_csco_mm.so';
+export const MATCHBOT_LANGUAGE = 'releases/0.6.7/language.txt';
+export const MATCHBOT_ARCHIVE = 'source-bundles/mixqueue2-cs16-0.6.7.zip';
+export const MATCHBOT_BOT_PROFILES = 'releases/0.6.7/resources/bot_profiles-5.30.0.814.zip';
+export const MATCHBOT_NAV_PROOF = 'releases/0.6.7/navigation/nav-proof.json';
+export const MATCHBOT_NAV = 'releases/0.6.7/navigation/de_dust2.nav';
 export const MATCHBOT_RESOURCE_PROVENANCE = {
-  'bot-dependencies.json': 'releases/0.6.5/resources/bot-dependencies.json',
-  'upstream-LICENSE': 'releases/0.6.5/resources/upstream-LICENSE',
-  'upstream-LICENSE-TRANSITION.md': 'releases/0.6.5/resources/upstream-LICENSE-TRANSITION.md',
+  'bot-dependencies.json': 'releases/0.6.7/resources/bot-dependencies.json',
+  'upstream-LICENSE': 'releases/0.6.7/resources/upstream-LICENSE',
+  'upstream-LICENSE-TRANSITION.md': 'releases/0.6.7/resources/upstream-LICENSE-TRANSITION.md',
 };
 export const MATCHBOT_NAVIGATION_MANIFEST = 'navigation/0.6.2/manifest.json';
 export const MATCHBOT_NAVIGATION_FILES: Record<string, string> = {
@@ -32,16 +32,16 @@ export const matchbotReleaseHashes = {
   'navigation/0.6.2/de_train.nav': 'fe0a673078812f774f7a93a002371c8145f864fcbd1321e78ff82d717219c445',
   'navigation/0.6.2/manifest.json': 'e803db2773953775f057f49415471e9905dfb39ba518c9d0cf41421f18874c43',
 
-  'releases/0.6.5/resources/bot_profiles-5.30.0.814.zip': '39e6e8a137dbbbdef842cdb4318ef1069b3467127a0cc19bdc6eca1d5d693e38',
-  'releases/0.6.5/resources/bot-dependencies.json': 'f62ed12bf6cca8c943bbf4b335177b9b2716251e15ae59164a9cc7674c739dd4',
-  'releases/0.6.5/resources/upstream-LICENSE': 'c2ad4def946a60034ae933109dbf5b0470c81872e5952bc81a502ea6e7f8b780',
-  'releases/0.6.5/resources/upstream-LICENSE-TRANSITION.md': '95f065ae6d51b35a90c09d70a0e6bb3eaca111bd7de20d4a67d52de48b025333',
-  'releases/0.6.5/navigation/nav-proof.json': '4d772b2c95ca34fcaf1dbf8ad525884b1c3722b0eb6d0017fc4fcc4eb2e62571',
-  'releases/0.6.5/navigation/de_dust2.nav': '9a44381363572f05d42fa4f82b293f54e49c93d60a4471d2fe8396ecceb77753',
+  'releases/0.6.7/resources/bot_profiles-5.30.0.814.zip': '39e6e8a137dbbbdef842cdb4318ef1069b3467127a0cc19bdc6eca1d5d693e38',
+  'releases/0.6.7/resources/bot-dependencies.json': 'f62ed12bf6cca8c943bbf4b335177b9b2716251e15ae59164a9cc7674c739dd4',
+  'releases/0.6.7/resources/upstream-LICENSE': 'c2ad4def946a60034ae933109dbf5b0470c81872e5952bc81a502ea6e7f8b780',
+  'releases/0.6.7/resources/upstream-LICENSE-TRANSITION.md': '95f065ae6d51b35a90c09d70a0e6bb3eaca111bd7de20d4a67d52de48b025333',
+  'releases/0.6.7/navigation/nav-proof.json': '4d772b2c95ca34fcaf1dbf8ad525884b1c3722b0eb6d0017fc4fcc4eb2e62571',
+  'releases/0.6.7/navigation/de_dust2.nav': '9a44381363572f05d42fa4f82b293f54e49c93d60a4471d2fe8396ecceb77753',
 
-  [MATCHBOT_SOURCE]: '6c34e3557c628d9cda431fbace292e002f4bb0943bae69fbfec9d319012e8a1b',
+  [MATCHBOT_SOURCE]: '7a12e1659823c77f3e6d4dacd5cfcccf2463885cb2753e57bab52e590e1741d2',
   [MATCHBOT_LANGUAGE]: '877007aa9b884af157b69cd8d33c73af00e4d6583f48a588ec5a26b2ce38bf27',
-  [MATCHBOT_ARCHIVE]: 'f54d1252bf822814e2af629f7b82297ed1fe906bd1d50fe541dec59737e5e8c2',
+  [MATCHBOT_ARCHIVE]: 'cc0aeb4630c26825508ae8ff0367f9f74cfc7496d73f8093f2f17af044c07af5',
 };
 export function matchbotVersionForHash(hash: string): string | null {
   if (hash === matchbotReleaseHashes[MATCHBOT_SOURCE]) return MATCHBOT_VERSION;
@@ -54,5 +54,6 @@ export function matchbotVersionForHash(hash: string): string | null {
   if (hash === 'b838e0968bde5a1667096a09d087b5805f035ef7974c3a7e9c2ecf601cab4908') return '0.6.2';
   if (hash === 'cbc24d3b18018db4589581327ae8bc3f120c8de6736129024a053e27868dc4da') return '0.6.3';
   if (hash === 'af5ed8c138180a7614be80dc981b10d878a19e9dfe9e16549adcd9ffa711ca31') return '0.6.4';
+  if (hash === '6c34e3557c628d9cda431fbace292e002f4bb0943bae69fbfec9d319012e8a1b') return '0.6.5';
   return null;
 }

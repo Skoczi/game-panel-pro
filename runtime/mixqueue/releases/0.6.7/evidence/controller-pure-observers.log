@@ -1,0 +1,4 @@
+Scope: local source pure tests only, no production build or deployment.
+Build exit: 0
+Run exit: 0
+observer contracts: identities, roster precedence, roles, expiry, replay, revocation and scope passed

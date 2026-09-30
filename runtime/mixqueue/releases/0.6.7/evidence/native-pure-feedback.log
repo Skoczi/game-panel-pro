@@ -1,0 +1,4 @@
+Scope: local pure tests / existing-binary metadata; no production rebuild, game host, lab or Steam client.
+Command: ['wsl.exe', '-e', 'sh', '-c', 'ulimit -c 0; exec /tmp/cs16-067-feedback-8137469e3db944e6a3477d9403e0982f']
+Exit: 0
+PASS captain consent scope/orders/duplicates/reset; measured HP; final-hit snapshot; identity epoch; dealt/taken/world/team; PL/EN; safe text

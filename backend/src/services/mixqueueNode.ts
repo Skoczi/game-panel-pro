@@ -14,11 +14,11 @@ export const mqSources = fileURLToPath(
   new URL("../../../runtime/mixqueue/", import.meta.url),
 );
 let installation: "idle" | "installing" | "failed" = "idle";
-export const MIXQUEUE_VERSION = "0.6.2";
+export const MIXQUEUE_VERSION = "0.6.3";
 export const sourceHashes: Record<string, string> = {
   ...matchbotReleaseHashes,
   "mq_agent.py":
-    "81fbb61c27f5a2b82bd78bf94f83adfaa8046aaae90c3428a2be4c44e3072201",
+    "511f876710ea2c68759375dd7a5b2e63e1d20e16c1b25d9f6fc1a88b1fef80a9",
   "matchbot_csco_mm.so":
     "0298b8d2e8096094789123e773b65861de5da296fdcb48cec6e3cc94f1b7c11e",
   "matchbot-language.txt": "877007aa9b884af157b69cd8d33c73af00e4d6583f48a588ec5a26b2ce38bf27",

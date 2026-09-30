@@ -1,0 +1,4 @@
+Scope: local pure tests / existing-binary metadata; no production rebuild, game host, lab or Steam client.
+Command: ['wsl.exe', '-e', 'sh', '-c', 'ulimit -c 0; exec /tmp/cs16-067-bots-c1dea8a392d840a097a2c6697984311e']
+Exit: 0
+CSCO native bot NAV structure, geometry, references and bounds tests passed

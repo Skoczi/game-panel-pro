@@ -1,0 +1,3 @@
+Scope: local pure tests / existing-binary metadata; no production rebuild, game host, lab or Steam client.
+Command: ['wsl.exe', '-e', 'g++', '-std=c++14', '-Wall', '-Wextra', '/mnt/d/Projects/Skoczi/csco-matchmaking/tests/cs16_end_test.cpp', '-o', '/tmp/cs16-067-end-b5ea4a2cf7834ce281808c975f901fbe']
+Exit: 0

@@ -1,0 +1,4 @@
+Scope: local source pure tests only, no production build or deployment.
+Build exit: 0
+Run exit: 0
+PASS contract: immutable identity, v1/v2/v3 roster, signed V3 bot-only full test, MR12/MR15 5v5, strict MR8 Wingman, four MR3 overtimes, test-only bots, owner, UTF-8, Steam IDs, maps
