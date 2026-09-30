@@ -39,6 +39,12 @@ test('controller release verifies with independent agent pins and immutable publ
   const v063 = hash(await fs.readFile(new URL('releases/0.6.3/matchbot_csco_mm.so', runtime)));
   assert.equal(v063, 'cbc24d3b18018db4589581327ae8bc3f120c8de6736129024a053e27868dc4da');
   assert.equal(matchbotVersionForHash(v063), '0.6.3');
+  const v064 = hash(await fs.readFile(new URL('releases/0.6.4/matchbot_csco_mm.so', runtime)));
+  assert.equal(v064, 'af5ed8c138180a7614be80dc981b10d878a19e9dfe9e16549adcd9ffa711ca31');
+  assert.equal(matchbotVersionForHash(v064), '0.6.4');
+  assert.equal(hash(await fs.readFile(new URL('source-bundles/mixqueue2-cs16-0.6.4.zip', runtime))), '799d3da30f7844181b39060653f0d85b3d2f2b6b7b20cc38e95530862e24b5a3');
+  assert.equal(hash(await fs.readFile(new URL('source-bundles/mixqueue2-cs16-0.6.4-source.zip', runtime))), '05c85ecb2444d3abf90ef32bfb26e410c73748388f8ed464f00708bd4ebb96c1');
+  assert.equal(hash(await fs.readFile(new URL('source-bundles/mixqueue2-agent-0.6.1.zip', runtime))), 'f8d80c3e7deb4fe2608ac7e536d226f8bc8caa0f88728472659949c6272c432f');
   assert.equal(hash(await fs.readFile(new URL('source-bundles/mixqueue2-cs16-0.6.3.zip', runtime))), 'b5785974ef282b757acc28362656fb7f99fa0cea60e9f1f82cd8c677cfd06adf');
   assert.equal(hash(await fs.readFile(new URL('source-bundles/mixqueue2-agent-0.6.0.zip', runtime))), 'b1be179add3b5b71de07c5738ab0566b923c6368e4dc01e270ed91adf34e2ce4');
   assert.equal(hash(await fs.readFile(new URL('source-bundles/mixqueue2-cs16-0.5.2.zip', runtime))), '86381d8451b0661d0d572a5857f87ebf1c563ee979307b8aa1fecdf5560f5f34');
@@ -49,23 +55,28 @@ test('controller release verifies with independent agent pins and immutable publ
   assert.equal(hash(await fs.readFile(new URL('source-bundles/mixqueue2-agent-0.5.0.zip', runtime))), '005b045255862f1ca848127580ae70111de9115db6cc62a6737907bb3e8df464');
   assert.equal(matchbotVersionForHash(matchbotReleaseHashes[MATCHBOT_SOURCE]), MATCHBOT_VERSION);
   assert.equal(matchbotVersionForHash(hash(Buffer.from('untrusted controller'))), null);
-  assert.equal(hash(await fs.readFile(new URL('mq_agent.py', runtime))), '2f14a107c210ae69d65a85ea3614c66c854b52ee6dcf3ea6ccb7dd72b027970a');
+  assert.equal(hash(await fs.readFile(new URL('mq_agent.py', runtime))), '81fbb61c27f5a2b82bd78bf94f83adfaa8046aaae90c3428a2be4c44e3072201');
   assert.equal(hash(await fs.readFile(new URL('source-bundles/mixqueue2-cs16-0.4.0.zip', runtime))), '89a04a3c461095d0e82f732d189b18dbf6f78c300f58ced0d504986e622f163b');
 });
 
 test('controller and agent upgrade retain the dependency contract', async () => {
-  const manifest = JSON.parse(await fs.readFile(new URL('releases/0.6.4/manifest.json', runtime), 'utf8'));
+  const manifest = JSON.parse(await fs.readFile(new URL('releases/0.6.5/manifest.json', runtime), 'utf8'));
   assert.equal(MATCHBOT_VERSION, manifest.controller_version);
   assert.equal(MATCHBOT_MIN_WEB_VERSION, manifest.minimum_web_version);
-  assert.equal(MATCHBOT_MIN_WEB_VERSION, '0.7.6');
+  assert.equal(MATCHBOT_MIN_WEB_VERSION, '0.7.8');
   assert.equal(MIXQUEUE_VERSION, manifest.agent_version);
-  assert.equal(MIXQUEUE_VERSION, '0.6.1');
+  assert.equal(MIXQUEUE_VERSION, '0.6.2');
   assert.equal(sourceHashes['mq_agent.py'], manifest.sourceHashes['mq_agent.py']);
   assert.equal(matchbotReleaseHashes[MATCHBOT_SOURCE], manifest.sourceHashes['matchbot_csco_mm.so']);
-  assert.equal(hash(await fs.readFile(new URL('source-bundles/mixqueue2-agent-0.6.1.zip', runtime))), manifest.files['packages/mixqueue2-agent-0.6.1.zip']);
-  const previous = JSON.parse(await fs.readFile(new URL('releases/0.6.3/dependencies.json', runtime), 'utf8'));
-  const dependencies = JSON.parse(await fs.readFile(new URL('releases/0.6.4/dependencies.json', runtime), 'utf8'));
+  assert.equal(hash(await fs.readFile(new URL('source-bundles/mixqueue2-agent-0.6.2.zip', runtime))), manifest.files['packages/mixqueue2-agent-0.6.2.zip']);
+  assert.equal(hash(await fs.readFile(new URL('source-bundles/mixqueue2-cs16-0.6.5-source.zip', runtime))), manifest.files['packages/mixqueue2-cs16-0.6.5-source.zip']);
+  for (const [name, expected] of Object.entries(manifest.files)) {
+    if (name.startsWith('packages/') || name.startsWith('runtime/')) continue;
+    assert.equal(hash(await fs.readFile(new URL(`releases/0.6.5/${name}`, runtime))), expected, name);
+  }
+  const previous = JSON.parse(await fs.readFile(new URL('releases/0.6.4/dependencies.json', runtime), 'utf8'));
+  const dependencies = JSON.parse(await fs.readFile(new URL('releases/0.6.5/dependencies.json', runtime), 'utf8'));
   assert.deepEqual(dependencies.tested, previous.tested);
   assert.deepEqual(dependencies.archives, previous.archives);
-  assert.equal(dependencies.archives.find((item: any) => item.name === 'regamedll-zbot-profiles').sha256, matchbotReleaseHashes['releases/0.6.4/resources/bot_profiles-5.30.0.814.zip']);
+  assert.equal(dependencies.archives.find((item: any) => item.name === 'regamedll-zbot-profiles').sha256, matchbotReleaseHashes['releases/0.6.5/resources/bot_profiles-5.30.0.814.zip']);
 });

@@ -1,0 +1,33 @@
+PASS audit: 3,3,1,1,2 always forms 5v5 without splitting parties
+PASS audit: non-contiguous 5,4,5 candidate selection
+PASS global claim prevents joining another game
+PASS party membership and leader authorization
+PASS full lifecycle settles once with zero-sum ELO
+PASS forged assignment and wrong map rejected
+PASS invalid final score rolls back all changes
+PASS overtime result settles
+PASS abort supersedes undelivered load and keeps quarantine
+PASS ready rejection requeues accepted players only
+PASS agent rejects bad signatures and old timestamps
+PASS event sequence gaps and config mismatch rejected
+PASS unprivileged caller cannot cancel or toggle queues
+PASS stats persist and absent metrics are not invented
+PASS veto stale version cannot apply another action
+PASS no-show penalizes only on a healthy server
+PASS lost controller identity quarantines the server
+PASS report resolution requires admin and preserves audit
+PASS csco 5v5 lifecycle keeps ratings isolated
+PASS csco 2v2 lifecycle keeps ratings isolated
+PASS csgo 5v5 lifecycle keeps ratings isolated
+PASS csgo 2v2 lifecycle keeps ratings isolated
+PASS cs16 5v5 lifecycle keeps ratings isolated
+PASS cs16 2v2 lifecycle keeps ratings isolated
+PASS drain releases waiting claims without cancelling active matches
+PASS ready timeout after drain does not requeue accepted users
+PASS server registry validates configuration and rejects duplicate IDs
+PASS server update requires current revision and fresh health before enabling
+PASS server disable preserves active match and rejects reconfiguration
+PASS private enrollment key authenticates only its registered agent
+PASS removal rejects stale revision and active or quarantined lease
+PASS removal preserves completed matches and denies old agents and ID reuse
+32 tests passed

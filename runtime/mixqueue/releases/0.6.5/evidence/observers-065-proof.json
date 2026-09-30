@@ -1,0 +1,692 @@
+{
+  "controller": "0.6.5",
+  "acceptance": "isolated ReGameDLL QA; not Steam or visual acceptance",
+  "qa_sha256": "11f256728481c8a735ae44f71921f3193b04f89d50e80dcbd068d676cf821ed8",
+  "checks": [
+    "live spectator routing; roster admin denied; both-team camera only for observer; ready/team/chat isolation; per-grant xray",
+    "observer exit/reconnect preserves score and roster connectivity; no disconnect pause; fresh session xray off",
+    "empty ACL revokes connected observers; stale revision denied; no reconnect pause",
+    "real observer ACL expiry fails closed and cannot be replayed",
+    "observer identities absent from participant statistics, penalties and connection journal",
+    "recovery clears observer grants and rejects updates"
+  ],
+  "metamod_list": "Currently loaded plugins:\n      description    stat pend  file                 vers    src  load  unload\n [ 1] MatchBot CSCO  RUN   -    matchbot_csco_mm.so  v0.6.5  ini  Start Never\n1 plugins, 1 running",
+  "match_id": "0650000018d9ef5b83570de2",
+  "generation": 120,
+  "baseline": {
+    "bridge": 1,
+    "full_test": true,
+    "assignment_contract": 3,
+    "stats_version": 2,
+    "side_choice": 1,
+    "solo_test": true,
+    "matchid": "0650000018d9ef5b83570de2:120",
+    "idle": false,
+    "healthy": true,
+    "controller_version": "0.6.5",
+    "controller": "matchbot",
+    "phase": "live",
+    "profile": "cs16-classic-v2",
+    "ruleset": 2,
+    "reconnect_budget": 1,
+    "pause_policy": 2,
+    "tactical_limit": 3,
+    "tactical_seconds": 30,
+    "ready_seconds": 300,
+    "player_ready": true,
+    "rules_ready": true,
+    "rules_issue": "",
+    "observer_acl_version": 1,
+    "observer_revision": 0,
+    "observer_expires_at": 0,
+    "observer_xray": "markers_v1",
+    "observer_slots": 2,
+    "connected_observers": 0,
+    "restarts_completed": 3,
+    "reconnect_resumes": 0,
+    "score": [
+      1,
+      0
+    ]
+  },
+  "events": [
+    {
+      "event_id": "0650000018d9ef5b83570de2:120:loaded",
+      "match_id": "0650000018d9ef5b83570de2",
+      "generation": 120,
+      "type": "loaded",
+      "data": {
+        "map": "de_dust2",
+        "config_hash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+        "ready_deadline": 1790725804
+      }
+    },
+    {
+      "event_id": "0650000018d9ef5b83570de2:120:6abc4d7c9f20661f533264b4:1",
+      "match_id": "0650000018d9ef5b83570de2",
+      "generation": 120,
+      "type": "player_ready",
+      "data": {
+        "steam_id": "76561198000000000",
+        "ready": false
+      }
+    },
+    {
+      "event_id": "0650000018d9ef5b83570de2:120:6abc4d7c9f20661f533264b4:2",
+      "match_id": "0650000018d9ef5b83570de2",
+      "generation": 120,
+      "type": "player_ready",
+      "data": {
+        "steam_id": "76561198000000001",
+        "ready": false
+      }
+    },
+    {
+      "event_id": "0650000018d9ef5b83570de2:120:6abc4d7c9f20661f533264b4:3",
+      "match_id": "0650000018d9ef5b83570de2",
+      "generation": 120,
+      "type": "player_ready",
+      "data": {
+        "steam_id": "76561198000000002",
+        "ready": false
+      }
+    },
+    {
+      "event_id": "0650000018d9ef5b83570de2:120:6abc4d7c9f20661f533264b4:4",
+      "match_id": "0650000018d9ef5b83570de2",
+      "generation": 120,
+      "type": "player_ready",
+      "data": {
+        "steam_id": "76561198000000003",
+        "ready": false
+      }
+    },
+    {
+      "event_id": "0650000018d9ef5b83570de2:120:6abc4d7c9f20661f533264b4:5",
+      "match_id": "0650000018d9ef5b83570de2",
+      "generation": 120,
+      "type": "player_ready",
+      "data": {
+        "steam_id": "76561198000000004",
+        "ready": false
+      }
+    },
+    {
+      "event_id": "0650000018d9ef5b83570de2:120:6abc4d7c9f20661f533264b4:6",
+      "match_id": "0650000018d9ef5b83570de2",
+      "generation": 120,
+      "type": "player_ready",
+      "data": {
+        "steam_id": "76561198000000005",
+        "ready": false
+      }
+    },
+    {
+      "event_id": "0650000018d9ef5b83570de2:120:6abc4d7c9f20661f533264b4:7",
+      "match_id": "0650000018d9ef5b83570de2",
+      "generation": 120,
+      "type": "player_ready",
+      "data": {
+        "steam_id": "76561198000000006",
+        "ready": false
+      }
+    },
+    {
+      "event_id": "0650000018d9ef5b83570de2:120:6abc4d7c9f20661f533264b4:8",
+      "match_id": "0650000018d9ef5b83570de2",
+      "generation": 120,
+      "type": "player_ready",
+      "data": {
+        "steam_id": "76561198000000007",
+        "ready": false
+      }
+    },
+    {
+      "event_id": "0650000018d9ef5b83570de2:120:6abc4d7c9f20661f533264b4:9",
+      "match_id": "0650000018d9ef5b83570de2",
+      "generation": 120,
+      "type": "player_ready",
+      "data": {
+        "steam_id": "76561198000000008",
+        "ready": false
+      }
+    },
+    {
+      "event_id": "0650000018d9ef5b83570de2:120:6abc4d7c9f20661f533264b4:10",
+      "match_id": "0650000018d9ef5b83570de2",
+      "generation": 120,
+      "type": "player_ready",
+      "data": {
+        "steam_id": "76561198000000009",
+        "ready": false
+      }
+    },
+    {
+      "event_id": "0650000018d9ef5b83570de2:120:6abc4d7c9f20661f533264b4:11",
+      "match_id": "0650000018d9ef5b83570de2",
+      "generation": 120,
+      "type": "connected",
+      "data": {
+        "steam_id": "76561198000000000",
+        "connected": true
+      }
+    },
+    {
+      "event_id": "0650000018d9ef5b83570de2:120:6abc4d7c9f20661f533264b4:12",
+      "match_id": "0650000018d9ef5b83570de2",
+      "generation": 120,
+      "type": "connected",
+      "data": {
+        "steam_id": "76561198000000001",
+        "connected": true
+      }
+    },
+    {
+      "event_id": "0650000018d9ef5b83570de2:120:6abc4d7c9f20661f533264b4:13",
+      "match_id": "0650000018d9ef5b83570de2",
+      "generation": 120,
+      "type": "connected",
+      "data": {
+        "steam_id": "76561198000000002",
+        "connected": true
+      }
+    },
+    {
+      "event_id": "0650000018d9ef5b83570de2:120:6abc4d7c9f20661f533264b4:14",
+      "match_id": "0650000018d9ef5b83570de2",
+      "generation": 120,
+      "type": "connected",
+      "data": {
+        "steam_id": "76561198000000003",
+        "connected": true
+      }
+    },
+    {
+      "event_id": "0650000018d9ef5b83570de2:120:6abc4d7c9f20661f533264b4:15",
+      "match_id": "0650000018d9ef5b83570de2",
+      "generation": 120,
+      "type": "connected",
+      "data": {
+        "steam_id": "76561198000000004",
+        "connected": true
+      }
+    },
+    {
+      "event_id": "0650000018d9ef5b83570de2:120:6abc4d7c9f20661f533264b4:16",
+      "match_id": "0650000018d9ef5b83570de2",
+      "generation": 120,
+      "type": "connected",
+      "data": {
+        "steam_id": "76561198000000005",
+        "connected": true
+      }
+    },
+    {
+      "event_id": "0650000018d9ef5b83570de2:120:6abc4d7c9f20661f533264b4:17",
+      "match_id": "0650000018d9ef5b83570de2",
+      "generation": 120,
+      "type": "connected",
+      "data": {
+        "steam_id": "76561198000000006",
+        "connected": true
+      }
+    },
+    {
+      "event_id": "0650000018d9ef5b83570de2:120:6abc4d7c9f20661f533264b4:18",
+      "match_id": "0650000018d9ef5b83570de2",
+      "generation": 120,
+      "type": "connected",
+      "data": {
+        "steam_id": "76561198000000007",
+        "connected": true
+      }
+    },
+    {
+      "event_id": "0650000018d9ef5b83570de2:120:6abc4d7c9f20661f533264b4:19",
+      "match_id": "0650000018d9ef5b83570de2",
+      "generation": 120,
+      "type": "connected",
+      "data": {
+        "steam_id": "76561198000000008",
+        "connected": true
+      }
+    },
+    {
+      "event_id": "0650000018d9ef5b83570de2:120:6abc4d7c9f20661f533264b4:20",
+      "match_id": "0650000018d9ef5b83570de2",
+      "generation": 120,
+      "type": "connected",
+      "data": {
+        "steam_id": "76561198000000009",
+        "connected": true
+      }
+    },
+    {
+      "event_id": "0650000018d9ef5b83570de2:120:6abc4d7c9f20661f533264b4:21",
+      "match_id": "0650000018d9ef5b83570de2",
+      "generation": 120,
+      "type": "player_ready",
+      "data": {
+        "steam_id": "76561198000000000",
+        "ready": true
+      }
+    },
+    {
+      "event_id": "0650000018d9ef5b83570de2:120:6abc4d7c9f20661f533264b4:22",
+      "match_id": "0650000018d9ef5b83570de2",
+      "generation": 120,
+      "type": "player_ready",
+      "data": {
+        "steam_id": "76561198000000001",
+        "ready": true
+      }
+    },
+    {
+      "event_id": "0650000018d9ef5b83570de2:120:6abc4d7c9f20661f533264b4:23",
+      "match_id": "0650000018d9ef5b83570de2",
+      "generation": 120,
+      "type": "player_ready",
+      "data": {
+        "steam_id": "76561198000000002",
+        "ready": true
+      }
+    },
+    {
+      "event_id": "0650000018d9ef5b83570de2:120:6abc4d7c9f20661f533264b4:24",
+      "match_id": "0650000018d9ef5b83570de2",
+      "generation": 120,
+      "type": "player_ready",
+      "data": {
+        "steam_id": "76561198000000003",
+        "ready": true
+      }
+    },
+    {
+      "event_id": "0650000018d9ef5b83570de2:120:6abc4d7c9f20661f533264b4:25",
+      "match_id": "0650000018d9ef5b83570de2",
+      "generation": 120,
+      "type": "player_ready",
+      "data": {
+        "steam_id": "76561198000000004",
+        "ready": true
+      }
+    },
+    {
+      "event_id": "0650000018d9ef5b83570de2:120:6abc4d7c9f20661f533264b4:26",
+      "match_id": "0650000018d9ef5b83570de2",
+      "generation": 120,
+      "type": "player_ready",
+      "data": {
+        "steam_id": "76561198000000005",
+        "ready": true
+      }
+    },
+    {
+      "event_id": "0650000018d9ef5b83570de2:120:6abc4d7c9f20661f533264b4:27",
+      "match_id": "0650000018d9ef5b83570de2",
+      "generation": 120,
+      "type": "player_ready",
+      "data": {
+        "steam_id": "76561198000000006",
+        "ready": true
+      }
+    },
+    {
+      "event_id": "0650000018d9ef5b83570de2:120:6abc4d7c9f20661f533264b4:28",
+      "match_id": "0650000018d9ef5b83570de2",
+      "generation": 120,
+      "type": "player_ready",
+      "data": {
+        "steam_id": "76561198000000007",
+        "ready": true
+      }
+    },
+    {
+      "event_id": "0650000018d9ef5b83570de2:120:6abc4d7c9f20661f533264b4:29",
+      "match_id": "0650000018d9ef5b83570de2",
+      "generation": 120,
+      "type": "player_ready",
+      "data": {
+        "steam_id": "76561198000000008",
+        "ready": true
+      }
+    },
+    {
+      "event_id": "0650000018d9ef5b83570de2:120:6abc4d7c9f20661f533264b4:30",
+      "match_id": "0650000018d9ef5b83570de2",
+      "generation": 120,
+      "type": "player_ready",
+      "data": {
+        "steam_id": "76561198000000009",
+        "ready": true
+      }
+    },
+    {
+      "event_id": "0650000018d9ef5b83570de2:120:live",
+      "match_id": "0650000018d9ef5b83570de2",
+      "generation": 120,
+      "type": "live",
+      "data": {}
+    },
+    {
+      "event_id": "0650000018d9ef5b83570de2:120:round-1-0",
+      "match_id": "0650000018d9ef5b83570de2",
+      "generation": 120,
+      "type": "round",
+      "data": {
+        "team1_score": 1,
+        "team2_score": 0,
+        "stats_version": 2,
+        "players": {
+          "76561198000000000": {
+            "kills": 5,
+            "deaths": 0,
+            "assists": 0,
+            "damage": 500,
+            "rounds": 1,
+            "headshots": 0,
+            "kast_rounds": 1,
+            "opening_kills": 1,
+            "opening_deaths": 0,
+            "trade_kills": 0,
+            "traded_deaths": 0,
+            "multi2": 0,
+            "multi3": 0,
+            "multi4": 0,
+            "multi5": 1,
+            "clutch_attempts": 0,
+            "clutch_wins": 0,
+            "clutch1": 0,
+            "clutch2": 0,
+            "clutch3": 0,
+            "clutch4": 0,
+            "clutch5": 0,
+            "plants": 0,
+            "defuses": 0,
+            "utility_damage": 0
+          },
+          "76561198000000001": {
+            "kills": 0,
+            "deaths": 0,
+            "assists": 0,
+            "damage": 0,
+            "rounds": 1,
+            "headshots": 0,
+            "kast_rounds": 1,
+            "opening_kills": 0,
+            "opening_deaths": 0,
+            "trade_kills": 0,
+            "traded_deaths": 0,
+            "multi2": 0,
+            "multi3": 0,
+            "multi4": 0,
+            "multi5": 0,
+            "clutch_attempts": 0,
+            "clutch_wins": 0,
+            "clutch1": 0,
+            "clutch2": 0,
+            "clutch3": 0,
+            "clutch4": 0,
+            "clutch5": 0,
+            "plants": 0,
+            "defuses": 0,
+            "utility_damage": 0
+          },
+          "76561198000000002": {
+            "kills": 0,
+            "deaths": 0,
+            "assists": 0,
+            "damage": 0,
+            "rounds": 1,
+            "headshots": 0,
+            "kast_rounds": 1,
+            "opening_kills": 0,
+            "opening_deaths": 0,
+            "trade_kills": 0,
+            "traded_deaths": 0,
+            "multi2": 0,
+            "multi3": 0,
+            "multi4": 0,
+            "multi5": 0,
+            "clutch_attempts": 0,
+            "clutch_wins": 0,
+            "clutch1": 0,
+            "clutch2": 0,
+            "clutch3": 0,
+            "clutch4": 0,
+            "clutch5": 0,
+            "plants": 0,
+            "defuses": 0,
+            "utility_damage": 0
+          },
+          "76561198000000003": {
+            "kills": 0,
+            "deaths": 0,
+            "assists": 0,
+            "damage": 0,
+            "rounds": 1,
+            "headshots": 0,
+            "kast_rounds": 1,
+            "opening_kills": 0,
+            "opening_deaths": 0,
+            "trade_kills": 0,
+            "traded_deaths": 0,
+            "multi2": 0,
+            "multi3": 0,
+            "multi4": 0,
+            "multi5": 0,
+            "clutch_attempts": 0,
+            "clutch_wins": 0,
+            "clutch1": 0,
+            "clutch2": 0,
+            "clutch3": 0,
+            "clutch4": 0,
+            "clutch5": 0,
+            "plants": 0,
+            "defuses": 0,
+            "utility_damage": 0
+          },
+          "76561198000000004": {
+            "kills": 0,
+            "deaths": 0,
+            "assists": 0,
+            "damage": 0,
+            "rounds": 1,
+            "headshots": 0,
+            "kast_rounds": 1,
+            "opening_kills": 0,
+            "opening_deaths": 0,
+            "trade_kills": 0,
+            "traded_deaths": 0,
+            "multi2": 0,
+            "multi3": 0,
+            "multi4": 0,
+            "multi5": 0,
+            "clutch_attempts": 0,
+            "clutch_wins": 0,
+            "clutch1": 0,
+            "clutch2": 0,
+            "clutch3": 0,
+            "clutch4": 0,
+            "clutch5": 0,
+            "plants": 0,
+            "defuses": 0,
+            "utility_damage": 0
+          },
+          "76561198000000005": {
+            "kills": 0,
+            "deaths": 1,
+            "assists": 0,
+            "damage": 0,
+            "rounds": 1,
+            "headshots": 0,
+            "kast_rounds": 0,
+            "opening_kills": 0,
+            "opening_deaths": 1,
+            "trade_kills": 0,
+            "traded_deaths": 0,
+            "multi2": 0,
+            "multi3": 0,
+            "multi4": 0,
+            "multi5": 0,
+            "clutch_attempts": 0,
+            "clutch_wins": 0,
+            "clutch1": 0,
+            "clutch2": 0,
+            "clutch3": 0,
+            "clutch4": 0,
+            "clutch5": 0,
+            "plants": 0,
+            "defuses": 0,
+            "utility_damage": 0
+          },
+          "76561198000000006": {
+            "kills": 0,
+            "deaths": 1,
+            "assists": 0,
+            "damage": 0,
+            "rounds": 1,
+            "headshots": 0,
+            "kast_rounds": 0,
+            "opening_kills": 0,
+            "opening_deaths": 0,
+            "trade_kills": 0,
+            "traded_deaths": 0,
+            "multi2": 0,
+            "multi3": 0,
+            "multi4": 0,
+            "multi5": 0,
+            "clutch_attempts": 0,
+            "clutch_wins": 0,
+            "clutch1": 0,
+            "clutch2": 0,
+            "clutch3": 0,
+            "clutch4": 0,
+            "clutch5": 0,
+            "plants": 0,
+            "defuses": 0,
+            "utility_damage": 0
+          },
+          "76561198000000007": {
+            "kills": 0,
+            "deaths": 1,
+            "assists": 0,
+            "damage": 0,
+            "rounds": 1,
+            "headshots": 0,
+            "kast_rounds": 0,
+            "opening_kills": 0,
+            "opening_deaths": 0,
+            "trade_kills": 0,
+            "traded_deaths": 0,
+            "multi2": 0,
+            "multi3": 0,
+            "multi4": 0,
+            "multi5": 0,
+            "clutch_attempts": 0,
+            "clutch_wins": 0,
+            "clutch1": 0,
+            "clutch2": 0,
+            "clutch3": 0,
+            "clutch4": 0,
+            "clutch5": 0,
+            "plants": 0,
+            "defuses": 0,
+            "utility_damage": 0
+          },
+          "76561198000000008": {
+            "kills": 0,
+            "deaths": 1,
+            "assists": 0,
+            "damage": 0,
+            "rounds": 1,
+            "headshots": 0,
+            "kast_rounds": 0,
+            "opening_kills": 0,
+            "opening_deaths": 0,
+            "trade_kills": 0,
+            "traded_deaths": 0,
+            "multi2": 0,
+            "multi3": 0,
+            "multi4": 0,
+            "multi5": 0,
+            "clutch_attempts": 0,
+            "clutch_wins": 0,
+            "clutch1": 0,
+            "clutch2": 0,
+            "clutch3": 0,
+            "clutch4": 0,
+            "clutch5": 0,
+            "plants": 0,
+            "defuses": 0,
+            "utility_damage": 0
+          },
+          "76561198000000009": {
+            "kills": 0,
+            "deaths": 1,
+            "assists": 0,
+            "damage": 0,
+            "rounds": 1,
+            "headshots": 0,
+            "kast_rounds": 0,
+            "opening_kills": 0,
+            "opening_deaths": 0,
+            "trade_kills": 0,
+            "traded_deaths": 0,
+            "multi2": 0,
+            "multi3": 0,
+            "multi4": 0,
+            "multi5": 0,
+            "clutch_attempts": 1,
+            "clutch_wins": 0,
+            "clutch1": 0,
+            "clutch2": 0,
+            "clutch3": 0,
+            "clutch4": 0,
+            "clutch5": 0,
+            "plants": 0,
+            "defuses": 0,
+            "utility_damage": 0
+          }
+        },
+        "round_reason": "elimination"
+      }
+    }
+  ],
+  "final_status": {
+    "bridge": 1,
+    "full_test": true,
+    "assignment_contract": 3,
+    "stats_version": 2,
+    "side_choice": 1,
+    "solo_test": true,
+    "matchid": "",
+    "idle": true,
+    "healthy": true,
+    "controller_version": "0.6.5",
+    "controller": "matchbot",
+    "phase": "idle",
+    "profile": "cs16-classic-v2",
+    "ruleset": 2,
+    "reconnect_budget": 1,
+    "pause_policy": 2,
+    "tactical_limit": 3,
+    "tactical_seconds": 30,
+    "ready_seconds": 300,
+    "player_ready": true,
+    "rules_ready": true,
+    "rules_issue": "",
+    "observer_acl_version": 1,
+    "observer_revision": 0,
+    "observer_expires_at": 0,
+    "observer_xray": "markers_v1",
+    "observer_slots": 0,
+    "connected_observers": 0,
+    "restarts_completed": 3,
+    "reconnect_resumes": 0,
+    "score": [
+      0,
+      0
+    ]
+  }
+}

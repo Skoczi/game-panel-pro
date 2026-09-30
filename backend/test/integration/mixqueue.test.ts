@@ -62,6 +62,17 @@ test(
     const aiRconCalls: string[] = [];
     const command = { id: 'c'.repeat(24), type: 'load', match_id: 'a'.repeat(24), generation: 2,
       payload: {match_id: 'a'.repeat(24), generation: 2, rules: {}, map: 'de_missing'} };
+    const observerMatch = 'f'.repeat(24), observerGeneration = 21;
+    const observerUntil = Math.floor(Date.now() / 1000) + 300;
+    const observerUpdate = {id: '1'.repeat(24), type: 'observer_update', match_id: observerMatch, generation: observerGeneration,
+      payload: {version: 1, revision: 1, expires_at: observerUntil, observers: [
+        {steam_id: '76561198000000001', role: 'admin', xray: true, expires_at: observerUntil, locale: 'pl'},
+        {steam_id: '76561198000000002', role: 'commentator', xray: false, expires_at: observerUntil, locale: 'en'},
+      ]}};
+    const observerCleanup = {id: '3'.repeat(24), type: 'cleanup', match_id: observerMatch, generation: observerGeneration,
+      payload: {reason: 'test_admin'}};
+    let observerPhase = 'none', observerRevision = 0, observerExpires = 0;
+    const observerRcon: string[] = [];
     const originalFetch = globalThis.fetch;
     globalThis.fetch = (async (url, options) => {
       assert.equal(url, "https://csco.gg/mq2-agent");
@@ -84,11 +95,11 @@ test(
       if (body.action === 'event') rejected.push({id, event: body.event});
       if (body.action === 'poll' && body.healthy) {
         assert.equal(body.observation.agent_protocol, 2);
-        assert.equal(body.observation.agent_version, '0.6.1');
+        assert.equal(body.observation.agent_version, '0.6.2');
         assert.equal(body.observation.assignment_contract, 3);
         assert.equal(body.observation.full_test, true);
         assert.equal(body.observation.controller, 'matchbot');
-        assert.equal(body.observation.controller_version, '0.6.4');
+        assert.equal(body.observation.controller_version, '0.6.5');
         assert.equal(body.observation.rules_ready, true);
         assert.equal(body.observation.stats_version, 2);
         assert.equal(body.observation.pause_policy, 2);
@@ -96,13 +107,23 @@ test(
         assert.equal(body.observation.tactical_limit, 3);
         assert.equal(body.observation.tactical_seconds, 30);
         assert.equal(body.observation.ready_seconds, 300);
+        assert.equal(body.observation.observer_acl_version, 1);
+        assert.equal(body.observation.observer_agent_version, 1);
+        assert.equal(body.observation.observer_slots, 2);
+        assert.equal(body.observation.observer_xray, 'markers_v1');
+        assert.equal(typeof body.observation.observer_revision, 'number');
+        assert.equal(typeof body.observation.observer_expires_at, 'number');
+        assert.equal(typeof body.observation.connected_observers, 'number');
         assert.equal(typeof body.observation.delivery.pending, 'number');
         assert.equal(body.observation.solo_test, true);
       }
       requests.push({ id, action: body.action, healthy: body.healthy });
-      return new Response(JSON.stringify({ commands: id !== keys[0] ? [] : rejectAiLoads
-        ? aiLoads.map(item => item.command) : rejectMissingMap ? [command] : [],
-        load_rejection_contract: 1 }), { status: 200 });
+      const commands = id !== keys[0] ? [] : observerPhase === 'apply' ? [observerUpdate]
+        : observerPhase === 'unconfirmed' ? [
+          {...observerUpdate, payload: {...observerUpdate.payload, revision: 0, path: '/private'}},
+          {...observerUpdate, id: '2'.repeat(24), payload: {...observerUpdate.payload, revision: 2, observers: []}}, observerCleanup,
+        ] : rejectAiLoads ? aiLoads.map(item => item.command) : rejectMissingMap ? [command] : [];
+      return new Response(JSON.stringify({ commands, load_rejection_contract: 1 }), { status: 200 });
     }) as typeof fetch;
     const closeBroker = async (key: string) => {
       await brokers.get(key)?.close();
@@ -158,9 +179,36 @@ test(
                 // The actual agent must map only the exact safe line, dropping all other RCON text.
                 return `private-controller-diagnostic\n${load.code}\n`;
               }
+              if (command.startsWith('mq2_observers ')) {
+                assert.equal(a.runtimeKey, keys[0]);
+                const revision = observerPhase === 'apply' ? 1 : 2;
+                assert.equal(command, `mq2_observers ${observerMatch} ${observerGeneration} ${revision}`);
+                const wire = await fs.readFile(path.join(base, 'config', `${observerMatch}-${observerGeneration}-observers-${revision}.txt`), 'utf8');
+                const header = `MQ2OBS1 ${observerMatch} ${observerGeneration} ${revision} ${observerUntil}\n`;
+                assert.equal(wire, header + (revision === 1
+                  ? `76561198000000001 admin 1 ${observerUntil} pl\n76561198000000002 commentator 0 ${observerUntil} en\n` : ''));
+                observerRcon.push(command);
+                if (revision === 2) return 'private-unconfirmed-observer-diagnostic';
+                observerRevision = revision;
+                observerExpires = observerUntil;
+                return 'observer_updated';
+              }
+              if (command === 'mq2_clear test_admin') {
+                assert.equal(a.runtimeKey, keys[0]);
+                assert.equal(observerRcon.at(-1), `mq2_observers ${observerMatch} ${observerGeneration} 2`);
+                observerRcon.push(command);
+                observerPhase = 'done'; observerRevision = 0; observerExpires = 0;
+                return 'cleared';
+              }
               assert.equal(command, "mq2_status");
               return JSON.stringify({bridge: 1, healthy: a.runtimeKey !== keys[0] || firstControllerHealthy,
-                idle: true, controller: 'matchbot', controller_version: '0.6.4', assignment_contract: 3, stats_version: 2,
+                idle: a.runtimeKey !== keys[0] || !['apply', 'unconfirmed'].includes(observerPhase),
+                matchid: a.runtimeKey === keys[0] && ['apply', 'unconfirmed'].includes(observerPhase)
+                  ? `${observerMatch}:${observerGeneration}` : '',
+                observer_acl_version: 1, observer_revision: a.runtimeKey === keys[0] ? observerRevision : 0,
+                observer_expires_at: a.runtimeKey === keys[0] ? observerExpires : 0,
+                observer_slots: 2, connected_observers: a.runtimeKey === keys[0] && observerRevision > 0 ? 1 : 0,
+                observer_xray: 'markers_v1', controller: 'matchbot', controller_version: '0.6.5', assignment_contract: 3, stats_version: 2,
                 pause_policy: 2, reconnect_budget: 1, tactical_limit: 3, tactical_seconds: 30, ready_seconds: 300,
                 full_test: true, rules_ready: true, solo_test: true});
             },
@@ -304,6 +352,24 @@ test(
       assert.deepEqual(event, {...expected, schema_version: 1, sequence: index % 2 + 1, boot_id: blocked.event.boot_id});
       assert.equal(Object.hasOwn(event.data, 'round_reason'), index < 2, 'legacy reasons must not be invented');
     }
+    // Real agent writes immutable, scoped ACL files and confirms the controller revision via its next signed poll.
+    rejectAiLoads = false;
+    observerPhase = 'apply';
+    await until(async () => observations.get(keys[0]).observer_revision === 1);
+    const snapshotPath = path.join(root, keys[0], 'config', `${observerMatch}-${observerGeneration}-observers-1.txt`);
+    const firstSnapshot = await fs.readFile(snapshotPath, 'utf8'), snapshotInode = (await fs.stat(snapshotPath)).ino;
+    assert.equal(observations.get(keys[0]).observer_expires_at, observerUntil);
+    assert.equal(observations.get(keys[0]).connected_observers, 1);
+    assert.equal(observations.get(keys[1]).observer_revision, 0);
+    assert.equal((await fs.readdir(path.join(root, keys[1], 'config'))).length, 0);
+    observerPhase = 'unconfirmed';
+    await until(async () => observerPhase === 'done' && rejected.some(item => item.event.event_id === 'idle-' + observerCleanup.id));
+    assert.equal((await status(keys[0])).ready, true);
+    assert.deepEqual(observerRcon.slice(-2), [`mq2_observers ${observerMatch} ${observerGeneration} 2`, 'mq2_clear test_admin']);
+    assert.equal((await fs.stat(snapshotPath)).ino, snapshotInode);
+    assert.equal(await fs.readFile(snapshotPath, 'utf8'), firstSnapshot);
+    assert.ok(!(await fs.readdir(path.join(root, keys[0], 'config'))).some(file => file.includes('-observers-0')));
+    assert.ok(!JSON.stringify(rejected).includes('private-unconfirmed-observer-diagnostic'));
     await fs.rm(path.join(root, keys[0], 'maps', 'de_nuke.bsp'));
     await until(async () => observations.get(keys[0]).map_inventory.maps.length === 0);
     assert.deepEqual(observations.get(keys[1]).map_inventory.maps, ['de_train']);

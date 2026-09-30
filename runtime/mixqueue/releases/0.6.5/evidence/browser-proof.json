@@ -1,0 +1,16 @@
+{
+  "environment": "local PHP preview, synthetic SQLite data, simulated controller ACK",
+  "url": "http://127.0.0.1:8798/admin/matchmaking/servers",
+  "checks": [
+    "Explicit grant to selected Flute account 12 for synthetic match, then revoke; active entry removed, history retained",
+    "Polish and English observer panel",
+    "390x844 mobile layout: dialog fits viewport, no page horizontal overflow",
+    "Unsupported server: observer status shown, no connect control",
+    "Pending native ACK: waiting message, no connect control",
+    "Confirmed ACK: observer status and steam connect control",
+    "Actor in roster: regular player view, no observer badge",
+    "403 response: private match view and connect controls removed"
+  ],
+  "screenshots": ["observer-panel-pl.png", "observer-panel-en.png", "observer-panel-mobile.png", "observer-live-pl.png"],
+  "not_claimed": ["Production Steam connection", "Native xray visual acceptance"]
+}

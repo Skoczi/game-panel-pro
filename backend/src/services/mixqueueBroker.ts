@@ -1,7 +1,7 @@
 import http from "node:http";
 import fs from "node:fs/promises";
 import { createHmac } from "node:crypto";
-import { allowedMixqueueCommand, validMixqueueReport, MQ_API } from "./mixqueueContract.js";
+import { allowedMixqueueCommand, filterMixqueueObserverUpdates, validMixqueueReport, MQ_API } from "./mixqueueContract.js";
 
 export type BrokerIdentity = { serverId: string; game: string; key: string };
 export type BrokerDependencies = {
@@ -104,7 +104,9 @@ export async function startMixqueueBroker(
         } finally {
           await reader.cancel();
         }
-        result = JSON.parse(Buffer.concat(resultChunks).toString("utf8"));
+        result = filterMixqueueObserverUpdates(
+          JSON.parse(Buffer.concat(resultChunks).toString("utf8")), identity.game,
+        );
       }
       // Revocation during an upstream request must not hand a match to a stopped executor.
       if (closed) throw new Error("revoked");

@@ -1,0 +1,119 @@
+{
+  "controller": "0.6.5",
+  "acceptance": "mapped production binary and native read-only RCON smoke; not Steam acceptance",
+  "production_sha256": "6c34e3557c628d9cda431fbace292e002f4bb0943bae69fbfec9d319012e8a1b",
+  "mapped_controller": [
+    {
+      "pid": 2011989,
+      "range": "f1665000-f166f000",
+      "permissions": "r--p",
+      "inode": 14453689,
+      "path": "/data/serverfiles/cstrike/addons/matchbot/dlls/matchbot_csco_mm.so"
+    },
+    {
+      "pid": 2011989,
+      "range": "f166f000-f17a6000",
+      "permissions": "r-xp",
+      "inode": 14453689,
+      "path": "/data/serverfiles/cstrike/addons/matchbot/dlls/matchbot_csco_mm.so"
+    },
+    {
+      "pid": 2011989,
+      "range": "f17a6000-f180d000",
+      "permissions": "r--p",
+      "inode": 14453689,
+      "path": "/data/serverfiles/cstrike/addons/matchbot/dlls/matchbot_csco_mm.so"
+    },
+    {
+      "pid": 2011989,
+      "range": "f180d000-f1812000",
+      "permissions": "r--p",
+      "inode": 14453689,
+      "path": "/data/serverfiles/cstrike/addons/matchbot/dlls/matchbot_csco_mm.so"
+    },
+    {
+      "pid": 2011989,
+      "range": "f1812000-f1813000",
+      "permissions": "rw-p",
+      "inode": 14453689,
+      "path": "/data/serverfiles/cstrike/addons/matchbot/dlls/matchbot_csco_mm.so"
+    }
+  ],
+  "metamod_list": "Currently loaded plugins:\n      description    stat pend  file                 vers    src  load  unload\n [ 1] MatchBot CSCO  RUN   -    matchbot_csco_mm.so  v0.6.5  ini  Start Never\n1 plugins, 1 running",
+  "qa_reply": "",
+  "scope_rejection": "observer_scope",
+  "before": {
+    "bridge": 1,
+    "full_test": true,
+    "assignment_contract": 3,
+    "stats_version": 2,
+    "side_choice": 1,
+    "solo_test": true,
+    "matchid": "",
+    "idle": true,
+    "healthy": true,
+    "controller_version": "0.6.5",
+    "controller": "matchbot",
+    "phase": "idle",
+    "profile": "cs16-classic-v2",
+    "ruleset": 2,
+    "reconnect_budget": 1,
+    "pause_policy": 2,
+    "tactical_limit": 3,
+    "tactical_seconds": 30,
+    "ready_seconds": 300,
+    "player_ready": true,
+    "rules_ready": true,
+    "rules_issue": "",
+    "observer_acl_version": 1,
+    "observer_revision": 0,
+    "observer_expires_at": 0,
+    "observer_xray": "markers_v1",
+    "observer_slots": 0,
+    "connected_observers": 0,
+    "restarts_completed": 0,
+    "reconnect_resumes": 0,
+    "score": [
+      0,
+      0
+    ]
+  },
+  "after": {
+    "bridge": 1,
+    "full_test": true,
+    "assignment_contract": 3,
+    "stats_version": 2,
+    "side_choice": 1,
+    "solo_test": true,
+    "matchid": "",
+    "idle": true,
+    "healthy": true,
+    "controller_version": "0.6.5",
+    "controller": "matchbot",
+    "phase": "idle",
+    "profile": "cs16-classic-v2",
+    "ruleset": 2,
+    "reconnect_budget": 1,
+    "pause_policy": 2,
+    "tactical_limit": 3,
+    "tactical_seconds": 30,
+    "ready_seconds": 300,
+    "player_ready": true,
+    "rules_ready": true,
+    "rules_issue": "",
+    "observer_acl_version": 1,
+    "observer_revision": 0,
+    "observer_expires_at": 0,
+    "observer_xray": "markers_v1",
+    "observer_slots": 0,
+    "connected_observers": 0,
+    "restarts_completed": 0,
+    "reconnect_resumes": 0,
+    "score": [
+      0,
+      0
+    ]
+  },
+  "generation_retained": 120,
+  "journal_sha256": "c8c4f69967709949e3b6c6cde459c9f428929a944393c87346e685e95b6adde7"
+}

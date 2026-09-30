@@ -1,0 +1,46 @@
+{
+  "controller_version": "0.6.5",
+  "agent_version": "0.6.2",
+  "web_version": "0.7.8",
+  "metamod_version": "0.6.5",
+  "production_sha256": "6c34e3557c628d9cda431fbace292e002f4bb0943bae69fbfec9d319012e8a1b",
+  "qa_sha256": "11f256728481c8a735ae44f71921f3193b04f89d50e80dcbd068d676cf821ed8",
+  "agent_sha256": "81fbb61c27f5a2b82bd78bf94f83adfaa8046aaae90c3428a2be4c44e3072201",
+  "evidence_files": {
+    "observers-065-proof.json": "7cbd158932ad86d04279ec57b1409c9c0a56268497f38329150421212ee93fba",
+    "production-065-proof.json": "c4fd36b384c4e19b21ea656b634a3bdb2ebe2692e5c70d5bd718fc39f3a2aa1f",
+    "native-runtime-final.log": "6ec6bcec7416ce07dcdda5e76de05aa653f433d9e942662ac5e799032ecc3117",
+    "production-smoke.log": "753c1fd8d2be3f89fd936065edb84c42545406eb58425b0cafd46280edb6df57",
+    "lab-restored.log": "7849c5e065fa0cdb7a210730aecd19c1aefa318cc68370aab3f01bccec1ebdf6",
+    "native-unit.log": "fdc213a14fd811604a339fe991d56e9c4cc657eaf83596d72c047aa5b829d505",
+    "agent-tests-linux.log": "7e3db7efae864b22742da982963f73fc58d80d528b4494b67ae3f2cb0fb7d1b7",
+    "agent-tests-windows.log": "caae251820e05f42a90a6f6abd9a88fea3ae3d71c61c7ebf6c243da69a66df3e",
+    "php-core.log": "8b6dfb54135104b55d1b94428c325fc6d0520bd996f49b2a8fe70dce5a65e824",
+    "php-observers.log": "d6d351c587d360ad1c07fd0bbf327ac944abd29808f70f751d99c58a867365d6",
+    "ui-check.log": "261954d85070bb8fdb45680614fcc241334e6d82d33d228383c47f8acd653b34",
+    "browser-proof.json": "83132f5e8d7070dcd46c65da0cea3a9d69dcdc6d76fad6784aac17af4787cd54",
+    "build-production-final.log": "4d808b33563f8ded6de174d7602118687973f0aeaca3c5b217afe4faf9a4991a",
+    "build-qa-final.log": "5faedfaaf0799c0d137d0bb7b7a67c1a5023a1cb03b55f95611bdf11963068b5",
+    "cleanup-first.log": "ba8c2e449a5c0f45b9f67b50f7a6e609a64df6f7cebfab1be028aa770543ae94"
+  },
+  "acceptance": {
+    "native_unit": "ACL, projection and bounded regular-file reader: C++11 ASan/UBSan PASS",
+    "agent": "Linux 48 PASS; Windows 46 PASS + 2 platform skips",
+    "php": "32 core tests and 4 observer groups PASS",
+    "browser": "Local synthetic PL/EN, mobile, grant/revoke, pending/ready/unsupported, roster and 403 PASS",
+    "native_runtime": [
+      "live spectator routing; roster admin denied; both-team camera only for observer; ready/team/chat isolation; per-grant xray",
+      "observer exit/reconnect preserves score and roster connectivity; no disconnect pause; fresh session xray off",
+      "empty ACL revokes connected observers; stale revision denied; no reconnect pause",
+      "real observer ACL expiry fails closed and cannot be replayed",
+      "observer identities absent from participant statistics, penalties and connection journal",
+      "recovery clears observer grants and rejects updates"
+    ],
+    "native_runtime_generation": 120,
+    "production": "Mapped Linux i386 production library: MetaMod version/branding, no QA, scope reject, idle PASS",
+    "lab": "Network none; normal cleanup; previous 0.6.4 restored stopped; generation/journal preserved",
+    "steam": "NOT TESTED: real Steam authentication, marker rendering/movement and 10 players plus observers acceptance required",
+    "live_game_deployed": false,
+    "unchanged_prior_release_files": 92
+  }
+}
